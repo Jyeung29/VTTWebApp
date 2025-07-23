@@ -226,6 +226,8 @@ function Toolbar({canvas}) {
 
       gridSet = true;
       canvas.add(grid);
+      canvas.sendObjectToBack(grid);
+      canvas.bringObjectForward(grid);
       canvas.remove(resizeRect);
     }
   }
