@@ -15,30 +15,11 @@ body {
   align-items: center;
   justify-content: flex-start;
   flex-direction: column;
-  padding: 100px 16px;
+  padding: 0px 0px;
   min-height: 100vh;
   height: 100%;
 }
 
 #canvas {
-  z-index: 2;
-}
-
-.lower-canvas {
-  position: inital !important;
-}
-
-.Toolbar {
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-  background-color: var(--background-neutral-container);
-  padding: 8px 8px;
-  border-radius: 4px;
-  position: fixed;
-  top: 0%;
-  left: 16px;
-  &:empty {
-    display: none;
-  }
+  z-index: 1;
 }
