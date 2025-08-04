@@ -29,8 +29,9 @@ export class Token<
     protected visibility: boolean = true;
 
     //Number Code to scale token size based on grid space. 
-    // Tiny = 1, Medium = 5, Large = 10, Huge = 15, Gigantic = 20
-    protected sizeCode: number = 5;
+    // Multiplicative to how many rectangles on a grid a token occupies.
+    //1 = 1 spaces, 2 = 4 spaces, 3 = 9 spaces, etc.
+    protected sizeCode: number = 1;
 
     //Whether token's name is shown in Streaming Mode
     protected showName: boolean = true;
@@ -44,21 +45,45 @@ export class Token<
     //Whether resources are synced and shared across multiple token instances
     protected shareResource: boolean = false;
 
+    //Number that is added onto the end of a Token's name if GM group toggles name numbering.
+    //-1 value indicates it should not be displayed. Otherwise must be positive integer starting at 1
+    protected nameNumber: number = -1;
+
     //Returns string name of Token.
     public getName(): string {
         return this.name;
     }
 
-    //Sets name of Token to entered String. Returns false if string is only spaces or is empty. 
+    //Sets name of Token to entered String. Returns false if string is only spaces, empty string, or null. 
     // Otherwise returns true
     public setName(newName: string): boolean {
-        //Make sure not empty name or 
-        if(newName.trim() == "")
+        //Make sure not empty name or null
+        if(!newName && newName.trim() == "")
         {
             return false;
         }
+        //Otherwise set name
         this.name = newName;
         return true;
+    }
+
+    //Sets nameNumber of the Token to the provided number. Returns false if provided number is null
+    // or less than -1. Otherwise returns true.
+    public setNameNumber(num: number): boolean {
+        if(num == null || num < -1)
+        {
+            return false;
+        }
+        else
+        {
+            this.nameNumber = num;
+            return true;
+        }
+    }
+
+    //Returns nameNumber of the Token.
+    public getNameNumber(): number {
+        return this.nameNumber;
     }
 
     //Returns boolean of whether to show in Streaming Mode
@@ -66,10 +91,14 @@ export class Token<
         return this.visibility;
     }
 
-    //Sets visibility to entered boolean. Always returns true.
+    //Sets visibility to entered boolean. Returns true if visibility was set.
     public setVisibility(newVisibility: boolean): boolean {
-        this.visibility = newVisibility;
-        return true;
+        if(newVisibility)
+        {
+            this.visibility = newVisibility;
+            return true;
+        }
+        return false;
     }
 
     //Returns sizeCode of the Token. 
@@ -80,7 +109,7 @@ export class Token<
     //Sets sizeCode to entered number. If an invalid negative number return false.
     public setSizeCode(newCode: number): boolean {
         //Make sure not negative size
-        if(newCode > 0)
+        if(newCode && newCode > 0)
         {
             this.sizeCode = newCode;
             return true;
@@ -117,15 +146,19 @@ export class Token<
 
     //Method that sets a specific resource value and maximum found with index or name of Resource.
     public setResource(index?:number, name?:string, val?:number, max?:number): boolean {
+        //Check if valid index provided
         if(index && index > -1 && index < this.resources.length)
         {
             this.setResourceData(this.resources[index], val, max);
             return true;     
         }
+        //Check if name is provided
         else if(name && name.trim() != "")
         {
+            //Search for resource name in Token's resources
             for(let i = 0; i < this.resources.length; i++)
             {
+                //If found, set new resource values
                 if(this.resources[i].name == name)
                 {
                     this.setResourceData(this.resources[i], val, max);
@@ -146,10 +179,15 @@ export class Token<
     }
 
     //Helper method for setResource() and restoreAllResources(). Sets Resource object values.
-    protected setResourceData(resource: Resource, val?:number, max?:number): void {
-        //If val or max is null, then make no changes
-        resource.val = val ?? resource.val;
-        resource.max = max ?? resource.max;
+    protected setResourceData(resource: Resource, val?:number, max?:number): boolean {
+        if(resource)
+        {
+            //If val or max is null, then make no changes
+            resource.val = val ?? resource.val;
+            resource.max = max ?? resource.max;
+            return true;
+        }
+        return false;
     }
 
     //Returns boolean array of whether to display resources of the Token. 
@@ -159,7 +197,7 @@ export class Token<
 
     //Sets showResource at given index to entered boolean. Returns true if in range of array.
     public setShowResources(newShowResource: boolean, index: number): boolean {
-        if(index > -1 && this.showResources.length > index)
+        if(newShowResource != null && index && index > -1 && this.showResources.length > index)
         {
             this.showResources[index] = newShowResource;
             return true;
@@ -172,10 +210,14 @@ export class Token<
         return this.showName;
     }
 
-    //Sets showName to entered boolean. Always returns true.
+    //Sets showName to entered boolean. Returns true if showName is set.
     public setShowName(newShowName: boolean): boolean {
-        this.showName = newShowName;
-        return true;
+        if(newShowName != null)
+        {
+            this.showName = newShowName;
+            return true;
+        }
+        return false;
     }
 
     //Returns whether token shares resources with other Tokens
@@ -183,6 +225,7 @@ export class Token<
         return this.shareResource;
     }
 
+    //Temp method must change
     public createStatBlock(): boolean {
         let health: Resource = {val:30, max:40, name:'HP', index:0};
         this.resources.push(health);

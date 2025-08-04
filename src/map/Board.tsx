@@ -1,28 +1,48 @@
 import BattleMap from "./BattleMap";
 import { useRef, useState, useEffect } from 'react';
-import { Canvas, Rect, FabricImage, Point } from 'fabric';
-import { useWindowSize } from '@uidotdev/usehooks';
-import {Token} from "./Token";
+import { Canvas, Rect, FabricImage, Point, Group } from 'fabric';
+import { Token } from "./Token";
 import './Board.css';
-import Toolbar from './Toolbar'
+import Toolbar from './Toolbar';
+import { ContextMenu } from './ContextMenu';
+import { ContextMenuManager } from "./ContextMenuManager";
 
 function Board() {
   //Return using HTML notation
   const canvasRef = useRef(null);
   const [canvas, setCanvas] = useState(null);
+  const [currentMap, setCurrentBoard] = useState(null);
+  const [contextMenuManager, setContextMenuManager] = useState(null);
 
   //track Mouse Canvas Coordinate
   var mouseLocation: Point;
 
   //Boolean to set Panning bools only once during Panning
-  var panSwitch:boolean = false;
+  var panSwitch: boolean = false;
 
   //Boolean to determine whether to Pan
-  var isPanning:boolean = false;
+  var isPanning: boolean = false;
+
+  var myMaps: BattleMap[] = [];
+
+  var createTest = true;
+
+  const newCMManager = new ContextMenuManager();
+
+  //Prevent Panning from Displaying Context Menu
+  const contextMenu = document.addEventListener('contextmenu', (event) => {
+    event.preventDefault();
+  });
 
   //Runs every render
   useEffect(() => {
     if (canvasRef.current) {
+      //Remove any preexisting events from previous renders. Optimize performance
+      window.removeEventListener("resize", detectResize, false);
+      window.removeEventListener("keydown", detectKeydown, false);
+      window.removeEventListener('mousedown', panCanvas);
+      window.removeEventListener('mouseup', stopPan);
+
       const initCanvas = new Canvas(canvasRef.current, {
         width: window.innerWidth,
         height: window.innerHeight,
@@ -35,33 +55,7 @@ function Board() {
 
       //Resize Canvas width and height if new window size is bigger
       function detectResize() {
-        initCanvas.setDimensions({height:window.innerHeight,width:window.innerWidth});
-        /*let changeMade = false;
-          if (initCanvas.width < window.innerWidth) {
-            console.log("width change");
-            let myHeight = initCanvas.height;
-            initCanvas.setDimensions({height:myHeight,width:window.innerWidth});
-            changeMade = true;
-          }
-          if (initCanvas.height < window.innerHeight) {
-            console.log("height change");
-            let myWidth = initCanvas.width;
-            initCanvas.setDimensions({height:window.innerHeight,width:myWidth});
-            changeMade = true;
-          }
-          /*
-          //Recenters when resized to larger screen. Back to normal screen causes issues.
-          if(changeMade)
-          {
-            let newCenter = initCanvas.getCenterPoint();
-            let difference = newCenter.subtract({x:centerPoint.x,y:centerPoint.y});
-            let objects = initCanvas.getObjects();
-            for(let i = 0; i < objects.length; i++)
-            {
-              let newCoord = objects[i].getXY().add(difference);
-              objects[i].setXY(newCoord);
-            }
-          }*/
+        initCanvas.setDimensions({ height: window.innerHeight, width: window.innerWidth });
       }
 
       //Listen for any keyboard input
@@ -70,7 +64,7 @@ function Board() {
       //Delete Group and Single FabricObject selections when "Backspace" or "Delete" keys pressed
       function detectKeydown(event) {
         //Check if key event was a Backspace
-        if (event.key == "Backspace") {
+        if (event.key == "Backspace" && newCMManager && newCMManager.getDeleteKeyBool()) {
           //Get all selected FabricObjects on Canvas
           let actives = initCanvas.getActiveObjects();
           //Check if FabricObjects have been selected
@@ -86,35 +80,28 @@ function Board() {
       }
 
       //Event for mouse event to start panning
-      const mousePan = window.addEventListener('mousedown', (event) => {
+      const mousePan = window.addEventListener('mousedown', panCanvas);
+
+      function panCanvas(event) {
         //If (for right hand) right mouse button down
-        if(event.button == 2 && !panSwitch)
-        {
+        if (event.button == 2 && !panSwitch) {
           isPanning = true;
           panSwitch = true;
           initCanvas.selection = false;
         }
-      });
+      }
 
       //Event for mouse event to stop panning
-      const mouseNoPan = window.addEventListener('mouseup', (event) => {
+      const mouseNoPan = window.addEventListener('mouseup', stopPan);
+
+      function stopPan(event) {
         //If (for right hand) right mouse button down
-        if(event.button == 2 && isPanning)
-        {
+        if (event.button == 2 && isPanning) {
           panSwitch = false;
           isPanning = false;
           initCanvas.selection = true;
         }
-      });
-
-      //Prevent Panning from Displaying Context Menu
-      const contextMenu = document.addEventListener('contextmenu', (event) => {
-        event.preventDefault();
-        /*if((canvas._activeObject) instanceof Token)
-        {
-          
-        }*/
-      });
+      }
 
       //Pan Viewport
       initCanvas.on('mouse:move', (event) => {
@@ -139,7 +126,7 @@ function Board() {
       });
 
       //Zoom with scrollwheel
-      initCanvas.on('mouse:wheel', function(opt) {
+      initCanvas.on('mouse:wheel', function (opt) {
         mouseLocation = opt.viewportPoint;
         //Current Zoom Value
         var delta = opt.e.deltaY;
@@ -150,8 +137,7 @@ function Board() {
         if (zoom > 20) zoom = 20;
         if (zoom < 0.3) zoom = 0.3;
         //Make sure mouse location is found    
-        if(mouseLocation)
-        {
+        if (mouseLocation) {
           //Zoom to where mouse is
           initCanvas.zoomToPoint(mouseLocation, zoom);
           opt.e.preventDefault();
@@ -162,6 +148,15 @@ function Board() {
       //Rendering
       initCanvas.renderAll();
       setCanvas(initCanvas);
+
+      if (createTest) {
+        var newMap = new BattleMap("Test Map", canvas);
+        myMaps.push(newMap);
+        setCurrentBoard(newMap);
+        createTest = false;
+        
+        setContextMenuManager(newCMManager);
+      }
 
       //Unmounted to free memory
       return () => {
@@ -174,8 +169,9 @@ function Board() {
   return (
     <div className="Board">
       <div className="Toolbar Top">
-        <Toolbar canvas={canvas} />
+        <Toolbar canvas={canvas} board={currentMap} cmManager={contextMenuManager} />
       </div>
+      <ContextMenu canvas={canvas} cmManager={contextMenuManager} />
       <canvas id="test" ref={canvasRef} />
     </div>
   )
