@@ -255,24 +255,42 @@ export function ContextMenu({ canvas, cmManager, board }) {
 
 
   var changeName = (event) => {
-    if (displayNameInput && cmManager) {
+    if (displayNameInput && cmManager && canvas) {
       let tokenGroup;
       let token;
       let nameBox;
       //Multi-Token selection
-      if (cmManager.getMultiSelectionBool()) {
-
+      if (cmManager.getMultiSelectionBool() && canvas.getActiveObjects().length > 1) {
+        let activeObjects = canvas.getActiveObjects();
+        for(let i = 0; i < activeObjects.length; i++)
+        {
+          if((tokenGroup = activeObjects[i]) instanceof Group && tokenGroup.getObjects().length > 1 &&
+        (token = tokenGroup.getObjects()[0]) instanceof Token)
+        {
+          let index = canvas.getObjects().indexOf(tokenGroup) + 1;
+          token.setName(event.target.value);
+          if(index > 0 && index < canvas.getObjects().length && 
+          (nameBox = canvas.getObjects()[index]) instanceof Textbox)
+          {
+            nameBox.set('text', event.target.value);
+            let newX = tokenGroup.getObjects()[1].getCenterPoint().x;
+            let newY = tokenGroup.getObjects()[1].getCoords()[3].y;
+            let newPoint = new Point({x:newX,y:newY});
+            nameBox.setXY(newPoint, 'center', 'top');
+            nameBox.setCoords();
+          }
+        }
+        }
+        canvas.renderAll();
       }
       //Single Token selection
       else if ((tokenGroup = canvas.getActiveObject()) instanceof Group && tokenGroup.getObjects().length > 1
         && (token = tokenGroup.getObjects()[0]) instanceof Token) {
-        console.log("name change")
-        console.log(event.target.value)
         let index = canvas.getObjects().indexOf(tokenGroup) + 1;
+        token.setName(event.target.value);
         if(index > 0 && index < canvas.getObjects().length &&
       (nameBox = canvas.getObjects()[index]) instanceof Textbox)
-        {
-          token.setName(event.target.value);
+        { 
           nameBox.set('text', event.target.value);
           let newX = tokenGroup.getObjects()[1].getCenterPoint().x;
           let newY = tokenGroup.getObjects()[1].getCoords()[3].y;
@@ -293,19 +311,26 @@ export function ContextMenu({ canvas, cmManager, board }) {
       let tokenGroup;
       let nameBox;
       let token;
-      console.log("trigger")
       if(cmManager && canvas && board)
       {
         //Multiple Selection
         if(cmManager.getMultiSelectionBool() && canvas.getActiveObjects().length > 1)
         {
-
+          let activeObjects = canvas.getActiveObjects();
+          for(let i = 0; i < activeObjects.length; i++)
+          {
+            if((tokenGroup = activeObjects[i])instanceof Group && (tokenGroup.getObjects().length > 1) &&
+          (token = tokenGroup.getObjects()[0]) instanceof Token)
+          {
+            board.resizeToken(tokenGroup, (event.value)[0] as number, canvas);
+            setSizeVal(event.value);
+          }
+          }
         }
         //Single Selection
         else if((tokenGroup = canvas.getActiveObject()) instanceof Group &&
       (tokenGroup.getObjects().length > 1) && (token = tokenGroup.getObjects()[0]) instanceof Token)
         {
-          console.log("chnage")
           board.resizeToken(tokenGroup,(event.value)[0] as number, canvas)
           setSizeVal(event.value);
         }
