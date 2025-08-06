@@ -1,34 +1,32 @@
-import {Canvas, Group, type TCornerPoint, Point, FabricImage, FabricObject} from 'fabric';
-import {useState} from 'react'
-import {Token} from './Token';
+import { Canvas, Group, type TCornerPoint, Point, FabricImage, FabricObject, Circle, Textbox } from 'fabric';
+import { useState } from 'react'
+import { Token } from './Token';
 
 //Class definition for BattleMap
 class BattleMap {
   private name: string;
-  private tokenGroups: Group[] = [];
-  private objects: [FabricObject,number][] = [];
+  private tokenGroups: [Group, FabricObject[]][] = [];
+  private objects: [FabricObject, number][] = [];
   private maps: FabricImage[] = [];
   private currentMap: number = 0;
   private canvas;
-  private smallestGridUnit:number = -1;
-  private centerPoint:Point;
-  private cornerPoints:TCornerPoint;
-  private gridSnap:boolean = false;
+  private smallestGridUnit: number = -1;
+  private centerPoint: Point;
+  private cornerPoints: TCornerPoint;
+  private gridSnap: boolean = false;
   private gridUnitHeight = -1;
   private gridUnitWidth = -1;
 
-  constructor(name: string, canvas: Canvas)
-  {
+  constructor(name: string, canvas: Canvas) {
     this.name = name;
     this.canvas = canvas;
   }
-  
+
   //Adds new token to be tracked in instance of BattleMap. Returns boolean depending
   //on success of Token addition.
-  public addToken(newToken: Group): boolean {
-    if(newToken && newToken.getObjects().length > 1 && newToken.getObjects()[0] instanceof Token)
-    {
-      this.tokenGroups.push(newToken);
+  public addToken(newToken: Group, tokenObjects: FabricObject[]): boolean {
+    if (newToken && newToken.getObjects().length > 1 && newToken.getObjects()[0] instanceof Token) {
+      this.tokenGroups.push([newToken, tokenObjects]);
       return true;
     }
     return false;
@@ -36,14 +34,25 @@ class BattleMap {
 
   //Removes token from being tracked in instance of BattleMap. Returns the
   //target token to be removed. Called when canvas object removed event triggers and
-  //is a Token group.
-  public removeToken(removeToken: Group) {
-    if(removeToken && removeToken.getObjects().length > 1 && removeToken.getObjects()[0] instanceof Token)
-    {
-      let index = this.tokenGroups.indexOf(removeToken);
-      if(index > -1)
-      {
-        let removedTokens = this.tokenGroups.splice(index,1);
+  //is a Token group. Removes any associated Token elements such as name textbox.
+  public removeToken(removeToken: Group, canvas: Canvas) {
+    if (removeToken && removeToken.getObjects().length > 1 && removeToken.getObjects()[0] instanceof Token) {
+      let index = -1;
+      for (let i = 0; i < this.tokenGroups.length; i++) {
+        if (this.tokenGroups[i][0] == removeToken) {
+          /*console.log("found" + i)
+          canvas.remove(this.tokenGroups[i][0]);
+          for(let j = 0; j < this.tokenGroups[i][1].length; j++)
+          {
+            console.log(j);
+            canvas.remove(this.tokenGroups[i][1][j]);
+          }*/
+          index = i;
+          break;
+        }
+      }
+      if (index > -1) {
+        let removedTokens = this.tokenGroups.splice(index, 1);
         return removedTokens[0];
       }
     }
@@ -53,9 +62,8 @@ class BattleMap {
   //Adds new shape to be tracked in instance of BattleMap. Returns boolean depending on
   //success of shape addition.
   public addObject(newObject: FabricObject, multiplier: number): boolean {
-    if(newObject)
-    {
-      this.objects.push([newObject,multiplier]);
+    if (newObject) {
+      this.objects.push([newObject, multiplier]);
       return true;
     }
     return false;
@@ -65,43 +73,61 @@ class BattleMap {
   //target shape to be removed. Called when canvas object removed event triggers and
   //is a shape.
   public removeObjects(removeObject: FabricObject) {
-    if(removeObject)
-    {
+    if (removeObject) {
       let index = -1;
-      for(let i = 0; i < this.objects.length; i++)
-      {
-        if(this.objects[i][0] == removeObject)
-        {
+      for (let i = 0; i < this.objects.length; i++) {
+        if (this.objects[i][0] == removeObject) {
           index = i;
           break;
         }
       }
 
-      if(index > -1)
-      {
-        let removedTokens = this.objects.splice(index,1);
+      if (index > -1) {
+        let removedTokens = this.objects.splice(index, 1);
         return removedTokens[0][0];
       }
     }
     return null;
   }
 
+  //Scales a specified Token according to the new size based on the grid
+  public resizeToken(token: Group, sizeCode: number, canvas:Canvas): boolean {
+    let resizeToken;
+    if (token && sizeCode > 0 &&
+      token.getObjects().length > 1 && (resizeToken = token.getObjects()[0]) instanceof Token) {
+      //Find Tokens added to the BattleMap
+      for (let i = 0; i < this.tokenGroups.length; i++) {
+        if (token == this.tokenGroups[i][0]) {
+          resizeToken.setSizeCode(sizeCode);
+          this.tokenGroups[i][0].scaleToHeight(this.smallestGridUnit * sizeCode);
+          this.tokenGroups[i][1][0].scaleToHeight(this.gridUnitHeight / 5);
+          let newX = this.tokenGroups[i][0].getObjects()[1].getCenterPoint().x;
+          let newY = this.tokenGroups[i][0].getObjects()[1].getCoords()[3].y;
+          let newPoint = new Point({ x: newX, y: newY });
+          this.tokenGroups[i][1][0].setXY(newPoint, 'center', 'top');
+          this.tokenGroups[i][1][0].setCoords();
+          canvas.renderAll();
+          return true;
+        }
+      }
+      //Token not found
+      return false;
+    }
+    return false;
+  }
 
   //Scales the Token size to the specified number. Returns either error that
   //indicates invalid size number or number of tokens unable to be resized.
-  public resizeAllObjects(width:number, height:number, corners:TCornerPoint,center:Point): number
-  {
-    if(!width ||!height || !corners || !center || width <= 0 || height <= 0)
-    {
+  public resizeAllObjects(width: number, height: number, corners: TCornerPoint, center: Point): number {
+    if (!width || !height || !corners || !center || width <= 0 || height <= 0) {
       return -1; //Indicates error
     }
 
-    if(width >= height)
-    {
+    //Find smallest grid unit to resize to
+    if (width >= height) {
       this.smallestGridUnit = height;
     }
-    else
-    {
+    else {
       this.smallestGridUnit = width;
     }
     this.gridUnitHeight = height;
@@ -109,36 +135,42 @@ class BattleMap {
 
     var errorCount = 0; //Indicates number of tokens not resized
 
-    if(this.tokenGroups.length > 0)
-    {
-      for(let i = 0; i < this.tokenGroups.length; i++)
-      {
-        let currentToken = this.tokenGroups[i].getObjects()[0];
-        if(currentToken instanceof Token)
-        {
+    if (this.tokenGroups.length > 0) {
+      for (let i = 0; i < this.tokenGroups.length; i++) {
+        let currentToken = this.tokenGroups[i][0].getObjects()[0];
+        if (currentToken instanceof Token) {
           let sizeMultiplier = currentToken.getSizeCode();
-          this.tokenGroups[i].scaleToHeight(this.smallestGridUnit * sizeMultiplier);
+          this.tokenGroups[i][0].scaleToHeight(this.smallestGridUnit * sizeMultiplier);
+
+          //Resize Associated Token Elements such as name textbox
+          if (this.tokenGroups[i][1].length > 0) {
+            this.tokenGroups[i][1][0].scaleToHeight(this.gridUnitHeight / 5);
+            let newX = this.tokenGroups[i][0].getObjects()[1].getCenterPoint().x;
+            let newY = this.tokenGroups[i][0].getObjects()[1].getCoords()[3].y;
+            let newPoint = new Point({ x: newX, y: newY });
+            this.tokenGroups[i][1][0].setXY(newPoint, 'center', 'top');
+            this.tokenGroups[i][1][0].setCoords();
+          }
+
         }
-        else
-        {
+        else {
           errorCount++;
         }
       }
     }
 
-    if(this.objects.length > 0)
-    {
-      for(let i = 0; i < this.objects.length; i++)
-      {
+    if (this.objects.length > 0) {
+      for (let i = 0; i < this.objects.length; i++) {
         let currentObject = this.objects[i][0];
         let multiplier = this.objects[i][1];
-        if(currentObject instanceof FabricObject && multiplier > 0)
-        {
+        if (currentObject instanceof Circle && multiplier > 0) {
           currentObject.scaleX = this.gridUnitWidth / 600 * multiplier;
           currentObject.scaleY = this.gridUnitHeight / 600 * multiplier;
         }
-        else
-        {
+        else if (currentObject instanceof FabricObject && multiplier > 0) {
+          currentObject.scaleToHeight(this.gridUnitHeight * multiplier);
+        }
+        else {
           errorCount++;
         }
       }
@@ -152,8 +184,7 @@ class BattleMap {
 
   //Set whether objects should snap on grid on this BattleMap. Returns true if gridSnap has been set.
   public setGridSnap(snap: boolean): boolean {
-    if(snap)
-    {
+    if (snap) {
       this.gridSnap = snap;
       return true;
     }
@@ -168,8 +199,7 @@ class BattleMap {
   //Method to add a map's FabricImage to reference. Returns of boolean of whether
   //map was added.
   public addMap(map: FabricImage): boolean {
-    if(map)
-    {
+    if (map) {
       this.maps.push(map);
 
       return true;
@@ -178,9 +208,8 @@ class BattleMap {
   }
 
   //Method to retrieve a a map's FabricImage reference with an index.
-  public getMapAtIndex(index:number) {
-    if(index && index > 0 && index < this.maps.length)
-    {
+  public getMapAtIndex(index: number) {
+    if (index && index > 0 && index < this.maps.length) {
       return this.maps[index];
     }
     return null;
@@ -189,12 +218,10 @@ class BattleMap {
   //Method to retrieve the current map's FabricImage used on the canvas.
   //Returns null of no maps have been added.
   public getCurrentMap() {
-    if(this.maps.length == 0)
-    {
+    if (this.maps.length == 0) {
       return null;
     }
-    else
-    {
+    else {
       return this.maps[this.currentMap];
     }
   }
@@ -219,13 +246,13 @@ class BattleMap {
 
   //Returns corner Point coordinates of the grid resizing rectangle. Used to calculate
   //snapping distances in GridSnappingHelper.
-  public getCornerPoints(): TCornerPoint{
+  public getCornerPoints(): TCornerPoint {
     return this.cornerPoints;
   }
 
   //Returns center Point coorindate of the grid resizing rectangle. Used to calculate
   //snapping distances in GridSnappingHelper.
-  public getCenterPoint(): Point{
+  public getCenterPoint(): Point {
     return this.centerPoint;
   }
 }

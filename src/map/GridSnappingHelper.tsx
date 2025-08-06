@@ -2,7 +2,7 @@ import { FabricObject, Canvas, Group, Point } from "fabric";
 import type BattleMap from "./BattleMap";
 import { Token } from './Token';
 
-export const handleObjectMoving = (canvas: Canvas, obj: FabricObject, map: BattleMap) => {
+export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: BattleMap) => {
     let mapEl = map.getCurrentMap();
     let token;
 
@@ -22,11 +22,20 @@ export const handleObjectMoving = (canvas: Canvas, obj: FabricObject, map: Battl
     var translateX;
     var translateY;
 
+    let canvasObjects = canvas.getObjects();
+
     //Check if obj is a Token group
     if (obj && obj instanceof Group && obj.getObjects().length > 1 &&
         (token = obj.getObjects()[0]) instanceof Token) {
         let tokenCenter = obj.getCenterPoint();
         let tokenSize = token.getSizeCode();
+
+        let index = canvasObjects.indexOf(obj) + 1;
+        if (index >= canvasObjects.length || index == 0) {
+            alert('Error: Token Name TextBox not Found');
+            return;
+        }
+        let nameBox = canvasObjects[index];
 
         //Snap to center of grid rectangle
         if (tokenSize % 2 == 1 && tokenSize >= 1) {
@@ -96,18 +105,21 @@ export const handleObjectMoving = (canvas: Canvas, obj: FabricObject, map: Battl
 
         let coordDistance = new Point({ x: translateX, y: translateY });
         let newPoint = unitCenter.add(coordDistance);
-        obj.setXY(newPoint);
+        obj.setXY(newPoint, 'center', 'center');
+        let nameCoords = new Point();
+        nameCoords.x = obj.getCenterPoint().x;
+        nameCoords.y = obj.getCoords()[3].y;
+        nameBox.setXY(nameCoords, 'center', 'top');
+        nameBox.setCoords();
     }
     //Generic Canvas Object. Usually will be shapes
-    else if (obj instanceof FabricObject) {
+    else if (obj instanceof FabricObject && !(obj instanceof Group)) {
         //find multiplier of the object
         let multiplier = Math.round(obj.scaleY / map.getGridUnitHeight() * 600);
-        console.log(obj.scaleY)
         let objCenter = obj.getCenterPoint();
+        let xHalves = Math.floor(Math.abs(unitCenter.x - objCenter.x) / unitXDistance);
+        let yHalves = Math.floor(Math.abs(unitCenter.y - objCenter.y) / unitYDistance);
         if (multiplier % 2 == 0) {
-            let xHalves = Math.floor(Math.abs(unitCenter.x - objCenter.x) / unitXDistance);
-            let yHalves = Math.floor(Math.abs(unitCenter.y - objCenter.y) / unitYDistance);
-
             //Even halves means current token location needs to snap farther by 1 half
             //Odd halves means current token location needs to snap closer by 1 half
             translateX = unitXDistance * xHalves;
@@ -122,8 +134,6 @@ export const handleObjectMoving = (canvas: Canvas, obj: FabricObject, map: Battl
             }
         }
         else if (multiplier % 2 == 1) {
-            let xHalves = Math.floor(Math.abs(unitCenter.x - objCenter.x) / unitXDistance);
-            let yHalves = Math.floor(Math.abs(unitCenter.y - objCenter.y) / unitYDistance);
 
             //Even halves means current token location needs to snap closer by 1 half
             //Odd halves means current token location needs to snap farther by 1 half
@@ -138,8 +148,7 @@ export const handleObjectMoving = (canvas: Canvas, obj: FabricObject, map: Battl
                 translateY += unitYDistance;
             }
         }
-        else
-        {
+        else {
             return;
         }
 
@@ -154,5 +163,107 @@ export const handleObjectMoving = (canvas: Canvas, obj: FabricObject, map: Battl
         let coordDistance = new Point({ x: translateX, y: translateY });
         let newPoint = unitCenter.add(coordDistance);
         obj.setXY(newPoint);
+        obj.setCoords();
+    }
+    //Moving possible mix of Tokens and shapes in a multi-selection
+    else if (obj instanceof Group) {
+        let objCenter = obj.getCenterPoint();
+        let widthUnits = Math.round(obj.getScaledWidth() / map.getGridUnitWidth());
+        let heightUnits = Math.round(obj.getScaledHeight() / map.getGridUnitHeight());
+        let widthQuarters = Math.round(obj.getScaledWidth() / map.getGridUnitWidth() * 2);
+        let heightQuarters = Math.round(obj.getScaledHeight() / map.getGridUnitHeight() * 2);
+
+        let xHalves;
+        let yHalves;
+
+        let divideX = 1;
+        let divideY = 1;
+
+        //Check if a height or width is a 1/2 of a grid unit off. If so, set to calculate as if
+        //1/2 size code as seen for snappingTokens only.
+        if (widthQuarters / widthUnits != 2) {
+            widthUnits = widthQuarters;
+            divideX = 2;
+        }
+
+        if (heightQuarters / widthUnits != 2) {
+            heightUnits = heightQuarters;
+            divideY = 2;
+        }
+
+        //Calculate number of half units from resizeRect to the current object
+        xHalves = Math.floor(Math.abs(unitCenter.x - objCenter.x) / (unitXDistance / divideX));
+        yHalves = Math.floor(Math.abs(unitCenter.y - objCenter.y) / (unitYDistance / divideY));
+
+        //Calculate distance needed to translate to
+        translateX = unitXDistance * xHalves / divideX;
+        translateY = unitYDistance * yHalves / divideY;
+
+        //Snap X to Grid Unit Intersection
+        if (widthUnits % 2 == 0) {
+            if (xHalves % 2 == 1) {
+                translateX += unitXDistance / divideX;
+            }
+        }
+        //Snap X to Grid Unit Center
+        else if (widthUnits % 2 == 1) {
+            if (xHalves % 2 == 0) {
+                translateX += unitXDistance / divideX;
+            }
+        }
+
+        //Snap Y to Grid Unit Intersection
+        if (heightUnits % 2 == 0) {
+            if (yHalves % 2 == 1) {
+                translateY += unitYDistance / divideY;
+            }
+        }
+        //Snap Y to Grid Unit Center
+        else if (heightUnits % 2 == 1) {
+            if (yHalves % 2 == 0) {
+                translateY += unitYDistance / divideY;
+            }
+        }
+
+        //Change x and y to negative depending on where Group center point is relative to the
+        //resizingUnit's original coordinate provided by BattleMap
+        if (objCenter.x < unitCenter.x) {
+            translateX = -translateX;
+        }
+
+        if (objCenter.y < unitCenter.y) {
+            translateY = -translateY;
+        }
+
+        //Set Group to new coordinate
+        let coordDistance = new Point({ x: translateX, y: translateY });
+        let newPoint = unitCenter.add(coordDistance);
+        obj.setXY(newPoint, 'center', 'center');
+        obj.setCoords();
+
+        let activeObjects = canvas.getActiveObjects();
+
+        let tokenGroup;
+        let token;
+
+        //Find Token groups so that associated name textboxes can be moved
+        for (let i = 0; i < activeObjects.length; i++) {
+            if ((tokenGroup = activeObjects[i]) instanceof Group &&
+                (tokenGroup = tokenGroup.getObjects()).length > 1
+                && (token = tokenGroup[0]) instanceof Token) {
+                    //Get index of the name textbox
+                    let index = canvas.getObjects().indexOf(activeObjects[i]) + 1;
+                    if(index > 0 && index < canvas.getObjects().length)
+                    {
+                        //Set name textbox to be underneath Token group
+                        let nameBox = canvas.getObjects()[index];
+                        let newX = tokenGroup[1].getCenterPoint().x;
+                        let newY = tokenGroup[1].getCoords()[3].y;
+                        let newPoint = new Point({x:newY,y:newX});
+                        nameBox.setXY(newPoint, 'center', 'top');
+                        nameBox.setCoords();
+                    }
+            }
+        }
     }
 }

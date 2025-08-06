@@ -4,7 +4,8 @@ import {
   Line, Textbox, Point
 } from "fabric";
 import { Token } from './Token';
-import { handleObjectMoving } from './GridSnappingHelper';
+import { handleObjectSnapping } from './GridSnappingHelper';
+import { handleObjectMoving } from './MovingHelper';
 
 function Toolbar({ canvas, board, cmManager }) {
   const features = [];
@@ -31,6 +32,7 @@ function Toolbar({ canvas, board, cmManager }) {
         lockSkewingX: true, lockSkewingY: true, lockScalingFlip: true, lockScalingY: true, lockScalingX: true,
         fill: 'rgba(227, 6, 6, 0.67)'
       });
+
       canvas.add(circle);
       canvas.centerObject(circle);
 
@@ -38,7 +40,13 @@ function Toolbar({ canvas, board, cmManager }) {
       if (!objectAdded) {
         canvas.on('object:moving', (event) => {
           if(gridSet)
-          handleObjectMoving(canvas, event.target, board);
+          {
+            handleObjectSnapping(canvas, event.target, board);
+          }
+          else
+          {
+            handleObjectMoving(canvas, event.target);
+          }
         });
       }
     }
@@ -105,7 +113,8 @@ function Toolbar({ canvas, board, cmManager }) {
       image.onload = function () {
         image.appendChild(source);
         var tokenEl = new Token(image);
-        tokenEl.setSizeCode(1);
+        var sizeCode = 1;
+        tokenEl.setSizeCode(sizeCode);
         tokenEl.setName("TestName");
 
         //Calculate Largest Radius Fitting in Image with Padding
@@ -129,13 +138,9 @@ function Toolbar({ canvas, board, cmManager }) {
           fill: 'transparent', stroke: 'green'
         });
 
-        var nameBox = new Textbox(tokenEl.getName(), {selectable:false, lockRotation:true,lockScalingFlip:true,
-          lockSkewingX:true, lockSkewingY:true, fill:'rgba(227, 207, 207, 1)', fontSize: newRadius * 2 / 5
-        });
-
         //Create group of Token and Border set as Group. FixedLayout used to change bounding box to fit circle.
         var group = new Group([tokenEl, circleBorder], {
-          width: newRadius * 2, height: newRadius * 2, originX: 'center', originY: 'center',
+          width: newRadius * 2 * 1.1, height: newRadius * 2 * 1.1, originX: 'center', originY: 'center',
           lockRotation: true, lockSkewingX: true, lockSkewingY: true, lockScalingFlip: true, lockScalingY: true, lockScalingX: true,
           layoutManager: new LayoutManager(new FixedLayout())
         });
@@ -144,12 +149,6 @@ function Toolbar({ canvas, board, cmManager }) {
         let center = group.getCenterPoint();
         circleBorder.setXY(center, 'center', 'center');
         tokenEl.setXY(center, 'center', 'center');
-        
-        let bottomLeft = circleBorder.getCoords()[3];
-        let newPoint = new Point();
-        newPoint.x = center.x;
-        newPoint.y = bottomLeft.y;
-        nameBox.setXY(newPoint, 'center', 'top');
 
         canvas.on('object:removed', (event) => {
           if (event.target == group) {
@@ -157,21 +156,39 @@ function Toolbar({ canvas, board, cmManager }) {
           }
         });
 
+        //Textbox element to show Token's name. Must be added after Token added to canvas because
+        //textbox must not be in same group.
+        var nameBox = new Textbox(tokenEl.getName(), {selectable:false, lockRotation:true,lockScalingFlip:true,
+          lockSkewingX:true, lockSkewingY:true, fill:'rgba(227, 207, 207, 1)', fontSize: newRadius * 2 / 20,
+          textAlign:'center'
+        });
+        
         //When adding Tokens check whether a grid has been added and resize accordingly
         if (board.getSmallestGridUnit() > 0) {
           group.scaleToHeight(board.getSmallestGridUnit() * tokenEl.getSizeCode());
+          nameBox.scaleToHeight(board.getGridUnitHeight() / 5);
         }
         //Otherwise scale height to the Token's image
         else if (canvas.getObjects()[0] instanceof FabricImage) {
-          group.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 15);
+          group.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 15 * sizeCode);
         }
 
         //Add Token group to the canvas
         canvas.add(group);
         canvas.centerObject(group);
 
+        //Add textbox to canvas
+        //Align textbox to bottom center of the Token
+        let bottomLeft = circleBorder.getCoords()[3];
+        let newPoint = new Point();
+        newPoint.x = group.getCenterPoint().x;
+        newPoint.y = bottomLeft.y;
+        nameBox.setXY(newPoint, 'center', 'top');
+        nameBox.setCoords();
+        canvas.add(nameBox);
+
         //Alert if Token was not added to Battle Map correctly
-        if (board.addToken(group) == false) {
+        if (!board.addToken(group, [nameBox])) {
           alert("Token not added correctly");
         }
 
@@ -247,7 +264,13 @@ function Toolbar({ canvas, board, cmManager }) {
         if (!objectAdded) {
           canvas.on('object:moving', (event) => {
             if(gridSet)
-            handleObjectMoving(canvas, event.target, board);
+            {
+              handleObjectSnapping(canvas, event.target, board);
+            }
+            else
+            {
+              handleObjectMoving(canvas, event.target);
+            }
           });
         }
       };

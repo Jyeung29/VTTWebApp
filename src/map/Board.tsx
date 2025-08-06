@@ -1,6 +1,6 @@
 import BattleMap from "./BattleMap";
 import { useRef, useState, useEffect } from 'react';
-import { Canvas, Rect, FabricImage, Point, Group } from 'fabric';
+import { Canvas, Rect, FabricImage, Point, Group, Textbox } from 'fabric';
 import { Token } from "./Token";
 import './Board.css';
 import Toolbar from './Toolbar';
@@ -71,6 +71,19 @@ function Board() {
           if (actives.length > 0) {
             //Remove all selected FabricObjects
             for (let i = 0; i < actives.length; i++) {
+              let token;
+              let tokenGroup;
+              let nameBox;
+              if((tokenGroup = actives[i]) instanceof Group && (tokenGroup = tokenGroup.getObjects()).length > 1
+            && (token = tokenGroup[0]) instanceof Token)
+              {
+                let index = initCanvas.getObjects().indexOf(actives[i]) + 1;
+                if(index > 0 && index < initCanvas.getObjects().length && 
+                (nameBox = initCanvas.getObjects()[index]) instanceof Textbox)
+                {
+                  initCanvas.remove(nameBox);
+                }
+              }
               initCanvas.remove(actives[i]);
             }
             //Remove group selection box
@@ -171,7 +184,7 @@ function Board() {
       <div className="Toolbar Top">
         <Toolbar canvas={canvas} board={currentMap} cmManager={contextMenuManager} />
       </div>
-      <ContextMenu canvas={canvas} cmManager={contextMenuManager} />
+      <ContextMenu canvas={canvas} cmManager={contextMenuManager} board={currentMap}/>
       <canvas id="test" ref={canvasRef} />
     </div>
   )

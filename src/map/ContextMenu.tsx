@@ -1,12 +1,16 @@
-import { Menu, Button, Portal, Slider, Flex, Checkbox, useSlider, useCheckbox
-  ,Input, Field
- } from '@chakra-ui/react';
+import {
+  Menu, Button, Portal, Slider, Flex, Checkbox, useSlider, useCheckbox
+  , Input, Field, useSelect,Select,
+  createListCollection
+} from '@chakra-ui/react';
 import { useRef, useState } from 'react';
 import { Canvas, Group, Point, Circle, Textbox } from 'fabric';
 import { ContextMenuManager } from './ContextMenuManager';
 import { Token } from './Token';
+import type BattleMap from './BattleMap';
+import { MenuPositioner } from '@ark-ui/react';
 
-export function ContextMenu({ canvas, cmManager }) {
+export function ContextMenu({ canvas, cmManager, board }) {
   //Event listener to hide context menu if token(s) are no longer selected
   const exit = document.addEventListener('mousedown', (event) => {
     if (event.button == 0 && cmManager && cmManager.getContextMenuExit()) {
@@ -104,7 +108,7 @@ export function ContextMenu({ canvas, cmManager }) {
       }
     }
   });
-//Create slider to change Token image offset in percentage according from center to either top or bottom
+  //Create slider to change Token image offset in percentage according from center to either top or bottom
   var ySlider = useSlider({
     max: 100,
     min: -100,
@@ -205,30 +209,42 @@ export function ContextMenu({ canvas, cmManager }) {
             //Check if selected objects are Token Groups
             if ((tokenGroup = activeObjects[i]) instanceof Group
               && tokenGroup.getObjects().length > 1 && (token = tokenGroup.getObjects()[0]) instanceof Token) {
-              let tokenName = tokenGroup.getObjects()[2];
-              //Set associated bool in Token to reflect change
-              token.setShowName(event.checked as boolean);
-              //Show name of the Token
-              tokenName.visible = event.checked as boolean;
-              //Set dirty so changes are reflected with cache
-              tokenGroup.dirty = true;
-              tokenName.dirty = true;
-              canvas.renderAll();
+              let index = canvas.getObjects().indexOf(tokenGroup) + 1;
+              let tokenName;
+              //Get the index of the name textbox and set visibility to reflect the checkbox
+              if (index > 0 && index < canvas.getObjects().length &&
+            (tokenName = canvas.getObjects()[index]) instanceof Textbox) {
+                //Set associated bool in Token to reflect change
+                token.setShowName(event.checked as boolean);
+                //Show name of the Token
+                tokenName.visible = event.checked as boolean;
+                //Set dirty so changes are reflected with cache
+                tokenGroup.dirty = true;
+                tokenName.dirty = true;
+                canvas.renderAll();
+              }
             }
           }
         }
         //Single Token selection
         else if (!cmManager.getMultiSelectionBool() && (tokenGroup = canvas.getActiveObject()) instanceof Group
           && tokenGroup.getObjects().length > 1 && (token = tokenGroup.getObjects()[0]) instanceof Token) {
-          let tokenName = tokenGroup.getObjects()[2];
-          //Set associated bool in Token to reflect change
-          token.setShowName(event.checked as boolean);
-          //Show name of the Token
-          tokenName.visible = event.checked as boolean;
-          //Set dirty so changes are reflected with cache
-          tokenGroup.dirty = true;
-          tokenName.dirty = true;
-          canvas.renderAll();
+          let tokenName;
+          let index = canvas.getObjects().indexOf(tokenGroup) + 1;
+          //Get the index of the name textbox and set visibility to reflect the checkbox
+          if (index > 0 && index < canvas.getObjects().length &&
+        (tokenName = canvas.getObjects()[index]) instanceof Textbox) {
+            tokenName = canvas.getObjects()[index];
+            //Set associated bool in Token to reflect change
+            token.setShowName(event.checked as boolean);
+            //Show name of the Token
+            tokenName.visible = event.checked as boolean;
+            //Set dirty so changes are reflected with cache
+            tokenGroup.dirty = true;
+            tokenName.dirty = true;
+            canvas.renderAll();
+          }
+
         }
       }
     }
@@ -239,30 +255,62 @@ export function ContextMenu({ canvas, cmManager }) {
 
 
   var changeName = (event) => {
-    if(displayNameInput && cmManager)
-    {
+    if (displayNameInput && cmManager) {
       let tokenGroup;
       let token;
       let nameBox;
       //Multi-Token selection
-      if(cmManager.getMultiSelectionBool())
-      {
-        
+      if (cmManager.getMultiSelectionBool()) {
+
       }
       //Single Token selection
-      else if((tokenGroup = canvas.getActiveObject()) instanceof Group && tokenGroup.getObjects().length > 1
-    && (token = tokenGroup.getObjects()[0]) instanceof Token && 
-    (nameBox = tokenGroup.getObjects()[2]) instanceof Textbox)
-      {
+      else if ((tokenGroup = canvas.getActiveObject()) instanceof Group && tokenGroup.getObjects().length > 1
+        && (token = tokenGroup.getObjects()[0]) instanceof Token) {
         console.log("name change")
         console.log(event.target.value)
-        token.setName(event.target.value);
-        nameBox.set('text',event.target.value);
-        canvas.renderAll();
+        let index = canvas.getObjects().indexOf(tokenGroup) + 1;
+        if(index > 0 && index < canvas.getObjects().length &&
+      (nameBox = canvas.getObjects()[index]) instanceof Textbox)
+        {
+          token.setName(event.target.value);
+          nameBox.set('text', event.target.value);
+          let newX = tokenGroup.getObjects()[1].getCenterPoint().x;
+          let newY = tokenGroup.getObjects()[1].getCoords()[3].y;
+          let newPoint = new Point({x:newX,y:newY});
+          nameBox.setXY(newPoint, 'center', 'top');
+          nameBox.setCoords();
+          canvas.renderAll();
+        }
+        
       }
     }
   };
 
+  const sizeReference = useRef(null);
+  const [sizeVal, setSizeVal] = useState(['1']);
+
+  var changeSize = (event) => {
+      let tokenGroup;
+      let nameBox;
+      let token;
+      console.log("trigger")
+      if(cmManager && canvas && board)
+      {
+        //Multiple Selection
+        if(cmManager.getMultiSelectionBool() && canvas.getActiveObjects().length > 1)
+        {
+
+        }
+        //Single Selection
+        else if((tokenGroup = canvas.getActiveObject()) instanceof Group &&
+      (tokenGroup.getObjects().length > 1) && (token = tokenGroup.getObjects()[0]) instanceof Token)
+        {
+          console.log("chnage")
+          board.resizeToken(tokenGroup,(event.value)[0] as number, canvas)
+          setSizeVal(event.value);
+        }
+      }
+    };
   //When new Context Menu is opened, reflect values of the selected Token(s)
   document.addEventListener('contextmenu', () => {
     //Check if valid and ContextMenu can is being displayed
@@ -284,33 +332,28 @@ export function ContextMenu({ canvas, cmManager }) {
         xSlider.value[0] = Math.round((token.left + xLimit) / (xLimit - radius) * 100);
         ySlider.value[0] = Math.round((token.top + yLimit) / (yLimit - radius) * 100);
         showName.setChecked(token.getShowName());
-        if(displayNameInput)
-        {
-          console.log("input single")
+        if (displayNameInput) {
           setNameVal(token.getName());
         }
       }
       //Values for a multi-Token selection are at default
       else {
         tokenGroup = canvas.getActiveObjects();
-        for(let i = 0; i < tokenGroup.length; i++)
-        {
+        for (let i = 0; i < tokenGroup.length; i++) {
           //Should never trigger since Context Menu Event in Toolbar checks if non-token groups are present
-          if(!(tokenGroup[i] instanceof Group) || tokenGroup[i].getObjects().length <= 1 ||
-        !(tokenGroup[i].getObjects()[0] instanceof Token))
-        {
-          return;
-        }
+          if (!(tokenGroup[i] instanceof Group) || tokenGroup[i].getObjects().length <= 1 ||
+            !(tokenGroup[i].getObjects()[0] instanceof Token)) {
+            return;
+          }
         }
         //Set to Default Values
         xSlider.value[0] = 0;
         ySlider.value[0] = 0;
         showName.setChecked(true);
-        if(displayNameInput)
-        {
+        if (displayNameInput) {
           setNameVal("");
         }
-        
+
       }
     }
   });
@@ -326,13 +369,13 @@ export function ContextMenu({ canvas, cmManager }) {
           Stat Block
         </Button>
 
-        <Menu.Root positioning={{ placement: "right-start" }}>
+        <Menu.Root positioning={{ placement: "right-start"}}>
           <Menu.Trigger asChild>
             <Button variant="outline" size="sm">Display Options</Button>
           </Menu.Trigger>
           <Portal>
-            <Menu.Positioner>
-              <Menu.Content>
+            <Menu.Positioner zIndex={'sticky'}>
+              <Menu.Content position="relative">
                 <Slider.RootProvider value={xSlider} width="200px">
                   <Slider.Label>Offset X: {xSlider.value}%</Slider.Label>
                   <Slider.Control>
@@ -374,8 +417,34 @@ export function ContextMenu({ canvas, cmManager }) {
                 <Field.Root>
                   <Field.Label>Display Name</Field.Label>
                   <Input onChange={changeName} defaultValue={displayNameVal} ref={displayNameInput}
-                  placeholder="Enter Display Name" contentEditable="true"/>
+                    placeholder="Enter Display Name" contentEditable="true" />
                 </Field.Root>
+
+                <Select.Root ref={sizeReference} collection={sizeOptions} zIndex="sticky" size="sm"
+                onValueChange={changeSize} value={sizeVal}> 
+                  <Select.HiddenSelect/>
+                  <Select.Label>Size</Select.Label>
+                  <Select.Control>
+                    <Select.Trigger>
+                      <Select.ValueText placeholder="Select Size"/>
+                    </Select.Trigger>
+                    <Select.IndicatorGroup>
+                      <Select.Indicator/>
+                    </Select.IndicatorGroup>
+                  </Select.Control>
+                  <Portal>
+                    <Select.Positioner>
+                      <Select.Content zIndex="sticky">
+                        {sizeOptions.items.map((size) => (
+                          <Select.Item item={size} key={size.value}>
+                            {size.label}
+                          <Select.ItemIndicator/>
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Portal>
+                </Select.Root>
 
               </Menu.Content>
             </Menu.Positioner>
@@ -391,7 +460,7 @@ export function ContextMenu({ canvas, cmManager }) {
         </Button>
 
         <Button variant="outline" size="sm" onClick={() => {
-          deleteToken(canvas, cmManager);
+          deleteToken(canvas, cmManager, board);
         }}>
           Delete
         </Button>
@@ -401,16 +470,25 @@ export function ContextMenu({ canvas, cmManager }) {
 }
 
 //Function called by context menu delete button to delete selected tokens
-function deleteToken(canvas: Canvas, cmManager: ContextMenuManager): boolean {
+function deleteToken(canvas: Canvas, cmManager: ContextMenuManager, board: BattleMap): boolean {
   //Check if delete for multiple Tokens or only one
-  if (cmManager.getMultiSelectionBool()) {
-    let selectedObjects = canvas.getActiveObjects();
+  if (cmManager.getMultiSelectionBool() && canvas.getActiveObjects().length > 1) {
+    let activeObjects = canvas.getActiveObjects();
+    let selectedToken;
+    let index;
     //Iterate over selected active objects
-    for (let i = 0; i < selectedObjects.length; i++) {
+    for (let i = 0; i < activeObjects.length; i++) {
       //Check if they are Token groups and remove them from canvas
-      if (selectedObjects[i] instanceof Group && selectedObjects[i].getObjects().length > 1
-        && selectedObjects[i].getObjects()[0] instanceof Token) {
-        canvas.remove(selectedObjects[i]);
+      if ((selectedToken = activeObjects[i]) instanceof Group && selectedToken.getObjects().length > 1
+        && selectedToken.getObjects()[0] instanceof Token) {
+        let canvasObjects = canvas.getObjects();
+        index = canvasObjects.indexOf(selectedToken) + 1;
+        if(index > 0 && index < canvasObjects.length)
+        {
+          canvas.remove(canvasObjects[index]);
+        }
+        canvas.remove(selectedToken);
+        board.removeToken(selectedToken, canvas);
       }
       //If not, error raised. Non-Token objects should already be detected in Toolbar
       else {
@@ -421,10 +499,18 @@ function deleteToken(canvas: Canvas, cmManager: ContextMenuManager): boolean {
     canvas.discardActiveObject();
   }
   //Remove single object. Should be guaranteed as a Token Group from Toolbar defined mouse events
-  else {
+  else if(canvas.getActiveObjects().length == 1){
     let selectedObject = canvas.getActiveObject();
-    if (selectedObject) {
+    if (selectedObject && selectedObject instanceof Group && selectedObject.getObjects().length > 1
+  && selectedObject.getObjects()[0] instanceof Token) {
+    let index = canvas.getObjects().indexOf(selectedObject) + 1;
+    //Remove Text Box
+      if(index > 0 && index < canvas.getObjects().length)
+        {
+          canvas.remove(canvas.getObjects()[index]);
+        }  
       canvas.remove(selectedObject);
+      board.removeToken(selectedObject, canvas);
     }
     else {
       return false;
@@ -442,3 +528,12 @@ function deleteToken(canvas: Canvas, cmManager: ContextMenuManager): boolean {
   }
   return true;
 }
+
+const sizeOptions = createListCollection({items: [
+    {label:"Tiny",value:'0.5', id:0}, {label:"Small/Medium",value:'1', id:1},
+    {label:"Large",value:'2', id:2}, {label:"Huge", value:'3', id:3},
+    {label:"Gargantuan",value:'4', id:4}, {label:"Custom",value:'0', id:5},
+  ],
+    //itemToString:(item)=>`${item.text} ${item.code}`,
+    //itemToValue: (item) => item.text,
+  });
