@@ -11,6 +11,9 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
         return;
     }
 
+    //Check if current Battle Map set so elements snap. Return if not.
+    if(!map.getGridSnap()) return;
+
     let unitCenter = map.getCenterPoint();
     let unitCorners = map.getCornerPoints();
 
@@ -178,7 +181,8 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
 
         let divideX = 1;
         let divideY = 1;
-
+        console.log("halves: " + widthUnits + " " + heightUnits);
+        console.log("quarters: " + widthQuarters + " " + heightQuarters);
         //Check if a height or width is a 1/2 of a grid unit off. If so, set to calculate as if
         //1/2 size code as seen for snappingTokens only.
         if (widthQuarters / widthUnits != 2) {
@@ -186,7 +190,7 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
             divideX = 2;
         }
 
-        if (heightQuarters / widthUnits != 2) {
+        if (heightQuarters / heightUnits != 2) {
             heightUnits = heightQuarters;
             divideY = 2;
         }
@@ -199,29 +203,48 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
         translateX = unitXDistance * xHalves / divideX;
         translateY = unitYDistance * yHalves / divideY;
 
+        console.log("Width: " + widthUnits);
+        console.log("Height: " + heightUnits);
+        console.log("x: " + xHalves);
+        console.log("y: " + yHalves);
+
         //Snap X to Grid Unit Intersection
-        if (widthUnits % 2 == 0) {
-            if (xHalves % 2 == 1) {
-                translateX += unitXDistance / divideX;
+        //Width units equivalent to size code or shape multiplier
+        if (widthUnits % 2 == 0 && divideX == 1) {
+            if (xHalves % 2 == 0) {
+                translateX += unitXDistance;
             }
         }
         //Snap X to Grid Unit Center
-        else if (widthUnits % 2 == 1) {
-            if (xHalves % 2 == 0) {
-                translateX += unitXDistance / divideX;
+        else if (widthUnits % 2 == 1 && divideX == 1) {
+            if (xHalves % 2 == 1) {
+                translateX += unitXDistance;
+            }
+        }
+        else if(divideX == 2)
+        {
+            if(xHalves % 2 == 0) {
+                translateX += unitXDistance / 2;
             }
         }
 
         //Snap Y to Grid Unit Intersection
-        if (heightUnits % 2 == 0) {
-            if (yHalves % 2 == 1) {
-                translateY += unitYDistance / divideY;
+        if (heightUnits % 2 == 0 && divideY == 1) {
+            if (yHalves % 2 == 0) {
+                translateY += unitYDistance;
             }
         }
         //Snap Y to Grid Unit Center
-        else if (heightUnits % 2 == 1) {
-            if (yHalves % 2 == 0) {
-                translateY += unitYDistance / divideY;
+        else if (heightUnits % 2 == 1 && divideY == 1) {
+            if (yHalves % 2 == 1) {
+                translateY += unitYDistance;
+            }
+        }
+        else if(divideY == 2)
+        {
+            if(yHalves % 2 == 0)
+            {
+                translateY += unitYDistance / 2;
             }
         }
 
@@ -259,7 +282,7 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
                         let nameBox = canvas.getObjects()[index];
                         let newX = tokenGroup[1].getCenterPoint().x;
                         let newY = tokenGroup[1].getCoords()[3].y;
-                        let newPoint = new Point({x:newY,y:newX});
+                        let newPoint = new Point({x:newX,y:newY});
                         nameBox.setXY(newPoint, 'center', 'top');
                         nameBox.setCoords();
                     }

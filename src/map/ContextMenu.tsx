@@ -322,7 +322,8 @@ export function ContextMenu({ canvas, cmManager, board }) {
             if((tokenGroup = activeObjects[i])instanceof Group && (tokenGroup.getObjects().length > 1) &&
           (token = tokenGroup.getObjects()[0]) instanceof Token)
           {
-            board.resizeToken(tokenGroup, (event.value)[0] as number, canvas);
+            //Board accounts for whether grid has been set
+            board.resizeToken(tokenGroup, (event.value)[0] as number, canvas); 
             setSizeVal(event.value);
           }
           }
@@ -557,7 +558,8 @@ function deleteToken(canvas: Canvas, cmManager: ContextMenuManager, board: Battl
 const sizeOptions = createListCollection({items: [
     {label:"Tiny",value:'0.5', id:0}, {label:"Small/Medium",value:'1', id:1},
     {label:"Large",value:'2', id:2}, {label:"Huge", value:'3', id:3},
-    {label:"Gargantuan",value:'4', id:4}, {label:"Custom",value:'0', id:5},
+    {label:"Gargantuan",value:'4', id:4}, 
+    //{label:"Custom",value:'0', id:5},
   ],
     //itemToString:(item)=>`${item.text} ${item.code}`,
     //itemToValue: (item) => item.text,

@@ -13,7 +13,7 @@ class BattleMap {
   private smallestGridUnit: number = -1;
   private centerPoint: Point;
   private cornerPoints: TCornerPoint;
-  private gridSnap: boolean = false;
+  private gridSnap: boolean = true;
   private gridUnitHeight = -1;
   private gridUnitWidth = -1;
 
@@ -93,14 +93,27 @@ class BattleMap {
   //Scales a specified Token according to the new size based on the grid
   public resizeToken(token: Group, sizeCode: number, canvas:Canvas): boolean {
     let resizeToken;
+
     if (token && sizeCode > 0 &&
       token.getObjects().length > 1 && (resizeToken = token.getObjects()[0]) instanceof Token) {
       //Find Tokens added to the BattleMap
       for (let i = 0; i < this.tokenGroups.length; i++) {
         if (token == this.tokenGroups[i][0]) {
           resizeToken.setSizeCode(sizeCode);
-          this.tokenGroups[i][0].scaleToHeight(this.smallestGridUnit * sizeCode);
-          this.tokenGroups[i][1][0].scaleToHeight(this.gridUnitHeight / 5);
+          //Account for grid not yet created. Map must be used as baseline size. Currently
+          //does not account for multiple Map Images for a calculation of size
+          if(this.smallestGridUnit <= 0 && this.maps.length > 0)
+          {
+            let newHeight = canvas.getObjects()[0].getScaledHeight() / 15 * sizeCode;
+          this.tokenGroups[i][0].scaleToHeight(newHeight);
+          }
+          //Check whether grid has been added. Assumed that if it is, then map image already present.
+          else if(this.smallestGridUnit > 0)
+          {
+            this.tokenGroups[i][0].scaleToHeight(this.smallestGridUnit * sizeCode);
+            this.tokenGroups[i][1][0].scaleToHeight(this.gridUnitHeight / 5);
+          }
+          
           let newX = this.tokenGroups[i][0].getObjects()[1].getCenterPoint().x;
           let newY = this.tokenGroups[i][0].getObjects()[1].getCoords()[3].y;
           let newPoint = new Point({ x: newX, y: newY });

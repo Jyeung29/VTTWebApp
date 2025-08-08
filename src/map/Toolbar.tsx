@@ -33,13 +33,18 @@ function Toolbar({ canvas, board, cmManager }) {
         fill: 'rgba(227, 6, 6, 0.67)'
       });
 
+      if(mapAdded && board.getSmallestGridUnit() <= 0)
+      {
+        circle.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 15 * unitMultiplier);
+      }
+
       canvas.add(circle);
       canvas.centerObject(circle);
 
       board.addObject(circle, unitMultiplier);
       if (!objectAdded) {
         canvas.on('object:moving', (event) => {
-          if(gridSet)
+          if(gridSet && board.getGridSnap())
           {
             handleObjectSnapping(canvas, event.target, board);
           }
@@ -263,7 +268,7 @@ function Toolbar({ canvas, board, cmManager }) {
         //If no objects have been added to the canvas yet, add a universal snapping event listener
         if (!objectAdded) {
           canvas.on('object:moving', (event) => {
-            if(gridSet)
+            if(gridSet && board.getGridSnap())
             {
               handleObjectSnapping(canvas, event.target, board);
             }
