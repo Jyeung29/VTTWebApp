@@ -1,4 +1,4 @@
-import {Token} from './Token';
+import {Token} from './tokenComponents/Token';
 
 abstract class TabletopRoleplayingGame {
     private name: string;

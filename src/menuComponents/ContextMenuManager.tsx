@@ -52,11 +52,11 @@ export class ContextMenuManager {
         return true;
     }
 
-    public getDeleteKeyBool(): boolean {
+    public getDeleteValid(): boolean {
         return this.deleteKeyValid;
     }
 
-    public setDeleteKeyBool(status: boolean): boolean {
+    public setDeleteValid(status: boolean): boolean {
         if(status == null)
         {
             return false;

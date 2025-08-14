@@ -3,45 +3,66 @@ import {
   FabricImage, Rect, Canvas, Circle, Group, LayoutManager, FixedLayout, type TCornerPoint,
   Line, Textbox, Point
 } from "fabric";
-import { Token } from './Token';
-import { handleObjectSnapping } from './GridSnappingHelper';
-import { handleObjectMoving } from './MovingHelper';
+import { Token } from '../tokenComponents/Token';
+import { handleObjectSnapping } from '../battleMapComponents/GridSnappingHelper';
+import { handleObjectMoving } from '../battleMapComponents/TokenMovingHelper';
+
+/*
+Function component Toolbar is displayed at the top of the user's window and provides a GM with tools to
+interact and change the BattleMap or Roleplaying Scene's Canvas. Basic universal buttons include zooming, screen centering,
+adding shapes, setting grids, and dice rolls. Different TableTopRoleplayingGame children may include exclusive features for
+toolbar to display.
+*/
 
 function Toolbar({ canvas, board, cmManager }) {
+  //Array of references to TableTopRoleplayingGame exclusive features. Is not implemented currently.
   const features = [];
-  var mapAdded = false;
-  var objectAdded = false;
-  var snap = false;
 
+  //Boolean that checks whether map image has been added. Used for grid creation. Will be removed when Scene Switching functionality is implemented.
+  var mapAdded = false;
+
+  //Boolean that checks whether any map objects have been added. Only switches to true once.
+  var objectAdded = false;
+
+  //Function called by a toolbar button to add a shape. Currently only adds a preset circle. The circle is able to scale with or without a grid.
   const addShape = () => {
     if (canvas) {
       let newWidth = 600;
       let newHeight = 600;
       let unitMultiplier = 4;
 
+      //If grid has been set, set height and width to scale with multiplier
       if (mapAdded && board.getGridUnitHeight() != -1 && board.getGridUnitWidth() != -1) {
         newHeight = board.getGridUnitHeight() * unitMultiplier;
         newWidth = board.getGridUnitWidth() * unitMultiplier;
       }
 
+      //Find the scale factor
       let newScaleY = newHeight / 600;
       let newScaleX = newWidth / 600;
 
+      //Create the shape. Circle is the only shape implemented currently. Shape can only be moved by the user.
       var circle = new Circle({
         objectCaching: true, radius: 300, scaleY: newScaleY, scaleX: newScaleX, originX: 'center', originY: 'center', lockRotation: true,
         lockSkewingX: true, lockSkewingY: true, lockScalingFlip: true, lockScalingY: true, lockScalingX: true,
         fill: 'rgba(227, 6, 6, 0.67)'
       });
 
+      //If grid has not been set and the map image has been added, scale the shape to the map image
       if(mapAdded && board.getSmallestGridUnit() <= 0)
       {
         circle.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 15 * unitMultiplier);
       }
 
+      //Add shape to canvas
       canvas.add(circle);
       canvas.centerObject(circle);
 
+      //Add to the BattleMap to track
       board.addObject(circle, unitMultiplier);
+
+      //If no objects have been added, add event to handle all object grid snapping and non-snapping movement
+      //Will be removed once Scene Switching has been implemented
       if (!objectAdded) {
         canvas.on('object:moving', (event) => {
           if(gridSet && board.getGridSnap())
@@ -216,6 +237,7 @@ function Toolbar({ canvas, board, cmManager }) {
             }
           }
 
+          //If all selected Group objects are Token groups then allow context menu access
           if (allTokens) {
             document.addEventListener('contextmenu', cmManager.updateContextMenuPosition);
             cmManager.setContextMenuExit(false);
@@ -265,7 +287,8 @@ function Toolbar({ canvas, board, cmManager }) {
           cmManager.setMultiSelectionBool(false);
         });
 
-        //If no objects have been added to the canvas yet, add a universal snapping event listener
+        //If no objects have been added, add event to handle all object grid snapping and non-snapping movement
+      //Will be removed once Scene Switching has been implemented
         if (!objectAdded) {
           canvas.on('object:moving', (event) => {
             if(gridSet && board.getGridSnap())
@@ -282,11 +305,19 @@ function Toolbar({ canvas, board, cmManager }) {
     }
   }
 
+  //Boolean to determine whether a grid is being set
   var resizing = false;
+  
+  //The user manipulatable rectangle that is the base unit of the grid
   var resizeRect: Rect;
+
+  //Boolean set when a grid has been created
   var gridSet = false;
+  
+  //The Group of lines drawn onto the Canvas
   var grid: Group = new Group([], { selectable: false, hasControls: false });
 
+  //Function called by a toolbar button to create a grid.
   var resizeGrid = () => {
     //If no preexisting grid rect to use, create a new one
     if (!resizeRect) {

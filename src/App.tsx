@@ -1,5 +1,5 @@
 import './App.css'
-import Board from './map/Board';
+import Board from './Board';
 import {ChakraProvider, defaultSystem} from '@chakra-ui/react';
 
 function App() {

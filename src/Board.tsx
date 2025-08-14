@@ -1,18 +1,21 @@
-import BattleMap from "./BattleMap";
+import BattleMap from "./battleMapComponents/BattleMap";
 import { useRef, useState, useEffect } from 'react';
 import { Canvas, Rect, FabricImage, Point, Group, Textbox } from 'fabric';
-import { Token } from "./Token";
+import { Token } from "./tokenComponents/Token";
 import './Board.css';
-import Toolbar from './Toolbar';
-import { ContextMenu } from './ContextMenu';
-import { ContextMenuManager } from "./ContextMenuManager";
+import Toolbar from './menuComponents/Toolbar';
+import { ContextMenu } from './menuComponents/ContextMenu';
+import { ContextMenuManager } from "./menuComponents/ContextMenuManager";
+import { SidebarMenu } from "./menuComponents/SidebarMenu";
+import { handleObjectSnapping } from "./battleMapComponents/GridSnappingHelper";
+import { handleObjectMoving } from "./battleMapComponents/TokenMovingHelper";
 
 function Board() {
   //Return using HTML notation
   const canvasRef = useRef(null);
-  const [canvas, setCanvas] = useState(null);
-  const [currentMap, setCurrentBoard] = useState(null);
-  const [contextMenuManager, setContextMenuManager] = useState(null);
+  const [canvas, setCanvas] = useState<Canvas>();
+  const [currentMap, setCurrentBoard] = useState<BattleMap>();
+  const [contextMenuManager, setContextMenuManager] = useState<ContextMenuManager>();
 
   //track Mouse Canvas Coordinate
   var mouseLocation: Point;
@@ -34,7 +37,8 @@ function Board() {
     event.preventDefault();
   });
 
-  //Runs every render
+  //Runs after detecting that new DOM element added which is the <canvas> so that 
+  //Fabric.js Canvas element can be connected
   useEffect(() => {
     if (canvasRef.current) {
       //Remove any preexisting events from previous renders. Optimize performance
@@ -64,7 +68,7 @@ function Board() {
       //Delete Group and Single FabricObject selections when "Backspace" or "Delete" keys pressed
       function detectKeydown(event) {
         //Check if key event was a Backspace
-        if (event.key == "Backspace" && newCMManager && newCMManager.getDeleteKeyBool()) {
+        if (event.key == "Backspace" && newCMManager && newCMManager.getDeleteValid()) {
           //Get all selected FabricObjects on Canvas
           let actives = initCanvas.getActiveObjects();
           //Check if FabricObjects have been selected
@@ -74,13 +78,11 @@ function Board() {
               let token;
               let tokenGroup;
               let nameBox;
-              if((tokenGroup = actives[i]) instanceof Group && (tokenGroup = tokenGroup.getObjects()).length > 1
-            && (token = tokenGroup[0]) instanceof Token)
-              {
+              if ((tokenGroup = actives[i]) instanceof Group && (tokenGroup = tokenGroup.getObjects()).length > 1
+                && (token = tokenGroup[0]) instanceof Token) {
                 let index = initCanvas.getObjects().indexOf(actives[i]) + 1;
-                if(index > 0 && index < initCanvas.getObjects().length && 
-                (nameBox = initCanvas.getObjects()[index]) instanceof Textbox)
-                {
+                if (index > 0 && index < initCanvas.getObjects().length &&
+                  (nameBox = initCanvas.getObjects()[index]) instanceof Textbox) {
                   initCanvas.remove(nameBox);
                 }
               }
@@ -167,9 +169,11 @@ function Board() {
         myMaps.push(newMap);
         setCurrentBoard(newMap);
         createTest = false;
-        
+
         setContextMenuManager(newCMManager);
       }
+
+      console.log("effect")
 
       //Unmounted to free memory
       return () => {
@@ -181,10 +185,11 @@ function Board() {
 
   return (
     <div className="Board">
-      <div className="Toolbar Top">
+      <div className="ToolMenus">
         <Toolbar canvas={canvas} board={currentMap} cmManager={contextMenuManager} />
+        <SidebarMenu canvas={canvas} cmManager={contextMenuManager} board={currentMap}></SidebarMenu>
       </div>
-      <ContextMenu canvas={canvas} cmManager={contextMenuManager} board={currentMap}/>
+      <ContextMenu canvas={canvas} cmManager={contextMenuManager} board={currentMap} />
       <canvas id="test" ref={canvasRef} />
     </div>
   )

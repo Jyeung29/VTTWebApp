@@ -1,4 +1,4 @@
-class Factory {
+export class Factory {
     
     constructor() {};
 

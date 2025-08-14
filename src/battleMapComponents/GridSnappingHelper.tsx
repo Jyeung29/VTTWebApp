@@ -1,7 +1,13 @@
 import { FabricObject, Canvas, Group, Point } from "fabric";
 import type BattleMap from "./BattleMap";
-import { Token } from './Token';
+import { Token } from '../tokenComponents/Token';
 
+/*
+Function called when Canvas FabricObjects are moved by the user and a grid has been set while snapping is true.
+The function handles snapping objects according to their size (how many spaces they occupy) and whether they are
+Tokens or other objects. Sizes snapped are either 1/4 of a square (0.5), are centered inside a square (odds), or centered 
+at the intersection of four squares (even).
+*/
 export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: BattleMap) => {
     let mapEl = map.getCurrentMap();
     let token;
@@ -14,6 +20,7 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
     //Check if current Battle Map set so elements snap. Return if not.
     if(!map.getGridSnap()) return;
 
+    //Get coordinates of base grid unit to calculate snapping coordinates
     let unitCenter = map.getCenterPoint();
     let unitCorners = map.getCornerPoints();
 
@@ -33,11 +40,13 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
         let tokenCenter = obj.getCenterPoint();
         let tokenSize = token.getSizeCode();
 
+        //Calculate index of the name Textbox
         let index = canvasObjects.indexOf(obj) + 1;
         if (index >= canvasObjects.length || index == 0) {
             alert('Error: Token Name TextBox not Found');
             return;
         }
+
         let nameBox = canvasObjects[index];
 
         //Snap to center of grid rectangle
@@ -106,9 +115,12 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
             translateY = -translateY;
         }
 
+        //Snap Token group to the grid
         let coordDistance = new Point({ x: translateX, y: translateY });
         let newPoint = unitCenter.add(coordDistance);
         obj.setXY(newPoint, 'center', 'center');
+
+        //Move the Token's name Textbox under the Token
         let nameCoords = new Point();
         nameCoords.x = obj.getCenterPoint().x;
         nameCoords.y = obj.getCoords()[3].y;
@@ -202,11 +214,6 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
         //Calculate distance needed to translate to
         translateX = unitXDistance * xHalves / divideX;
         translateY = unitYDistance * yHalves / divideY;
-
-        console.log("Width: " + widthUnits);
-        console.log("Height: " + heightUnits);
-        console.log("x: " + xHalves);
-        console.log("y: " + yHalves);
 
         //Snap X to Grid Unit Intersection
         //Width units equivalent to size code or shape multiplier

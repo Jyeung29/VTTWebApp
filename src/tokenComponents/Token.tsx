@@ -14,7 +14,9 @@ interface Resource {
         name: string
 }
 
-//Token class definition. Extends Fabric's FabricImage class but with additional Functionality
+//Token class definition. Extends Fabric's FabricImage class but with additional Functionality to store
+// values regarding the Token's name, size, visibility, resources, and more. The class provides multiple
+//getter, setters, add, and remove functions to manipulate the Token's values.
 export class Token<
     Props extends TOptions<ImageProps> = Partial<ImageProps>,
     SProps extends SerializedImageProps = SerializedImageProps,
@@ -48,6 +50,10 @@ export class Token<
     //Number that is added onto the end of a Token's name if GM group toggles name numbering.
     //-1 value indicates it should not be displayed. Otherwise must be positive integer starting at 1
     protected nameNumber: number = -1;
+
+    //Variable that stores URLs of images while also storing the provided file's id in their associated
+    //cloud storage service such as Google Drive or OneDrive.
+    protected imageURLs: [string, string][] = []
 
     //Returns string name of Token.
     public getName(): string {
@@ -230,5 +236,40 @@ export class Token<
         let health: Resource = {val:30, max:40, name:'HP', index:0};
         this.resources.push(health);
         return true;
+    }
+
+    //Method that only adds a url string to be tracked. Does not change the 
+    //Token's image.
+    public addURL(url: string): boolean {
+        return true;
+    }
+
+    //Method that adds url string to be tracked and changes the Token's image
+    public setNewImage(url: string): boolean {
+        if(url.trim() != "")
+        {
+            if(url.includes('onedrive.live.com/'))
+            {
+
+            }
+            else if(url.includes('1drv.ms/'))
+            {
+
+            }
+            else if(url.includes('drive.google.com/'))
+            {
+
+            }
+            else
+            {
+                alert('Your URL is incorrect or not supported');
+                return false;
+            }
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 }
