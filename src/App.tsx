@@ -1,4 +1,4 @@
-import './App.css'
+import './index.css';
 import Board from './Board';
 import {ChakraProvider, defaultSystem} from '@chakra-ui/react';
 

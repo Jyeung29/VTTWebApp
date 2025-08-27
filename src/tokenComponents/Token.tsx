@@ -53,7 +53,10 @@ export class Token<
 
     //Variable that stores URLs of images while also storing the provided file's id in their associated
     //cloud storage service such as Google Drive or OneDrive.
-    protected imageURLs: [string, string][] = []
+    protected imageURLs: [string, string][] = [['https://www.dndbeyond.com/avatars/thumbnails/6/365/420/618/636272701937419552.png','']]
+
+    //Number that tracks the current image link being used for the Token
+    protected currentImage: number = 0;
 
     //Returns string name of Token.
     public getName(): string {
@@ -242,6 +245,10 @@ export class Token<
     //Token's image.
     public addURL(url: string): boolean {
         return true;
+    }
+
+    public getCurrentURL(): string {
+        return this.imageURLs[this.currentImage][0];
     }
 
     //Method that adds url string to be tracked and changes the Token's image

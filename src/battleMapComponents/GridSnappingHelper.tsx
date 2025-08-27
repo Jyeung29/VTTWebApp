@@ -193,8 +193,6 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
 
         let divideX = 1;
         let divideY = 1;
-        console.log("halves: " + widthUnits + " " + heightUnits);
-        console.log("quarters: " + widthQuarters + " " + heightQuarters);
         //Check if a height or width is a 1/2 of a grid unit off. If so, set to calculate as if
         //1/2 size code as seen for snappingTokens only.
         if (widthQuarters / widthUnits != 2) {

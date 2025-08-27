@@ -3,18 +3,39 @@ import {
   , Input, Field, Select,
   createListCollection
 } from '@chakra-ui/react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Canvas, Group, Point, Circle, Textbox } from 'fabric';
 import { ContextMenuManager } from './ContextMenuManager';
 import { Token } from '../tokenComponents/Token';
 import type BattleMap from '../battleMapComponents/BattleMap';
+import '../index.css';
 
 /*
 Function component ContextMenu is used for whenever a context menu is called when Tokens are selected
 on the Canvas. The ContextMenu contains buttons and sub-menus to manipulate and interact with Tokens.
 The ContextMenu is not interactable if non-Token groups are selected. 
 */
-export function ContextMenu({ canvas, cmManager, board }) {
+export function ContextMenu({ canvas, cmManager, scene }) {
+  
+  //Reference to the token name input box in ContextMenu
+  const displayNameInput = useRef(null);
+
+  //The value displayed by the token name input box
+  const [displayNameVal, setNameVal] = useState("");
+
+  //Reference to size Select component
+  const sizeReference = useRef(null);
+  
+  //Hook for setting size value of size Select component. Must use string[] value due
+  //same as Select's value parameter.
+  const [sizeVal, setSizeVal] = useState(['1']);
+
+  //Reference to the text input for pasting image links
+  const imageLinkRef = useRef(null);
+
+  //Value displayed by image link input box
+  const [imageLinkVal, setImageLinkVal] = useState("");
+
   //Event listener to hide context menu if token(s) are no longer selected
   const exit = document.addEventListener('mousedown', (event) => {
     if (event.button == 0 && cmManager && cmManager.getContextMenuExit()) {
@@ -24,7 +45,7 @@ export function ContextMenu({ canvas, cmManager, board }) {
       }
     }
   });
-
+  
   //Create slider to change Token image offset in percentage according from center to either side
   var xSlider = useSlider({
     max: 100,
@@ -259,11 +280,7 @@ export function ContextMenu({ canvas, cmManager, board }) {
     }
   });
 
-  //Reference to the token name input box in ContextMenu
-  const displayNameInput = useRef(null);
-
-  //The value displayed by the token name input box
-  const [displayNameVal, setNameVal] = useState("");
+  
 
   //Function that is called whenever the token name input box's value is changed
   var changeName = (event) => {
@@ -338,18 +355,11 @@ export function ContextMenu({ canvas, cmManager, board }) {
     cmManager.setDeleteValid(true);
   }
 
-  //Reference to size Select component
-  const sizeReference = useRef(null);
-  
-  //Hook for setting size value of size Select component. Must use string[] value due
-  //same as Select's value parameter.
-  const [sizeVal, setSizeVal] = useState(['1']);
-
   //Function that changes size of a single or multiple selected Tokens
   var changeSize = (event) => {
     let tokenGroup;
     let token;
-    if (cmManager && canvas && board) {
+    if (cmManager && canvas && scene) {
       //Multiple Selection
       if (cmManager.getMultiSelectionBool() && canvas.getActiveObjects().length > 1) {
         let activeObjects = canvas.getActiveObjects();
@@ -357,7 +367,7 @@ export function ContextMenu({ canvas, cmManager, board }) {
           if ((tokenGroup = activeObjects[i]) instanceof Group && (tokenGroup.getObjects().length > 1) &&
             (token = tokenGroup.getObjects()[0]) instanceof Token) {
             //Call BattleMap to resize the Tokens
-            board.resizeToken(tokenGroup, (event.value)[0] as number, canvas);
+            scene.resizeToken(tokenGroup, (event.value)[0] as number, canvas);
 
             //Update size Select component's display value
             setSizeVal(event.value);
@@ -368,7 +378,7 @@ export function ContextMenu({ canvas, cmManager, board }) {
       else if ((tokenGroup = canvas.getActiveObject()) instanceof Group &&
         (tokenGroup.getObjects().length > 1) && (token = tokenGroup.getObjects()[0]) instanceof Token) {
         //Call BattleMap to resize the Tokens
-        board.resizeToken(tokenGroup, (event.value)[0] as number, canvas);
+        scene.resizeToken(tokenGroup, (event.value)[0] as number, canvas);
 
         //Update size Select component's display value
         setSizeVal(event.value);
@@ -376,8 +386,10 @@ export function ContextMenu({ canvas, cmManager, board }) {
     }
   };
 
-  //When new Context Menu is opened, reflect values of the selected Token(s)
-  document.addEventListener('contextmenu', () => {
+  //Runs on each render whenever Context Menu is opened or changed
+  useEffect(() => {
+//When new Context Menu is opened, reflect values of the selected Token(s)
+  const listeningFunc = () => {
     //Check if valid and ContextMenu can is being displayed
     if (canvas && cmManager && !cmManager.getContextMenuExit()) {
       let tokenGroup;
@@ -410,8 +422,15 @@ export function ContextMenu({ canvas, cmManager, board }) {
         if (sizeReference) {
           setSizeVal([token.getSizeCode().toString()]);
         }
+
+        if(imageLinkRef)
+        {
+          setImageLinkVal(token.getCurrentURL());
+        }
       }
       //Values for a multi-Token selection are at default
+      //Currently only has default values but later implementations should iterate over all Tokens to
+      //check for same values to display
       else {
         tokenGroup = canvas.getActiveObjects();
         for (let i = 0; i < tokenGroup.length; i++) {
@@ -431,9 +450,23 @@ export function ContextMenu({ canvas, cmManager, board }) {
         if (sizeReference) {
           setSizeVal(['1']);
         }
+
+        if(imageLinkRef)
+        {
+          setImageLinkVal('');
+        }
+
       }
     }
-  });
+  }
+
+  //Remove any possible previous function that may cause performance issues
+  document.removeEventListener('contextmenu', listeningFunc);
+  
+  //Add new event listener with new state of ContextMenuManager
+  document.addEventListener('contextmenu', listeningFunc);
+  }, [cmManager]);
+  
 
 
   return (
@@ -444,6 +477,10 @@ export function ContextMenu({ canvas, cmManager, board }) {
       <Flex gap="0" direction="column" alignContent='center'>
         <Button variant="outline" size="sm">
           Stat Block
+        </Button>
+
+        <Button variant="outline" size="sm">
+          Conditions
         </Button>
 
         <Menu.Root positioning={{ placement: "right-start" }}>
@@ -541,7 +578,7 @@ export function ContextMenu({ canvas, cmManager, board }) {
                   <Field.Label>Image Link</Field.Label>
                   <Input
                     placeholder="Enter Image Link" contentEditable="true" onFocus={preventDelete}
-                    onBlur={allowDelete} />
+                    onBlur={allowDelete} defaultValue={imageLinkVal} ref={imageLinkRef}/>
                 </Field.Root>
 
               </Menu.Content>
@@ -554,7 +591,7 @@ export function ContextMenu({ canvas, cmManager, board }) {
         </Button>
 
         <Button variant="outline" size="sm" onClick={() => {
-          deleteToken(canvas, cmManager, board);
+          deleteToken(canvas, cmManager, scene);
         }}>
           Delete
         </Button>
@@ -564,7 +601,7 @@ export function ContextMenu({ canvas, cmManager, board }) {
 }
 
 //Function called by context menu delete button to delete selected tokens
-function deleteToken(canvas: Canvas, cmManager: ContextMenuManager, board: BattleMap): boolean {
+function deleteToken(canvas: Canvas, cmManager: ContextMenuManager, scene: BattleMap): boolean {
   //Check if delete for multiple Tokens or only one
   if (cmManager.getMultiSelectionBool() && canvas.getActiveObjects().length > 1) {
     let activeObjects = canvas.getActiveObjects();
@@ -581,7 +618,7 @@ function deleteToken(canvas: Canvas, cmManager: ContextMenuManager, board: Battl
           canvas.remove(canvasObjects[index]);
         }
         canvas.remove(selectedToken);
-        board.removeToken(selectedToken, canvas);
+        scene.removeToken(selectedToken, canvas);
       }
       //If not, error raised. Non-Token objects should already be detected in Toolbar
       else {
@@ -602,7 +639,7 @@ function deleteToken(canvas: Canvas, cmManager: ContextMenuManager, board: Battl
         canvas.remove(canvas.getObjects()[index]);
       }
       canvas.remove(selectedObject);
-      board.removeToken(selectedObject, canvas);
+      scene.removeToken(selectedObject, canvas);
     }
     else {
       return false;

@@ -35,7 +35,7 @@ export const handleObjectMoving = (canvas: Canvas, obj: FabricObject) => {
 
                 //Move name Textbox underneath Token
                 let nameBox = canvasObjects[index];
-                let newX = token.getCenterPoint().x;
+                let newX = tokenGroup[1].getCenterPoint().x;
                 let newY = tokenGroup[1].getCoords()[3].y;
                 let newPoint = new Point({ x: newX, y: newY });
                 nameBox.setXY(newPoint, 'center', 'top');
@@ -58,7 +58,7 @@ export const handleObjectMoving = (canvas: Canvas, obj: FabricObject) => {
 
         //Move name Textbox underneath Token
         let nameBox = canvasObjects[index];
-        let newX = token.getCenterPoint().x;
+        let newX = tokenGroup[1].getCenterPoint().x;
         let newY = tokenGroup[1].getCoords()[3].y;
         let newPoint = new Point({ x: newX, y: newY });
         nameBox.setXY(newPoint, 'center', 'top');

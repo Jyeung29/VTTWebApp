@@ -1,4 +1,4 @@
-import './Toolbar.css';
+import '../index.css';
 import {
   FabricImage, Rect, Canvas, Circle, Group, LayoutManager, FixedLayout, type TCornerPoint,
   Line, Textbox, Point
@@ -14,7 +14,7 @@ adding shapes, setting grids, and dice rolls. Different TableTopRoleplayingGame 
 toolbar to display.
 */
 
-function Toolbar({ canvas, board, cmManager }) {
+function Toolbar({ canvas, scene, cmManager }) {
   //Array of references to TableTopRoleplayingGame exclusive features. Is not implemented currently.
   const features = [];
 
@@ -32,9 +32,9 @@ function Toolbar({ canvas, board, cmManager }) {
       let unitMultiplier = 4;
 
       //If grid has been set, set height and width to scale with multiplier
-      if (mapAdded && board.getGridUnitHeight() != -1 && board.getGridUnitWidth() != -1) {
-        newHeight = board.getGridUnitHeight() * unitMultiplier;
-        newWidth = board.getGridUnitWidth() * unitMultiplier;
+      if (mapAdded && scene.getGridUnitHeight() != -1 && scene.getGridUnitWidth() != -1) {
+        newHeight = scene.getGridUnitHeight() * unitMultiplier;
+        newWidth = scene.getGridUnitWidth() * unitMultiplier;
       }
 
       //Find the scale factor
@@ -49,7 +49,7 @@ function Toolbar({ canvas, board, cmManager }) {
       });
 
       //If grid has not been set and the map image has been added, scale the shape to the map image
-      if(mapAdded && board.getSmallestGridUnit() <= 0)
+      if(mapAdded && scene.getSmallestGridUnit() <= 0)
       {
         circle.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 15 * unitMultiplier);
       }
@@ -59,15 +59,15 @@ function Toolbar({ canvas, board, cmManager }) {
       canvas.centerObject(circle);
 
       //Add to the BattleMap to track
-      board.addObject(circle, unitMultiplier);
+      scene.addObject(circle, unitMultiplier);
 
       //If no objects have been added, add event to handle all object grid snapping and non-snapping movement
       //Will be removed once Scene Switching has been implemented
       if (!objectAdded) {
         canvas.on('object:moving', (event) => {
-          if(gridSet && board.getGridSnap())
+          if(gridSet && scene.getGridSnap())
           {
-            handleObjectSnapping(canvas, event.target, board);
+            handleObjectSnapping(canvas, event.target, scene);
           }
           else
           {
@@ -119,188 +119,7 @@ function Toolbar({ canvas, board, cmManager }) {
         canvas.centerObject(mapEl);
 
         //Add the FabricImage object to BattleMap instance
-        board.addMap(mapEl);
-      };
-    }
-  }
-
-  const addToken = () => {
-    if (canvas) {
-      var image = document.createElement('img');
-      var source = document.createElement('source');
-      image.src = 'https://www.dndbeyond.com/avatars/thumbnails/6/365/420/618/636272701937419552.png';
-
-      //Make sure image's link source works
-      image.onerror = function () {
-        alert('Token link is invalid or is not compatible');
-      };
-
-      //Make sure image loads before loading to Canvas
-      image.onload = function () {
-        image.appendChild(source);
-        var tokenEl = new Token(image);
-        var sizeCode = 1;
-        tokenEl.setSizeCode(sizeCode);
-        tokenEl.setName("TestName");
-
-        //Calculate Largest Radius Fitting in Image with Padding
-        let newRadius: number;
-        if (tokenEl.width >= tokenEl.height) {
-          newRadius = tokenEl.height / 4;
-        }
-        else {
-          newRadius = tokenEl.width / 4;
-        }
-
-        //Clipping Token Image into a circle
-        tokenEl.set({
-          dirty: true, selection: true,
-          clipPath: new Circle({ objectCaching: true, radius: newRadius, originX: 'center', originY: 'center'})
-        });
-
-        //Circle with border that will change color
-        var circleBorder = new Circle({
-          radius: newRadius, strokeWidth: 5, lockScalingX: false, lockScalingY: false, originX: 'center', originY: 'center',
-          fill: 'transparent', stroke: 'green'
-        });
-
-        //Create group of Token and Border set as Group. FixedLayout used to change bounding box to fit circle.
-        var group = new Group([tokenEl, circleBorder], {
-          width: newRadius * 2 * 1.1, height: newRadius * 2 * 1.1, originX: 'center', originY: 'center',
-          lockRotation: true, lockSkewingX: true, lockSkewingY: true, lockScalingFlip: true, lockScalingY: true, lockScalingX: true,
-          layoutManager: new LayoutManager(new FixedLayout())
-        });
-
-        //Get center point of Token Image to set circleBorder onto
-        let center = group.getCenterPoint();
-        circleBorder.setXY(center, 'center', 'center');
-        tokenEl.setXY(center, 'center', 'center');
-
-        canvas.on('object:removed', (event) => {
-          if (event.target == group) {
-            board.removeToken(group);
-          }
-        });
-
-        //Textbox element to show Token's name. Must be added after Token added to canvas because
-        //textbox must not be in same group.
-        var nameBox = new Textbox(tokenEl.getName(), {selectable:false, lockRotation:true,lockScalingFlip:true,
-          lockSkewingX:true, lockSkewingY:true, fill:'rgba(227, 207, 207, 1)', fontSize: newRadius * 2 / 20,
-          textAlign:'center'
-        });
-        
-        //When adding Tokens check whether a grid has been added and resize accordingly
-        if (board.getSmallestGridUnit() > 0) {
-          group.scaleToHeight(board.getSmallestGridUnit() * tokenEl.getSizeCode());
-          nameBox.scaleToHeight(board.getGridUnitHeight() / 5);
-        }
-        //Otherwise scale height to the Token's image
-        else if (canvas.getObjects()[0] instanceof FabricImage) {
-          group.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 15 * sizeCode);
-        }
-
-        //Add Token group to the canvas
-        canvas.add(group);
-        canvas.centerObject(group);
-
-        //Add textbox to canvas
-        //Align textbox to bottom center of the Token
-        let bottomLeft = circleBorder.getCoords()[3];
-        let newPoint = new Point();
-        newPoint.x = group.getCenterPoint().x;
-        newPoint.y = bottomLeft.y;
-        nameBox.setXY(newPoint, 'center', 'top');
-        nameBox.setCoords();
-        canvas.add(nameBox);
-
-        //Alert if Token was not added to Battle Map correctly
-        if (!board.addToken(group, [nameBox])) {
-          alert("Token not added correctly");
-        }
-
-        //When Token is selected, add a listener for the context menu
-        //and prevent context menu from being exited
-        group.on('selected', () => {
-          let selectedObjects = canvas.getActiveObjects();
-          let allTokens: boolean = true;
-          let tokenNumber: number = 0;
-          //Iterate over selected objects and determine if all are Token groups
-          for (let i = 0; i < selectedObjects.length; i++) {
-            if ((selectedObjects[i] instanceof Group) && (selectedObjects[i].getObjects().length > 1)
-              && (selectedObjects[i].getObjects()[0] instanceof Token)) {
-              tokenNumber++;
-            }
-            else //If not a Token Group end loop
-            {
-              allTokens = false;
-              break;
-            }
-          }
-
-          //If all selected Group objects are Token groups then allow context menu access
-          if (allTokens) {
-            document.addEventListener('contextmenu', cmManager.updateContextMenuPosition);
-            cmManager.setContextMenuExit(false);
-            if (tokenNumber > 1) {
-              cmManager.setMultiSelectionBool(true);
-              let groupBox = canvas.getActiveObject();
-              groupBox.on('mouseover', () => {
-                document.addEventListener('contextmenu', cmManager.updateContextMenuPosition)
-              });
-              groupBox.on('mouseout', () => {
-                document.removeEventListener('contextmenu', cmManager.updateContextMenuPosition);
-              })
-            }
-            else {
-              cmManager.setMultiSelectionBool(false);
-            }
-          }
-        });
-
-        //When mouse hovers over Token group and the group is selected, add listener for context menu
-        group.on('mouseover', () => {
-          let selectedObjects = canvas.getActiveObjects();
-          for (let i = 0; i < selectedObjects.length; i++) {
-            if (selectedObjects[i] == group) {
-              document.addEventListener('contextmenu', cmManager.updateContextMenuPosition);
-              break;
-            }
-          }
-        });
-
-        //When mouse no longer hovers over Token group, remove listener for context menu
-        group.on('mouseout', (mouseEvent) => {
-          let selectedObjects = canvas.getActiveObjects();
-          for (let i = 0; i < selectedObjects.length; i++) {
-            if (selectedObjects[i] == group) {
-              document.removeEventListener('contextmenu', cmManager.updateContextMenuPosition);
-              break;
-            }
-          }
-        });
-
-        //When Token group is no longer selected, remove listener for context menu and
-        //allow context menu to be exited
-        group.on('deselected', () => {
-          document.removeEventListener('contextmenu', cmManager.updateContextMenuPosition);
-          cmManager.setContextMenuExit(true);
-          cmManager.setMultiSelectionBool(false);
-        });
-
-        //If no objects have been added, add event to handle all object grid snapping and non-snapping movement
-      //Will be removed once Scene Switching has been implemented
-        if (!objectAdded) {
-          canvas.on('object:moving', (event) => {
-            if(gridSet && board.getGridSnap())
-            {
-              handleObjectSnapping(canvas, event.target, board);
-            }
-            else
-            {
-              handleObjectMoving(canvas, event.target);
-            }
-          });
-        }
+        scene.addMap(mapEl);
       };
     }
   }
@@ -440,7 +259,7 @@ function Toolbar({ canvas, board, cmManager }) {
       canvas.bringObjectForward(grid);
 
       //resize all tokens on the map to the grid
-      board.resizeAllObjects(resizeRect.getScaledWidth(), resizeRect.getScaledHeight(), resizeRect.aCoords, resizeRect.getCenterPoint());
+      scene.resizeAllObjects(resizeRect.getScaledWidth(), resizeRect.getScaledHeight(), resizeRect.aCoords, resizeRect.getCenterPoint());
 
       //Remove the grid resizing rectangle
       canvas.remove(resizeRect);
@@ -451,7 +270,6 @@ function Toolbar({ canvas, board, cmManager }) {
     <div className="Toolbar">
       <button id="rect" onClick={addShape}>Shape</button>
       <button id="image" onClick={addImage}>Map</button>
-      <button id="token" onClick={addToken}>Token</button>
       <button id="grid" onClick={resizeGrid}>Grid</button>
     </div>
   )

@@ -26,9 +26,6 @@ class BattleMap {
   //The index number used to access the current FabricImage being displayed on the canvas. Currently not implemented.
   private currentMap: number = 0;
 
-  //The reference to the canvas which the BattleMap's elements are displayed on.
-  private canvas: Canvas;
-
   //The non-zero number of the smallest value of either a single grid unit's width or height. Used for
   // performing snapping calculations in GridSnappingHelper. A negative number indicates no grid has been set.
   private smallestGridUnit: number = -1;
@@ -52,10 +49,34 @@ class BattleMap {
 
   //Basic constructor requires a unique and valid name string and a reference to the associated Canvas object.
   // The name is validated by the Sidebar Menu.
-  constructor(name: string, canvas: Canvas) {
+  constructor(name: string) {
+    if(name.trim() == "")
+    {
+      throw new Error("BattleMap name cannot be empty or only spaces");
+    }
+    if(name.length > 64)
+    {
+      throw new Error("BattleMap name's length cannot be greater than 64 characters");
+    }
     this.name = name;
-    this.canvas = canvas;
+
   }
+
+  //Function that returns the string name of the BattleMap. 
+  public getName(): string {
+    return this.name;
+  }
+
+  //Function that sets the name of the BattleMap. Returns true if a valid name and false if invalid.
+  public setName(newName: string): boolean {
+    //Remove spaces and check if length is not too long
+    if(newName.trim() != "" && newName.length <= 64)
+    {
+      this.name = newName;
+      return true;
+    }
+    return false;
+  } 
 
   //A function that adds new token and associated list of FabricObjects to be tracked in instance of BattleMap. 
   // Returns boolean depending on success of Token addition. Function validates whether the Group object is
