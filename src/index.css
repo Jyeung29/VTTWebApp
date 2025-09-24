@@ -6,10 +6,6 @@ body {
   box-sizing: border-box;
 }
 
-.button {
-  width: max-content;
-}
-
 .Board {
   font-family: sans-serif;
   text-align: center;
@@ -104,8 +100,25 @@ body {
   }
 }
 
+.BaseToken {
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  justify-items: center;
+  max-height: 150px;
+  width: 110px;
+}
+
 .BaseTokenImage {
   border: 2px solid rgb(133, 133, 133);
+  height: 100px;
+  width: 100px;
+  object-fit:cover;
+}
+
+.ImageBox {
+  height:100px;
+  width:100px;
 }
 
 .BaseTokenContextMenu {
@@ -138,4 +151,12 @@ body {
 .TokenCreationEditMenu {
   position:fixed;
   display:none;
+}
+
+.SceneEl {
+  display: flex;
+  flex-direction: row;
+  justify-content: right;
+  gap: 1px;
+  align-items:center;
 }

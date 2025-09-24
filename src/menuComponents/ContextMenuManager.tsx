@@ -26,7 +26,8 @@ export class ContextMenuManager {
     public updateContextMenuPosition(event: Event): boolean {
         var contextMenu = document.querySelector(".ContextMenu");
 
-        if (contextMenu && event.type == 'contextmenu') {
+        if (contextMenu && event.type == 'contextmenu' && contextMenu instanceof HTMLElement) {
+
             contextMenu.style.display = "flex";
             const maxTopValue = window.innerHeight - contextMenu.offsetHeight;
             const maxLeftValue = window.innerWidth - contextMenu.offsetWidth;

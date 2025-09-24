@@ -562,7 +562,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
                   </Select.Control>
                   <Portal>
                     <Select.Positioner>
-                      <Select.Content zIndex="sticky">
+                      <Select.Content position={'fixed'}>
                         {sizeOptions.items.map((size) => (
                           <Select.Item item={size} key={size.value}>
                             {size.label}

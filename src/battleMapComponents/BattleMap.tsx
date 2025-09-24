@@ -1,55 +1,39 @@
 import { Canvas, Group, type TCornerPoint, Point, FabricImage, FabricObject, Circle } from 'fabric';
 import { useState } from 'react'
 import { Token } from '../tokenComponents/Token';
+import Scene from '../SceneComponents/Scene';
 
 /*
-BattleMap is a class that stores Fabric.js canvas object references and other data members used for
+BattleMap is a child class of Scene that stores Fabric.js canvas object references and other data members used for
 Battle Map functionality such as for token snapping. BattleMap provides functions that get, set, add, and
 remove from data members.
 */
 
-class BattleMap {
-  //String which is displayed to the user on the Scene Selection Menu
-  private name: string;
-
-  //A list which contains a reference to a Group which contains a Token object (With a Specified Order and Composition)
-  // and an array of references to associated FabricObjects such as a token name textbox
-  private tokenGroups: [Group, FabricObject[]][] = [];
-
-  //A list which contains a reference to non-token interactable objects on a BattleMap such as a circle and an associated
-  // size multiplier used to scale the object to the grid.
-  private objects: [FabricObject, number][] = [];
-
-  //A list of FabricImages that can be switched between a single BattleMap instance. Currently only supports a single image.
-  private maps: FabricImage[] = [];
-
-  //The index number used to access the current FabricImage being displayed on the canvas. Currently not implemented.
-  private currentMap: number = 0;
-
+class BattleMap extends Scene {
   //The non-zero number of the smallest value of either a single grid unit's width or height. Used for
   // performing snapping calculations in GridSnappingHelper. A negative number indicates no grid has been set.
-  private smallestGridUnit: number = -1;
+  protected smallestGridUnit: number = -1;
 
   //The center coordinate of the originating resizing grid unit (the rectangle used to set the grid). Used for
   // performing snapping calculations in GridSnappingHelper.
-  private centerPoint: Point;
+  protected centerPoint: Point;
 
   //The coordinates of all four corners of the originating resizing grid unit (the rectangle used to set the grid). Used for
   // performing snapping calculations in GridSnappingHelper.
-  private cornerPoints: TCornerPoint;
+  protected cornerPoints: TCornerPoint;
 
   //The boolean which sets whether a BattleMap will snap elements to a grid. User will change boolean according to whether they
   // want to have grid snapping in the Sidebar Menu.
-  private gridSnap: boolean = true;
+  protected gridSnap: boolean = true;
 
   //The non-zero numbers of a single grid unit's width and height. Used for
   // performing snapping calculations in GridSnappingHelper. A negative number indicates no grid has been set.
-  private gridUnitHeight: number = -1;
-  private gridUnitWidth: number = -1;
+  protected gridUnitHeight: number = -1;
+  protected gridUnitWidth: number = -1;
 
   //Basic constructor requires a unique and valid name string and a reference to the associated Canvas object.
   // The name is validated by the Sidebar Menu.
-  constructor(name: string) {
+  constructor(name: string, id:number, gridSnap?:boolean) {
     if(name.trim() == "")
     {
       throw new Error("BattleMap name cannot be empty or only spaces");
@@ -58,94 +42,12 @@ class BattleMap {
     {
       throw new Error("BattleMap name's length cannot be greater than 64 characters");
     }
-    this.name = name;
-
-  }
-
-  //Function that returns the string name of the BattleMap. 
-  public getName(): string {
-    return this.name;
-  }
-
-  //Function that sets the name of the BattleMap. Returns true if a valid name and false if invalid.
-  public setName(newName: string): boolean {
-    //Remove spaces and check if length is not too long
-    if(newName.trim() != "" && newName.length <= 64)
+    super(id);
+    if(gridSnap != null)
     {
-      this.name = newName;
-      return true;
+      this.gridSnap = gridSnap;
     }
-    return false;
-  } 
-
-  //A function that adds new token and associated list of FabricObjects to be tracked in instance of BattleMap. 
-  // Returns boolean depending on success of Token addition. Function validates whether the Group object is
-  // a Token group.
-  public addToken(newToken: Group, tokenObjects: FabricObject[]): boolean {
-    //Check if provided Group is a valid Token Group. If so, add to tokenGroups data member.
-    if (newToken && newToken.getObjects().length > 1 && newToken.getObjects()[0] instanceof Token) {
-      this.tokenGroups.push([newToken, tokenObjects]);
-      return true;
-    }
-    return false;
-  }
-
-  //Function that Removes token from being tracked in instance of BattleMap. Returns the
-  //target token to be removed. Called when canvas object removed event triggers and
-  //is a Token group. Removes any associated Token elements such as name textbox.
-  public removeToken(removeToken: Group, canvas: Canvas) {
-    //Validate whether provided Group is a Token Group
-    if (removeToken && removeToken.getObjects().length > 1 && removeToken.getObjects()[0] instanceof Token) {
-      let index = -1;
-      //Iterate over tracked Tokens and if found, track the index of the Token.
-      for (let i = 0; i < this.tokenGroups.length; i++) {
-        if (this.tokenGroups[i][0] == removeToken) {
-          index = i;
-          break;
-        }
-      }
-      //Pop the Token Group and associated FabricObjects and return the Token group.
-      if (index > -1) {
-        let removedTokens = this.tokenGroups.splice(index, 1);
-        return removedTokens[0];
-      }
-    }
-    return null;
-  }
-
-  //Function that adds new objects to be tracked in instance of BattleMap. Returns boolean depending on
-  //success of object addition. Examples of objects include circles, rectangles, and polygons.
-  public addObject(newObject: FabricObject, multiplier: number): boolean {
-    //Check if provided object is not null and multiplier is valid. If so, add object with multiplier.
-    if (newObject && multiplier > 0) {
-      this.objects.push([newObject, multiplier]);
-      return true;
-    }
-    return false;
-  }
-
-  //Funciton that removes shape from being tracked in instance of BattleMap. Returns the
-  //target shape to be removed. Called when canvas object removed event triggers and
-  //is a shape.
-  public removeObjects(removeObject: FabricObject) {
-    //Check if removeObject is not null
-    if (removeObject) {
-      let index = -1;
-      //Iterate over tracked objects and if found, track index
-      for (let i = 0; i < this.objects.length; i++) {
-        if (this.objects[i][0] == removeObject) {
-          index = i;
-          break;
-        }
-      }
-
-      //If object was found, remove it and it's multiplier. Return the object.
-      if (index > -1) {
-        let removedTokens = this.objects.splice(index, 1);
-        return removedTokens[0][0];
-      }
-    }
-    return null;
+    this.name = name;
   }
 
   //Function that scales a specified Token according to the new size based on the grid.
@@ -164,7 +66,7 @@ class BattleMap {
           resizeToken.setSizeCode(sizeCode);
           //Account for grid not yet created. Map must be used as baseline size. Currently
           //does not account for multiple Map Images for a calculation of size
-          if (this.smallestGridUnit <= 0 && this.maps.length > 0) {
+          if (this.smallestGridUnit <= 0 && this.images.length > 0) {
             let newHeight = canvas.getObjects()[0].getScaledHeight() / 15 * sizeCode;
             this.tokenGroups[i][0].scaleToHeight(newHeight);
           }
@@ -189,7 +91,6 @@ class BattleMap {
         }
       }
       //Token not found
-      return false;
     }
     return false;
   }
@@ -274,35 +175,6 @@ class BattleMap {
   //Function that returns boolean of whether objects should snap on grid for this BattleMap. 
   public getGridSnap(): boolean {
     return this.gridSnap;
-  }
-
-  //Method to add a map's FabricImage to reference. Returns boolean of whether
-  //map was added.
-  public addMap(map: FabricImage): boolean {
-    if (map) {
-      this.maps.push(map);
-      return true;
-    }
-    return false;
-  }
-
-  //Method to retrieve a a map's FabricImage reference with an index.
-  public getMapAtIndex(index: number) {
-    if (index && index > 0 && index < this.maps.length) {
-      return this.maps[index];
-    }
-    return null;
-  }
-
-  //Method to retrieve the current map's FabricImage used on the canvas.
-  //Returns null of no maps have been added.
-  public getCurrentMap() {
-    if (this.maps.length == 0) {
-      return null;
-    }
-    else {
-      return this.maps[this.currentMap];
-    }
   }
 
   //Returns the current smallestGridUnit size. smallestGridUnit is set by resizeAllTokens. Will return

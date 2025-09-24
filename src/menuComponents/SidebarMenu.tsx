@@ -9,8 +9,11 @@ import { Token } from '../tokenComponents/Token';
 import type BattleMap from '../battleMapComponents/BattleMap';
 import '../index.css';
 import {TokenMenu} from './TokenMenu';
+import { SceneMenu } from './SceneMenu';
 
-export function SidebarMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection }) {
+export function SidebarMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, 
+    linkFactory, sceneCollection, setSceneCollection, sceneIDMap, setSceneIDMap, currentCanvasID, 
+    setCurrentCanvasID, setCurrentScene, setCanvas, canvasCollection, setCanvasCollection}) {
     const [open, setOpen] = useState(false)
     return (
         <div className='SidebarMenu'>
@@ -49,13 +52,18 @@ export function SidebarMenu({ canvas, cmManager, scene, tokenCollection, setToke
                                 <Drawer.Body>
                                 <Tabs.Content value="game log">Game Log Coming Soon</Tabs.Content>
                                 <Tabs.Content value="tokens">
-                                    <TokenMenu canvas={canvas} cmManager={cmManager} scene={scene} tokenCollection={tokenCollection} setTokenCollection={setTokenCollection}/>
+                                    <TokenMenu canvas={canvas} cmManager={cmManager} scene={scene} tokenCollection={tokenCollection} 
+                                    setTokenCollection={setTokenCollection} linkFactory={linkFactory}/>
                                     </Tabs.Content>
                                 <Tabs.Content value="audio">
                                     Audio Coming Soon
                                 </Tabs.Content>
                                 <Tabs.Content value="scenes">
-                                    Scenes Coming Soon
+                                    <SceneMenu linkFactory={linkFactory} sceneCollection={sceneCollection}
+                                    setSceneCollection={setSceneCollection} setCurrentScene={setCurrentScene}
+                                    sceneIDMap={sceneIDMap} setSceneIDMap={setSceneIDMap} setCanvas={setCanvas}
+                                    currentCanvasID={currentCanvasID} setCurrentCanvasID={setCurrentCanvasID}
+                                    canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection}/>
                                 </Tabs.Content>
                                 <Tabs.Content value="settings">
                                     Settings Coming Soon

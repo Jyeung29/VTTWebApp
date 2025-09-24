@@ -9,7 +9,7 @@ Tokens or other objects. Sizes snapped are either 1/4 of a square (0.5), are cen
 at the intersection of four squares (even).
 */
 export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: BattleMap) => {
-    let mapEl = map.getCurrentMap();
+    let mapEl = map.getCurrentImage();
     let token;
 
     //Check if map exists and grid exists

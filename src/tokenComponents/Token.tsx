@@ -53,10 +53,13 @@ export class Token<
 
     //Variable that stores URLs of images while also storing the provided file's id in their associated
     //cloud storage service such as Google Drive or OneDrive.
-    protected imageURLs: [string, string][] = [['https://www.dndbeyond.com/avatars/thumbnails/6/365/420/618/636272701937419552.png','']]
+    protected imageURLs: [string, string][] = [];
 
     //Number that tracks the current image link being used for the Token
     protected currentImage: number = 0;
+
+    //An array of index pairs that indicate where in the Base Token Collection a token is located
+    protected baseTokenIndexePairs: [number,number][] = [];
 
     //Returns string name of Token.
     public getName(): string {
@@ -242,41 +245,35 @@ export class Token<
     }
 
     //Method that only adds a url string to be tracked. Does not change the 
-    //Token's image.
-    public addURL(url: string): boolean {
-        return true;
+    //Token's image. Assumes that ImageLinkFactory outputed correct file id and
+    //url.
+    public addURL(id:string, url: string): boolean {
+        //Check if not empty
+        if(//id.trim() != '' && 
+        url.trim() != '')
+        {
+            for(let i = 0; i < this.imageURLs.length; i++)
+            {
+                //Make sure there are no redundant links. IDs could be same across
+                //drive services so must match url as well.
+                if(this.imageURLs[i][0] == id && this.imageURLs[i][1] == url)
+                {
+                    return false;
+                }
+            }
+            //Add url and file id to the array
+            this.imageURLs.push([id, url]);
+            return true;
+        }
+        return false;
     }
 
     public getCurrentURL(): string {
-        return this.imageURLs[this.currentImage][0];
+        return this.imageURLs[this.currentImage][1];
     }
 
     //Method that adds url string to be tracked and changes the Token's image
     public setNewImage(url: string): boolean {
-        if(url.trim() != "")
-        {
-            if(url.includes('onedrive.live.com/'))
-            {
-
-            }
-            else if(url.includes('1drv.ms/'))
-            {
-
-            }
-            else if(url.includes('drive.google.com/'))
-            {
-
-            }
-            else
-            {
-                alert('Your URL is incorrect or not supported');
-                return false;
-            }
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return false;
     }
 }

@@ -119,7 +119,7 @@ function Toolbar({ canvas, scene, cmManager }) {
         canvas.centerObject(mapEl);
 
         //Add the FabricImage object to BattleMap instance
-        scene.addMap(mapEl);
+        scene.addImage(mapEl);
       };
     }
   }

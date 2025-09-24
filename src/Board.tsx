@@ -9,120 +9,169 @@ import { ContextMenuManager } from "./menuComponents/ContextMenuManager";
 import { SidebarMenu } from "./menuComponents/SidebarMenu";
 import { handleObjectSnapping } from "./battleMapComponents/GridSnappingHelper";
 import { handleObjectMoving } from "./battleMapComponents/TokenMovingHelper";
-import { TokenCreationEditMenu } from "./menuComponents/TokenCreationEditMenu";
+import { ImageLinkFactory } from "./ImageLinkFactory";
+import type Scene from "./SceneComponents/Scene";
 
 function Board() {
-  //Return using HTML notation
-  const canvasRef = useRef(null);
   const [canvas, setCanvas] = useState<Canvas>();
-  const [currentMap, setCurrentBoard] = useState<BattleMap>();
-  const [contextMenuManager, setContextMenuManager] = useState<ContextMenuManager>();
+  const [currentScene, setCurrentScene] = useState<Scene>();
+  const [currentCanvasID, setCurrentCanvasID] = useState<number>(0);
+  const [contextMenuManager, setContextMenuManager] = useState<ContextMenuManager>(new ContextMenuManager);
+  const [linkFactory, setLinkFactory] = useState<ImageLinkFactory>(new ImageLinkFactory);
 
   //tokenCollection is a array where each row contains the group's name and an array of Tokens 
-    // placeable onto the scene
-    const [tokenCollection, setTokenCollection] = useState<[string, Token[]][]>([['My Tokens', []]]);
+  // placeable onto the scene
+  const [tokenCollection, setTokenCollection] = useState<[string, Token[]][]>([['My Tokens', []]]);
 
   //track Mouse Canvas Coordinate
-  var mouseLocation: Point;
-
-  //Boolean to set Panning bools only once during Panning
-  var panSwitch: boolean = false;
+  const [mouseLocation, setMouseLocation] = useState<Point>();
+  const [mouseLocationBool, setMouseLocationBool] = useState<boolean>(false);
 
   //Boolean to determine whether to Pan
-  var isPanning: boolean = false;
+  const [isPanning, setIsPanning] = useState<boolean>(false);
 
-  var myMaps: BattleMap[] = [];
+  const [panTrigger, setPanTrigger] = useState<boolean>(false);
 
-  var createTest = true;
+  //An array containing the name of a scene collection and an array of Scenes. For scenes not associated
+  //with any collection, the name is empty and the Scene arrray only contains the Scene by itself 
+  const [sceneCollection, setSceneCollection] = useState<[string, Scene[]][]>([]);
 
-  const newCMManager = new ContextMenuManager();
+  const [canvasCollection, setCanvasCollection] = useState<[string, Canvas[]][]>([]);
 
-  //Prevent Panning from Displaying Context Menu
-  const contextMenu = document.addEventListener('contextmenu', (event) => {
-    event.preventDefault();
-  });
+  const [sceneIDMap, setSceneIDMap] = useState<Map<number, boolean>>(new Map<number, boolean>());
+
+  const [resizeBool, setResizeBool] = useState<boolean>(false);
+
+  const [deleteBool, setDeleteBool] = useState<boolean>(false);
+
+
+  //Resize all canvas's in the collection to new width and height if new window size is bigger.
+  //Has TypeError for this.lower which is in Fabric library. Does not cause issues with functionality
+  useEffect(() => {
+    if (resizeBool) {
+      for (let i = 0; i < canvasCollection.length; i++) {
+        if (canvasCollection[i][0] == '') {
+          let myCanvas = canvasCollection[i][1][0];
+          myCanvas.setDimensions({ width: window.innerWidth, height: window.innerHeight, });
+        }
+        else {
+          for (let j = 0; j < canvasCollection[i][1].length; j++) {
+            let myCanvas = canvasCollection[i][1][j];
+            myCanvas.setDimensions({ width: window.innerWidth, height: window.innerHeight, });
+          }
+        }
+      }
+      setResizeBool(false);
+    }
+  }, [resizeBool])
+
+
+  useEffect(() => {
+    if (deleteBool && canvas) {
+      //Get all selected FabricObjects on Canvas
+      let actives = canvas.getActiveObjects();
+      //Check if FabricObjects have been selected
+      if (actives.length > 0) {
+        //Remove all selected FabricObjects
+        for (let i = 0; i < actives.length; i++) {
+          let token;
+          let tokenGroup;
+          let nameBox;
+          if ((tokenGroup = actives[i]) instanceof Group && (tokenGroup = tokenGroup.getObjects()).length > 1
+            && (token = tokenGroup[0]) instanceof Token) {
+            let index = canvas.getObjects().indexOf(actives[i]) + 1;
+            if (index > 0 && index < canvas.getObjects().length &&
+              (nameBox = canvas.getObjects()[index]) instanceof Textbox) {
+              canvas.remove(nameBox);
+            }
+          }
+          canvas.remove(actives[i]);
+        }
+        //Remove group selection box
+        canvas.discardActiveObject();
+      }
+      setDeleteBool(false);
+    }
+
+  }, [deleteBool])
+
+  useEffect(() => {
+    if (panTrigger && canvas) {
+      if (isPanning) {
+        setIsPanning(false);
+        canvas.selection = true;
+      }
+      else {
+        setIsPanning(true);
+        canvas.selection = false;
+      }
+    }
+  }, [panTrigger])
+
+
   //Runs after detecting that new DOM element added which is the <canvas> so that 
   //Fabric.js Canvas element can be connected
   useEffect(() => {
-    if (canvasRef.current) {
+    var newMap = new BattleMap("Test Map", 0);
+    setSceneCollection([['', [newMap]]]);
+    setCurrentScene(newMap);
+    let newIDMap = sceneIDMap;
+    newIDMap.set(0, true);
+    setSceneIDMap(newIDMap);
+    document.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+    });
+
+    //Listener for detecting resize
+    window.addEventListener("resize", () => { setResizeBool(true) });
+
+    let currentCanvas = document.getElementById('scene_0');
+    if (currentCanvas) {
       //Remove any preexisting events from previous renders. Optimize performance
-      window.removeEventListener("resize", detectResize, false);
       window.removeEventListener("keydown", detectKeydown, false);
       window.removeEventListener('mousedown', panCanvas);
       window.removeEventListener('mouseup', stopPan);
 
-      const initCanvas = new Canvas(canvasRef.current, {
+      const initCanvas = new Canvas('scene_0', {
         width: window.innerWidth,
         height: window.innerHeight,
         backgroundColor: 'rgb(0,0,0)',
         enableRetinaScaling: true
       });
 
-      //Listener for detecting resize
-      var resizeEvent = window.addEventListener("resize", detectResize, false);
-
-      //Resize Canvas width and height if new window size is bigger
-      function detectResize() {
-        initCanvas.setDimensions({ height: window.innerHeight, width: window.innerWidth });
-      }
+      setCanvasCollection([['', [initCanvas]]]);
 
       //Listen for any keyboard input
-      var deleteEvent = document.addEventListener("keydown", detectKeydown, false);
+      document.addEventListener("keydown", detectKeydown, false);
 
       //Delete Group and Single FabricObject selections when "Backspace" or "Delete" keys pressed
       function detectKeydown(event: KeyboardEvent) {
         //Check if key event was a Backspace
-        if (event.key == "Backspace" && newCMManager && newCMManager.getDeleteValid()) {
-          //Get all selected FabricObjects on Canvas
-          let actives = initCanvas.getActiveObjects();
-          //Check if FabricObjects have been selected
-          if (actives.length > 0) {
-            //Remove all selected FabricObjects
-            for (let i = 0; i < actives.length; i++) {
-              let token;
-              let tokenGroup;
-              let nameBox;
-              if ((tokenGroup = actives[i]) instanceof Group && (tokenGroup = tokenGroup.getObjects()).length > 1
-                && (token = tokenGroup[0]) instanceof Token) {
-                let index = initCanvas.getObjects().indexOf(actives[i]) + 1;
-                if (index > 0 && index < initCanvas.getObjects().length &&
-                  (nameBox = initCanvas.getObjects()[index]) instanceof Textbox) {
-                  initCanvas.remove(nameBox);
-                }
-              }
-              initCanvas.remove(actives[i]);
-            }
-            //Remove group selection box
-            initCanvas.discardActiveObject();
-          }
+        if (event.key == "Backspace" && contextMenuManager && contextMenuManager.getDeleteValid()) {
+          setDeleteBool(true);
         }
       }
 
       //Event for mouse event to start panning
-      const mousePan = window.addEventListener('mousedown', panCanvas);
+      window.addEventListener('mousedown', panCanvas);
 
       function panCanvas(event: MouseEvent) {
         //If (for right hand) right mouse button down
-        if (event.button == 2 && !panSwitch) {
-          isPanning = true;
-          panSwitch = true;
-          initCanvas.selection = false;
+        if (event.button == 2) {
+          setPanTrigger(true);
         }
       }
 
       //Event for mouse event to stop panning
-      const mouseNoPan = window.addEventListener('mouseup', stopPan);
-
+      window.addEventListener('mouseup', stopPan);
       function stopPan(event: MouseEvent) {
         //If (for right hand) right mouse button down
-        if (event.button == 2 && isPanning) {
-          panSwitch = false;
-          isPanning = false;
-          initCanvas.selection = true;
+        if (event.button == 2) {
+          setPanTrigger(true);
         }
       }
 
-      //Pan Viewport
+      //Pan Viewport change this!!!
       initCanvas.on('mouse:move', (event) => {
         if (isPanning) {
           var vpt = initCanvas.viewportTransform;
@@ -141,12 +190,13 @@ function Board() {
           initCanvas.setViewportTransform(vpt);
           initCanvas.requestRenderAll();
         }
-        mouseLocation = event.viewportPoint;
+        setMouseLocation(event.viewportPoint);
       });
 
       //Zoom with scrollwheel
-      initCanvas.on('mouse:wheel', function (opt) {
-        mouseLocation = opt.viewportPoint;
+      initCanvas.on('mouse:wheel', (opt) => {
+        setMouseLocation(opt.viewportPoint);
+
         //Current Zoom Value
         var delta = opt.e.deltaY;
         var zoom = initCanvas.getZoom();
@@ -168,29 +218,19 @@ function Board() {
       initCanvas.renderAll();
       setCanvas(initCanvas);
 
-      if (createTest) {
-        var newMap = new BattleMap("Test Map");
-        myMaps.push(newMap);
-        setCurrentBoard(newMap);
-        createTest = false;
-
-        setContextMenuManager(newCMManager);
-      }
-
       //Unmounted to free memory
       return () => {
         initCanvas.dispose();
       }
-
     }
   }, []);
 
   //Function to enable grid snapping and Token moving
   const handleMove = (event) => {
-    if (canvas && canvas instanceof Canvas) {
-      if (currentMap && currentMap instanceof BattleMap &&
-        currentMap.getGridSnap() && currentMap.getSmallestGridUnit() > 0) {
-        handleObjectSnapping(canvas, event.target, currentMap);
+    if (canvas) {
+      if (currentScene && currentScene instanceof BattleMap &&
+        currentScene.getGridSnap() && currentScene.getSmallestGridUnit() > 0) {
+        handleObjectSnapping(canvas, event.target, currentScene);
       }
       else {
         handleObjectMoving(canvas, event.target);
@@ -198,25 +238,40 @@ function Board() {
     }
   };
 
-  //Update event whenever currentMap or canvas is updated so state values are up-to-date
+  //Update event whenever currentScene or canvas is updated so state values are up-to-date
   useEffect(() => {
     if (canvas) {
       canvas.off('object:moving', handleMove);
       canvas.on('object:moving', handleMove);
     }
 
-  }, [currentMap, canvas])
+  }, [currentScene, canvas])
+
+  useEffect(() => {
+    console.log('scene collection')
+    console.log(sceneCollection);
+    if (sceneCollection.length > 0)
+      console.log(sceneCollection[0][1])
+    console.log('canvas collection')
+    console.log(canvasCollection)
+  });
 
   return (
     <div className="Board">
       <div className="ToolMenus">
-        <Toolbar canvas={canvas} scene={currentMap} cmManager={contextMenuManager} />
-        <SidebarMenu canvas={canvas} cmManager={contextMenuManager} scene={currentMap}
-        tokenCollection={tokenCollection} setTokenCollection={setTokenCollection}/>
-        <TokenCreationEditMenu tokenCollection={tokenCollection} setTokenCollection={setTokenCollection}/>
+        <Toolbar canvas={canvas} scene={currentScene} cmManager={contextMenuManager} />
+        <SidebarMenu canvas={canvas} cmManager={contextMenuManager} scene={currentScene}
+          setCurrentScene={setCurrentScene} setCanvas={setCanvas}
+          tokenCollection={tokenCollection} setTokenCollection={setTokenCollection}
+          linkFactory={linkFactory} sceneIDMap={sceneIDMap} setSceneIDMap={setSceneIDMap}
+          sceneCollection={sceneCollection} setSceneCollection={setSceneCollection}
+          currentCanvasID={currentCanvasID} setCurrentCanvasID={setCurrentCanvasID}
+          canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection} />
       </div>
-      <ContextMenu canvas={canvas} cmManager={contextMenuManager} scene={currentMap} />
-      <canvas id="test" ref={canvasRef} />
+      <ContextMenu canvas={canvas} cmManager={contextMenuManager} scene={currentScene} />
+      <div id='SceneDiv'>
+        <canvas id='scene_0' />
+      </div>
     </div>
   )
 }
