@@ -16,7 +16,7 @@ on the Canvas. The ContextMenu contains buttons and sub-menus to manipulate and 
 The ContextMenu is not interactable if non-Token groups are selected. 
 */
 export function ContextMenu({ canvas, cmManager, scene }) {
-  
+
   //Reference to the token name input box in ContextMenu
   const displayNameInput = useRef(null);
 
@@ -25,7 +25,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
 
   //Reference to size Select component
   const sizeReference = useRef(null);
-  
+
   //Hook for setting size value of size Select component. Must use string[] value due
   //same as Select's value parameter.
   const [sizeVal, setSizeVal] = useState(['1']);
@@ -36,16 +36,29 @@ export function ContextMenu({ canvas, cmManager, scene }) {
   //Value displayed by image link input box
   const [imageLinkVal, setImageLinkVal] = useState("");
 
-  //Event listener to hide context menu if token(s) are no longer selected
-  const exit = document.addEventListener('mousedown', (event) => {
-    if (event.button == 0 && cmManager && cmManager.getContextMenuExit()) {
-      let contextMenu = document.querySelector(".ContextMenu");
-      if (contextMenu) {
-        contextMenu.style.display = "none";
+  console.log('cm render')
+
+  useEffect(() => {
+    const exitFunction = (event) => {
+      console.log('exit')
+      if (event.button == 0 && cmManager && cmManager.getContextMenuExit()) {
+        let contextMenu = document.querySelector(".ContextMenu");
+        console.log('true exit')
+        if (contextMenu && contextMenu instanceof HTMLElement) {
+          contextMenu.style.display = "none";
+        }
+        cmManager.setContextMenuExit(false);
       }
     }
-  });
-  
+    //Event listener to hide context menu if token(s) are no longer selected
+    document.addEventListener('mousedown', exitFunction);
+
+    return () => {
+      document.removeEventListener('mousedown', exitFunction);
+    }
+  })
+
+
   //Create slider to change Token image offset in percentage according from center to either side
   var xSlider = useSlider({
     max: 100,
@@ -280,75 +293,91 @@ export function ContextMenu({ canvas, cmManager, scene }) {
     }
   });
 
-  
 
-  //Function that is called whenever the token name input box's value is changed
-  var changeName = (event) => {
-    //Check if all required references are available
-    if (displayNameInput && cmManager && canvas) {
-      let tokenGroup;
-      let token;
-      let nameBox;
-      //Multi-Token selection
-      if (cmManager.getMultiSelectionBool() && canvas.getActiveObjects().length > 1) {
-        let activeObjects = canvas.getActiveObjects();
+  useEffect(() => {
+    if (displayNameVal.trim() != '') {
+      //Check if all required references are available
+      if (cmManager && canvas) {
+        let tokenGroup;
+        let token;
+        let nameBox;
+        //Multi-Token selection
+        if (cmManager.getMultiSelectionBool() && canvas.getActiveObjects().length > 1) {
+          let activeObjects = canvas.getActiveObjects();
 
-        //Iterate over selected objects
-        for (let i = 0; i < activeObjects.length; i++) {
-          //Check if object is a Token group
-          if ((tokenGroup = activeObjects[i]) instanceof Group && tokenGroup.getObjects().length > 1 &&
-            (token = tokenGroup.getObjects()[0]) instanceof Token) {
-            //Calculate index of Token's name textbox 
-            let index = canvas.getObjects().indexOf(tokenGroup) + 1;
+          //Iterate over selected objects
+          for (let i = 0; i < activeObjects.length; i++) {
+            //Check if object is a Token group
+            if ((tokenGroup = activeObjects[i]) instanceof Group && tokenGroup.getObjects().length > 1 &&
+              (token = tokenGroup.getObjects()[0]) instanceof Token) {
+              //Calculate index of Token's name textbox 
+              let index = canvas.getObjects().indexOf(tokenGroup) + 1;
 
-            //Update the Token's name
-            token.setName(event.target.value);
+              //Update the Token's name
+              token.setName(displayNameVal);
 
-            //Check if Textbox index is valid and is a Textbox
-            if (index > 0 && index < canvas.getObjects().length &&
-              (nameBox = canvas.getObjects()[index]) instanceof Textbox) {
-              //Update the Textbox with new name and update position to be
-              //recentered
-              nameBox.set('text', event.target.value);
-              let newX = tokenGroup.getObjects()[1].getCenterPoint().x;
-              let newY = tokenGroup.getObjects()[1].getCoords()[3].y;
-              let newPoint = new Point({ x: newX, y: newY });
-              nameBox.setXY(newPoint, 'center', 'top');
-              nameBox.setCoords();
+              //Check if Textbox index is valid and is a Textbox
+              if (index > 0 && index < canvas.getObjects().length &&
+                (nameBox = canvas.getObjects()[index]) instanceof Textbox) {
+                //Update the Textbox with new name and update position to be
+                //recentered
+                nameBox.set('text', displayNameVal);
+                let newX = tokenGroup.getObjects()[1].getCenterPoint().x;
+                let newY = tokenGroup.getObjects()[1].getCoords()[3].y;
+                let newPoint = new Point({ x: newX, y: newY });
+                nameBox.setXY(newPoint, 'center', 'top');
+                nameBox.setCoords();
+              }
             }
           }
-        }
-        canvas.renderAll();
-      }
-      //Single Token selection
-      else if ((tokenGroup = canvas.getActiveObject()) instanceof Group && tokenGroup.getObjects().length > 1
-        && (token = tokenGroup.getObjects()[0]) instanceof Token) {
-        //Calculate index of Token's name textbox
-        let index = canvas.getObjects().indexOf(tokenGroup) + 1;
 
-        //Update Token's name
-        token.setName(event.target.value);
-
-        //Check if Textbox index is valid
-        if (index > 0 && index < canvas.getObjects().length &&
-          (nameBox = canvas.getObjects()[index]) instanceof Textbox) {
-          //Update Textbox with new name and update position to be recentered
-          nameBox.set('text', event.target.value);
-          let newX = tokenGroup.getObjects()[1].getCenterPoint().x;
-          let newY = tokenGroup.getObjects()[1].getCoords()[3].y;
-          let newPoint = new Point({ x: newX, y: newY });
-          nameBox.setXY(newPoint, 'center', 'top');
-          nameBox.setCoords();
           canvas.renderAll();
+        }
+        //Single Token selection
+        else if ((tokenGroup = canvas.getActiveObject()) instanceof Group && tokenGroup.getObjects().length > 1
+          && (token = tokenGroup.getObjects()[0]) instanceof Token) {
+          //Calculate index of Token's name textbox
+          let index = canvas.getObjects().indexOf(tokenGroup) + 1;
+
+          //Update Token's name
+          token.setName(displayNameVal);
+
+          //Check if Textbox index is valid
+          if (index > 0 && index < canvas.getObjects().length &&
+            (nameBox = canvas.getObjects()[index]) instanceof Textbox) {
+            //Update Textbox with new name and update position to be recentered
+            nameBox.set('text', displayNameVal);
+            let newX = tokenGroup.getObjects()[1].getCenterPoint().x;
+            let newY = tokenGroup.getObjects()[1].getCoords()[3].y;
+            let newPoint = new Point({ x: newX, y: newY });
+            nameBox.setXY(newPoint, 'center', 'top');
+            nameBox.setCoords();
+            canvas.renderAll();
+          }
         }
       }
     }
+  }, [displayNameVal]);
+
+  //Function that is called whenever the token name input box's value is changed
+  var changeName = (event) => {
+    setNameVal(event.target.value);
+    console.log(event.target.value + '_')
   };
 
   //Function prevents backspace key pressed from deleting Token while typing in input field
   var preventDelete = (event) => {
     cmManager.setDeleteValid(false);
   };
+
+  //Function that allows for spaces to be typed into input elements
+  var allowSpace = (event) => {
+    if(event.key === " ")
+    {
+      //Stops spacebar from propogating to menu and stay in input element
+      event.stopPropagation();
+    }
+  }
 
   //Function that allows backspace key to delete Token after exiting input field
   var allowDelete = (event) => {
@@ -388,85 +417,82 @@ export function ContextMenu({ canvas, cmManager, scene }) {
 
   //Runs on each render whenever Context Menu is opened or changed
   useEffect(() => {
-//When new Context Menu is opened, reflect values of the selected Token(s)
-  const listeningFunc = () => {
-    //Check if valid and ContextMenu can is being displayed
-    if (canvas && cmManager && !cmManager.getContextMenuExit()) {
-      let tokenGroup;
-      let token;
-      //Values for a single Token selection
-      if (!cmManager.getMultiSelectionBool() && (tokenGroup = canvas.getActiveObject()) instanceof Group
-        && tokenGroup.getObjects().length > 1 && (token = tokenGroup.getObjects()[0]) instanceof Token) {
-        //Calculate x and y slider values from the selected Token
-        let xLimit = token.width / 2;
-        let yLimit = token.height / 2;
-        let radius;
-        if (token.width > token.height) {
-          radius = token.height / 4;
-        }
-        else {
-          radius = token.width / 4;
-        }
-        xSlider.value[0] = Math.round((token.left + xLimit) / (xLimit - radius) * 100);
-        ySlider.value[0] = Math.round((token.top + yLimit) / (yLimit - radius) * 100);
 
-        //Set the checked box to Token's show name bool
-        showName.setChecked(token.getShowName());
+    //When new Context Menu is opened, reflect values of the selected Token(s)
+    const listeningFunc = () => {
+      //Check if valid and ContextMenu can is being displayed
+      if (canvas && cmManager && !cmManager.getContextMenuExit()) {
+        let tokenGroup;
+        let token;
+        //Values for a single Token selection
+        if (!cmManager.getMultiSelectionBool() && (tokenGroup = canvas.getActiveObject()) instanceof Group
+          && tokenGroup.getObjects().length > 1 && (token = tokenGroup.getObjects()[0]) instanceof Token) {
+          //Calculate x and y slider values from the selected Token
+          let xLimit = token.width / 2;
+          let yLimit = token.height / 2;
+          let radius;
+          if (token.width > token.height) {
+            radius = token.height / 4;
+          }
+          else {
+            radius = token.width / 4;
+          }
+          xSlider.value[0] = Math.round((token.left + xLimit) / (xLimit - radius) * 100);
+          ySlider.value[0] = Math.round((token.top + yLimit) / (yLimit - radius) * 100);
 
-        //Set the name input component to Token's name
-        if (displayNameInput) {
+          //Set the checked box to Token's show name bool
+          showName.setChecked(token.getShowName());
+
+          //Set the name input component to Token's name
           setNameVal(token.getName());
-        }
 
-        //Set the Select component display value to Token's size
-        if (sizeReference) {
-          setSizeVal([token.getSizeCode().toString()]);
-        }
+          //Set the Select component display value to Token's size
+          if (sizeReference) {
+            setSizeVal([token.getSizeCode().toString()]);
+          }
 
-        if(imageLinkRef)
-        {
-          setImageLinkVal(token.getCurrentURL());
-        }
-      }
-      //Values for a multi-Token selection are at default
-      //Currently only has default values but later implementations should iterate over all Tokens to
-      //check for same values to display
-      else {
-        tokenGroup = canvas.getActiveObjects();
-        for (let i = 0; i < tokenGroup.length; i++) {
-          //Should never trigger since Context Menu Event in Toolbar checks if non-token groups are present
-          if (!(tokenGroup[i] instanceof Group) || tokenGroup[i].getObjects().length <= 1 ||
-            !(tokenGroup[i].getObjects()[0] instanceof Token)) {
-            return;
+          if (imageLinkRef) {
+            setImageLinkVal(token.getCurrentURL());
           }
         }
-        //Set to Default Values
-        xSlider.value[0] = 0;
-        ySlider.value[0] = 0;
-        showName.setChecked(true);
-        if (displayNameInput) {
+        //Values for a multi-Token selection are at default
+        //Currently only has default values but later implementations should iterate over all Tokens to
+        //check for same values to display
+        else {
+          tokenGroup = canvas.getActiveObjects();
+          for (let i = 0; i < tokenGroup.length; i++) {
+            //Should never trigger since Context Menu Event in Toolbar checks if non-token groups are present
+            if (!(tokenGroup[i] instanceof Group) || tokenGroup[i].getObjects().length <= 1 ||
+              !(tokenGroup[i].getObjects()[0] instanceof Token)) {
+              return;
+            }
+          }
+          //Set to Default Values
+          xSlider.value[0] = 0;
+          ySlider.value[0] = 0;
+          showName.setChecked(true);
           setNameVal("");
-        }
-        if (sizeReference) {
-          setSizeVal(['1']);
-        }
+          
+          if (sizeReference) {
+            setSizeVal(['1']);
+          }
 
-        if(imageLinkRef)
-        {
-          setImageLinkVal('');
-        }
+          if (imageLinkRef) {
+            setImageLinkVal('');
+          }
 
+        }
       }
     }
-  }
+    //Add new event listener with new state of ContextMenuManager
+    document.addEventListener('contextmenu', listeningFunc);
 
-  //Remove any possible previous function that may cause performance issues
-  document.removeEventListener('contextmenu', listeningFunc);
-  
-  //Add new event listener with new state of ContextMenuManager
-  document.addEventListener('contextmenu', listeningFunc);
-  }, [cmManager]);
-  
+    return () => {
+      //Remove any possible previous function that may cause performance issues
+      document.removeEventListener('contextmenu', listeningFunc);
+    }
+  });
+
 
 
   return (
@@ -489,7 +515,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
           </Menu.Trigger>
           <Portal>
             <Menu.Positioner zIndex={'sticky'}>
-              <Menu.Content position="relative">
+              <Menu.Content position="relative" tabIndex={-1}>
                 <Slider.RootProvider value={xSlider} width="200px">
                   <Slider.Label>Offset X: {xSlider.value}%</Slider.Label>
                   <Slider.Control>
@@ -510,13 +536,15 @@ export function ContextMenu({ canvas, cmManager, scene }) {
                   </Slider.Control>
                 </Slider.RootProvider>
 
+
                 <Field.Root>
                   <Field.Label>Display Name</Field.Label>
-                  <Input onChange={changeName} defaultValue={displayNameVal} ref={displayNameInput}
-                    placeholder="Enter Display Name" contentEditable="true" onFocus={preventDelete}
+                  <Input onChange={changeName} value={displayNameVal}
+                    placeholder="Enter Display Name"  onFocus={preventDelete} onKeyDown={allowSpace}
                     onBlur={allowDelete} />
                 </Field.Root>
 
+                
               </Menu.Content>
             </Menu.Positioner>
           </Portal>
@@ -562,7 +590,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
                   </Select.Control>
                   <Portal>
                     <Select.Positioner>
-                      <Select.Content position={'fixed'}>
+                      <Select.Content position={'fixed'} zIndex='sticky'>
                         {sizeOptions.items.map((size) => (
                           <Select.Item item={size} key={size.value}>
                             {size.label}
@@ -578,7 +606,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
                   <Field.Label>Image Link</Field.Label>
                   <Input
                     placeholder="Enter Image Link" contentEditable="true" onFocus={preventDelete}
-                    onBlur={allowDelete} defaultValue={imageLinkVal} ref={imageLinkRef}/>
+                    onBlur={allowDelete} defaultValue={imageLinkVal} ref={imageLinkRef} />
                 </Field.Root>
 
               </Menu.Content>

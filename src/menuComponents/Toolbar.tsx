@@ -78,52 +78,6 @@ function Toolbar({ canvas, scene, cmManager }) {
     }
   }
 
-  const addImage = () => {
-    if (canvas && !mapAdded) {
-      mapAdded = true;
-      var image = document.createElement('img');
-      var source = document.createElement('source');
-      image.id = 'testMap';
-
-      //Set image URL source
-      image.appendChild(source);
-      image.src = 'https://content.encounterkit.com/cdn-cgi/image/width=1920,quality=75,format=auto/https://content.encounterkit.com/map/preview/5209421a3a339713f582dadc92ba9488.webp';
-
-      //Make sure image's link source works
-      image.onerror = function () {
-        alert('Token link is invalid or is not compatible');
-      };
-
-      //Make sure image loads before adding to Canvas
-      image.onload = function () {
-        const mapEl = new FabricImage(image);
-
-        //Scale image for battle map to fit in window as large as possible with some padding
-        if (mapEl.height >= mapEl.width && canvas.getHeight() < mapEl.height) {
-          mapEl.scaleToHeight(canvas.getHeight() - 50);
-        } else if (mapEl.width > mapEl.height && canvas.getWidth() < mapEl.width) {
-          mapEl.scaleToWidth(canvas.getWidth() - 50);
-        }
-
-        //Set map to be unable to be changed and have no controls
-        mapEl.set({
-          hoverCursor: 'default',
-          hasBorder: false,
-          hasControls: false,
-          selectable: false
-        });
-
-        //Add map onto center of canvas and at the very back layer
-        canvas.add(mapEl);
-        canvas.sendObjectToBack(mapEl);
-        canvas.centerObject(mapEl);
-
-        //Add the FabricImage object to BattleMap instance
-        scene.addImage(mapEl);
-      };
-    }
-  }
-
   //Boolean to determine whether a grid is being set
   var resizing = false;
   
@@ -269,7 +223,6 @@ function Toolbar({ canvas, scene, cmManager }) {
   return (
     <div className="Toolbar">
       <button id="rect" onClick={addShape}>Shape</button>
-      <button id="image" onClick={addImage}>Map</button>
       <button id="grid" onClick={resizeGrid}>Grid</button>
     </div>
   )

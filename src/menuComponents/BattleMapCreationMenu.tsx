@@ -76,7 +76,7 @@ export function BattleMapCreationMenu({ linkFactory, sceneCollection, setCanvas,
         setSpinState('block');
         //Make sure image's link source works
         image.onerror = function () {
-          alert('Token link is invalid or is not compatible');
+          alert('Image link is invalid or is not compatible');
           fabricCanvas.dispose();
           newCanvas.remove();
           setSpinState('none');
@@ -134,19 +134,12 @@ export function BattleMapCreationMenu({ linkFactory, sceneCollection, setCanvas,
           setCanvas(fabricCanvas);
           setMenuOpen(false);
           setCollectionUpdate(true);
-          //Listener for detecting resize
-          window.addEventListener("resize", detectResize, false);
 
-          //Resize Canvas width and height if new window size is bigger
-          //Has TypeError for this.lower which is in Fabric library. Does not cause issues with functionality
-          function detectResize() {
-            fabricCanvas.setDimensions({ width: window.innerWidth, height: window.innerHeight, });
-          }
           setSpinState('none');
           //Unmounted to free memory
-        return () => {
-          fabricCanvas.dispose();
-        }
+          return () => {
+            fabricCanvas.dispose();
+          }
         };
       }
       setSubmitState(false);
@@ -161,127 +154,6 @@ export function BattleMapCreationMenu({ linkFactory, sceneCollection, setCanvas,
       setNameVal('');
     }
   }, [menuOpen])
-
-  //Runs after detecting that new DOM element added which is the <canvas> so that 
-  //Fabric.js Canvas element can be connected
-  /*useEffect(() => {
-    
-    if (canvas && canvas instanceof Canvas) {
-      //Remove any preexisting events from previous renders. Optimize performance
-      window.removeEventListener("resize", detectResize, false);
-      window.removeEventListener("keydown", detectKeydown, false);
-      window.removeEventListener('mousedown', panCanvas);
-      window.removeEventListener('mouseup', stopPan);
-
-      //Listen for any keyboard input
-      document.addEventListener("keydown", detectKeydown, false);
-
-      //Delete Group and Single FabricObject selections when "Backspace" or "Delete" keys pressed
-      function detectKeydown(event: KeyboardEvent) {
-        //Check if key event was a Backspace
-        if (event.key == "Backspace" && contextMenuManager && contextMenuManager.getDeleteValid()) {
-          //Get all selected FabricObjects on Canvas
-          let actives = initCanvas.getActiveObjects();
-          //Check if FabricObjects have been selected
-          if (actives.length > 0) {
-            //Remove all selected FabricObjects
-            for (let i = 0; i < actives.length; i++) {
-              let token;
-              let tokenGroup;
-              let nameBox;
-              if ((tokenGroup = actives[i]) instanceof Group && (tokenGroup = tokenGroup.getObjects()).length > 1
-                && (token = tokenGroup[0]) instanceof Token) {
-                let index = initCanvas.getObjects().indexOf(actives[i]) + 1;
-                if (index > 0 && index < initCanvas.getObjects().length &&
-                  (nameBox = initCanvas.getObjects()[index]) instanceof Textbox) {
-                  initCanvas.remove(nameBox);
-                }
-              }
-              initCanvas.remove(actives[i]);
-            }
-            //Remove group selection box
-            initCanvas.discardActiveObject();
-          }
-        }
-      }
-
-      //Event for mouse event to start panning
-      window.addEventListener('mousedown', panCanvas);
-
-      function panCanvas(event: MouseEvent) {
-        //If (for right hand) right mouse button down
-        if (event.button == 2 && !panSwitch) {
-          isPanning = true;
-          panSwitch = true;
-          initCanvas.selection = false;
-        }
-      }
-
-      //Event for mouse event to stop panning
-      window.addEventListener('mouseup', stopPan);
-
-      function stopPan(event: MouseEvent) {
-        //If (for right hand) right mouse button down
-        if (event.button == 2 && isPanning) {
-          panSwitch = false;
-          isPanning = false;
-          initCanvas.selection = true;
-        }
-      }
-
-      //Pan Viewport
-      initCanvas.on('mouse:move', (event) => {
-        if (isPanning) {
-          var vpt = initCanvas.viewportTransform;
-
-          //pan in x direction
-          vpt[4] += event.viewportPoint.x - mouseLocation.x;
-
-          //pan in y direction
-          vpt[5] += event.viewportPoint.y - mouseLocation.y;
-
-          let center = initCanvas.getCenterPoint()
-          let corners = initCanvas.calcViewportBoundaries();
-
-          //Add panning range in future
-
-          initCanvas.setViewportTransform(vpt);
-          initCanvas.requestRenderAll();
-        }
-        mouseLocation = event.viewportPoint;
-      });
-
-      //Zoom with scrollwheel
-      initCanvas.on('mouse:wheel', function (opt) {
-        mouseLocation = opt.viewportPoint;
-        //Current Zoom Value
-        var delta = opt.e.deltaY;
-        var zoom = initCanvas.getZoom();
-        //New Zoom Value
-        zoom *= 0.999 ** delta;
-        //Range of Zoom Value
-        if (zoom > 20) zoom = 20;
-        if (zoom < 0.3) zoom = 0.3;
-        //Make sure mouse location is found    
-        if (mouseLocation) {
-          //Zoom to where mouse is
-          initCanvas.zoomToPoint(mouseLocation, zoom);
-          opt.e.preventDefault();
-          opt.e.stopPropagation();
-        }
-      });
-
-      //Rendering
-      initCanvas.renderAll();
-      setCanvas(initCanvas);
-
-      //Unmounted to free memory
-      return () => {
-        initCanvas.dispose();
-      }
-
-    }
-  }, [submitState]);*/
 
 
   const updateName = (event) => {
@@ -348,7 +220,7 @@ export function BattleMapCreationMenu({ linkFactory, sceneCollection, setCanvas,
                 </Button>
                 <Box pos={'absolute'} inset='0' bg='bg/80' display={spinState}>
                   <Center h='full'>
-                    <Spinner size='xl'/>
+                    <Spinner size='xl' />
                   </Center>
                 </Box>
               </Box>

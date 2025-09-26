@@ -272,6 +272,13 @@ export class Token<
         return this.imageURLs[this.currentImage][1];
     }
 
+    public cloneTokenMembers(copyToken: Token): boolean {
+        this.imageURLs = copyToken.imageURLs
+        this.name = copyToken.name;
+        this.sizeCode = copyToken.sizeCode;
+        return true;
+    }
+
     //Method that adds url string to be tracked and changes the Token's image
     public setNewImage(url: string): boolean {
         return false;

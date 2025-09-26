@@ -24,13 +24,10 @@ function Board() {
   const [tokenCollection, setTokenCollection] = useState<[string, Token[]][]>([['My Tokens', []]]);
 
   //track Mouse Canvas Coordinate
-  const [mouseLocation, setMouseLocation] = useState<Point>();
-  const [mouseLocationBool, setMouseLocationBool] = useState<boolean>(false);
+  const mouseLocation = useRef<Point>(null);
 
   //Boolean to determine whether to Pan
-  const [isPanning, setIsPanning] = useState<boolean>(false);
-
-  const [panTrigger, setPanTrigger] = useState<boolean>(false);
+  const isPanning = useRef<boolean>(false);
 
   //An array containing the name of a scene collection and an array of Scenes. For scenes not associated
   //with any collection, the name is empty and the Scene arrray only contains the Scene by itself 
@@ -42,72 +39,7 @@ function Board() {
 
   const [resizeBool, setResizeBool] = useState<boolean>(false);
 
-  const [deleteBool, setDeleteBool] = useState<boolean>(false);
-
-
-  //Resize all canvas's in the collection to new width and height if new window size is bigger.
-  //Has TypeError for this.lower which is in Fabric library. Does not cause issues with functionality
-  useEffect(() => {
-    if (resizeBool) {
-      for (let i = 0; i < canvasCollection.length; i++) {
-        if (canvasCollection[i][0] == '') {
-          let myCanvas = canvasCollection[i][1][0];
-          myCanvas.setDimensions({ width: window.innerWidth, height: window.innerHeight, });
-        }
-        else {
-          for (let j = 0; j < canvasCollection[i][1].length; j++) {
-            let myCanvas = canvasCollection[i][1][j];
-            myCanvas.setDimensions({ width: window.innerWidth, height: window.innerHeight, });
-          }
-        }
-      }
-      setResizeBool(false);
-    }
-  }, [resizeBool])
-
-
-  useEffect(() => {
-    if (deleteBool && canvas) {
-      //Get all selected FabricObjects on Canvas
-      let actives = canvas.getActiveObjects();
-      //Check if FabricObjects have been selected
-      if (actives.length > 0) {
-        //Remove all selected FabricObjects
-        for (let i = 0; i < actives.length; i++) {
-          let token;
-          let tokenGroup;
-          let nameBox;
-          if ((tokenGroup = actives[i]) instanceof Group && (tokenGroup = tokenGroup.getObjects()).length > 1
-            && (token = tokenGroup[0]) instanceof Token) {
-            let index = canvas.getObjects().indexOf(actives[i]) + 1;
-            if (index > 0 && index < canvas.getObjects().length &&
-              (nameBox = canvas.getObjects()[index]) instanceof Textbox) {
-              canvas.remove(nameBox);
-            }
-          }
-          canvas.remove(actives[i]);
-        }
-        //Remove group selection box
-        canvas.discardActiveObject();
-      }
-      setDeleteBool(false);
-    }
-
-  }, [deleteBool])
-
-  useEffect(() => {
-    if (panTrigger && canvas) {
-      if (isPanning) {
-        setIsPanning(false);
-        canvas.selection = true;
-      }
-      else {
-        setIsPanning(true);
-        canvas.selection = false;
-      }
-    }
-  }, [panTrigger])
-
+  console.log('new render')
 
   //Runs after detecting that new DOM element added which is the <canvas> so that 
   //Fabric.js Canvas element can be connected
@@ -122,16 +54,26 @@ function Board() {
       event.preventDefault();
     });
 
-    //Listener for detecting resize
-    window.addEventListener("resize", () => { setResizeBool(true) });
+    //Mouse event that indicates panning should be allowed
+    window.addEventListener('mousedown', panCanvas);
+    function panCanvas(event: MouseEvent) {
+      //If (for right hand) right mouse button down
+      if (event.button == 2) {
+        isPanning.current = true;
+      }
+    }
+
+    //Event for mouse event to stop panning
+    window.addEventListener('mouseup', stopPan);
+    function stopPan(event: MouseEvent) {
+      //If (for right hand) right mouse button down
+      if (event.button == 2) {
+        isPanning.current = false;
+      }
+    }
 
     let currentCanvas = document.getElementById('scene_0');
     if (currentCanvas) {
-      //Remove any preexisting events from previous renders. Optimize performance
-      window.removeEventListener("keydown", detectKeydown, false);
-      window.removeEventListener('mousedown', panCanvas);
-      window.removeEventListener('mouseup', stopPan);
-
       const initCanvas = new Canvas('scene_0', {
         width: window.innerWidth,
         height: window.innerHeight,
@@ -141,78 +83,43 @@ function Board() {
 
       setCanvasCollection([['', [initCanvas]]]);
 
-      //Listen for any keyboard input
-      document.addEventListener("keydown", detectKeydown, false);
+      var image = document.createElement('img');
+      var source = document.createElement('source');
 
-      //Delete Group and Single FabricObject selections when "Backspace" or "Delete" keys pressed
-      function detectKeydown(event: KeyboardEvent) {
-        //Check if key event was a Backspace
-        if (event.key == "Backspace" && contextMenuManager && contextMenuManager.getDeleteValid()) {
-          setDeleteBool(true);
+      //Set image URL source
+      image.appendChild(source);
+      image.src = 'https://1drv.ms/i/c/f3cddce27969a886/IQS5odtxa8NwSaFIM6eGBULFAd4w_Rj6p8iviKFIV5AhzKs';
+      //Make sure image's link source works
+      image.onerror = function () {
+        alert('Image link is invalid or is not compatible');
+      };
+
+      //Make sure image loads before adding to Canvas
+      image.onload = function () {
+        const mapEl = new FabricImage(image);
+
+        //Scale image for battle map to fit in window as large as possible with some padding
+        if (mapEl.height >= mapEl.width && initCanvas.getHeight() < mapEl.height) {
+          mapEl.scaleToHeight(initCanvas.getHeight() - 50);
+        } else if (mapEl.width > mapEl.height && initCanvas.getWidth() < mapEl.width) {
+          mapEl.scaleToWidth(initCanvas.getWidth() - 50);
         }
-      }
 
-      //Event for mouse event to start panning
-      window.addEventListener('mousedown', panCanvas);
+        //Set map to be unable to be changed and have no controls
+        mapEl.set({
+          hoverCursor: 'default',
+          hasBorder: false,
+          hasControls: false,
+          selectable: false
+        });
+        //Add map onto center of canvas and at the very back layer
+        initCanvas.add(mapEl);
+        initCanvas.sendObjectToBack(mapEl);
+        initCanvas.centerObject(mapEl);
 
-      function panCanvas(event: MouseEvent) {
-        //If (for right hand) right mouse button down
-        if (event.button == 2) {
-          setPanTrigger(true);
-        }
-      }
-
-      //Event for mouse event to stop panning
-      window.addEventListener('mouseup', stopPan);
-      function stopPan(event: MouseEvent) {
-        //If (for right hand) right mouse button down
-        if (event.button == 2) {
-          setPanTrigger(true);
-        }
-      }
-
-      //Pan Viewport change this!!!
-      initCanvas.on('mouse:move', (event) => {
-        if (isPanning) {
-          var vpt = initCanvas.viewportTransform;
-
-          //pan in x direction
-          vpt[4] += event.viewportPoint.x - mouseLocation.x;
-
-          //pan in y direction
-          vpt[5] += event.viewportPoint.y - mouseLocation.y;
-
-          let center = initCanvas.getCenterPoint()
-          let corners = initCanvas.calcViewportBoundaries();
-
-          //Add panning range in future
-
-          initCanvas.setViewportTransform(vpt);
-          initCanvas.requestRenderAll();
-        }
-        setMouseLocation(event.viewportPoint);
-      });
-
-      //Zoom with scrollwheel
-      initCanvas.on('mouse:wheel', (opt) => {
-        setMouseLocation(opt.viewportPoint);
-
-        //Current Zoom Value
-        var delta = opt.e.deltaY;
-        var zoom = initCanvas.getZoom();
-        //New Zoom Value
-        zoom *= 0.999 ** delta;
-        //Range of Zoom Value
-        if (zoom > 20) zoom = 20;
-        if (zoom < 0.3) zoom = 0.3;
-        //Make sure mouse location is found    
-        if (mouseLocation) {
-          //Zoom to where mouse is
-          initCanvas.zoomToPoint(mouseLocation, zoom);
-          opt.e.preventDefault();
-          opt.e.stopPropagation();
-        }
-      });
+        //Add the FabricImage object to BattleMap instance
+        newMap.addImage(mapEl);
+      };
 
       //Rendering
       initCanvas.renderAll();
@@ -225,36 +132,147 @@ function Board() {
     }
   }, []);
 
-  //Function to enable grid snapping and Token moving
-  const handleMove = (event) => {
-    if (canvas) {
-      if (currentScene && currentScene instanceof BattleMap &&
-        currentScene.getGridSnap() && currentScene.getSmallestGridUnit() > 0) {
-        handleObjectSnapping(canvas, event.target, currentScene);
-      }
-      else {
-        handleObjectMoving(canvas, event.target);
-      }
-    }
-  };
-
-  //Update event whenever currentScene or canvas is updated so state values are up-to-date
+  //Update event whenever currentScene or canvas is updated so user view features apply to the current canvas
   useEffect(() => {
     if (canvas) {
-      canvas.off('object:moving', handleMove);
+      //Delete Group and Single FabricObject selections when "Backspace" or "Delete" keys pressed
+      function detectKeydown(event: KeyboardEvent) {
+        //Check if key event was a Backspace
+        if (event.key == "Backspace" && contextMenuManager && contextMenuManager.getDeleteValid()) {
+          if (canvas) {
+            //Get all selected FabricObjects on Canvas
+            let actives = canvas.getActiveObjects();
+            //Check if FabricObjects have been selected
+            if (actives.length > 0) {
+              //Remove all selected FabricObjects
+              for (let i = 0; i < actives.length; i++) {
+                let token;
+                let tokenGroup;
+                let nameBox;
+                if ((tokenGroup = actives[i]) instanceof Group && (tokenGroup = tokenGroup.getObjects()).length > 1
+                  && (token = tokenGroup[0]) instanceof Token) {
+                  let index = canvas.getObjects().indexOf(actives[i]) + 1;
+                  if (index > 0 && index < canvas.getObjects().length &&
+                    (nameBox = canvas.getObjects()[index]) instanceof Textbox) {
+                    canvas.remove(nameBox);
+                  }
+                }
+                canvas.remove(actives[i]);
+              }
+              //Remove group selection box
+              canvas.discardActiveObject();
+            }
+          }
+        }
+      }
+      document.addEventListener('keydown', detectKeydown);
+
+      //Function to enable grid snapping and Token moving
+      const handleMove = (event) => {
+        if (canvas) {
+          if (currentScene && currentScene instanceof BattleMap &&
+            currentScene.getGridSnap() && currentScene.getSmallestGridUnit() > 0) {
+            handleObjectSnapping(canvas, event.target, currentScene);
+          }
+          else {
+            handleObjectMoving(canvas, event.target);
+          }
+        }
+      };
       canvas.on('object:moving', handleMove);
+
+      //Function to pan across the canvas
+      const panView = (event) => {
+        if (isPanning.current && mouseLocation.current) {
+          var vpt = canvas.viewportTransform;
+
+          //pan in x direction
+          vpt[4] += event.viewportPoint.x - mouseLocation.current.x;
+
+          //pan in y direction
+          vpt[5] += event.viewportPoint.y - mouseLocation.current.y;
+
+          //let center = initCanvas.getCenterPoint()
+          //let corners = initCanvas.calcViewportBoundaries();
+
+          //Add panning range in future
+
+          canvas.setViewportTransform(vpt);
+          canvas.requestRenderAll();
+        }
+        mouseLocation.current = event.viewportPoint;
+      }
+
+      canvas.on('mouse:move', panView);
+
+      //Function to zoom in or out of the canvas using the scroll wheel
+      const zoomView = (opt) => {
+        mouseLocation.current = opt.viewportPoint;
+
+        //Current Zoom Value
+        var delta = opt.e.deltaY;
+        var zoom = canvas.getZoom();
+        //New Zoom Value
+        zoom *= 0.999 ** delta;
+        //Range of Zoom Value
+        if (zoom > 20) zoom = 20;
+        if (zoom < 0.3) zoom = 0.3;
+        //Make sure mouse location is found    
+        if (mouseLocation.current) {
+          //Zoom to where mouse is
+          canvas.zoomToPoint(mouseLocation.current, zoom);
+          //opt.e.preventDefault();
+          //opt.e.stopPropagation();
+        }
+      }
+
+      //Zoom with scrollwheel
+      canvas.on('mouse:wheel', zoomView);
+
+      //Resize all canvases to fit the window. Runs whenever scene is switched so all scenes match in size
+      for (let i = 0; i < canvasCollection.length; i++) {
+        if (canvasCollection[i][0] == '') {
+          let myCanvas = canvasCollection[i][1][0];
+          myCanvas.setDimensions({ width: window.innerWidth, height: window.innerHeight, });
+        }
+        else {
+          for (let j = 0; j < canvasCollection[i][1].length; j++) {
+            let myCanvas = canvasCollection[i][1][j];
+            myCanvas.setDimensions({ width: window.innerWidth, height: window.innerHeight, });
+          }
+        }
+      }
+
+      //Detect window resize and resize the currently viewable canvas which must respond to minute and numerous changes without
+      //too much computation time.
+      const resizeCanvas = () => {
+        if (canvas)
+          canvas.setDimensions({ width: window.innerWidth, height: window.innerHeight, });
+      }
+
+      window.addEventListener('resize', resizeCanvas);
+
+      //When canvas is updated make sure previous canvas viewing features are
+      //turned off
+      return () => {
+        canvas.off('object:moving', handleMove);
+        canvas.off('mouse:wheel', zoomView);
+        canvas.off('mouse:move', panView);
+        document.removeEventListener('keydown', detectKeydown);
+        window.removeEventListener('resize', resizeCanvas);
+      }
     }
 
-  }, [currentScene, canvas])
+  }, [canvas, currentScene]);
 
-  useEffect(() => {
+  /*useEffect(() => {
     console.log('scene collection')
     console.log(sceneCollection);
     if (sceneCollection.length > 0)
       console.log(sceneCollection[0][1])
     console.log('canvas collection')
     console.log(canvasCollection)
-  });
+  });*/
 
   return (
     <div className="Board">

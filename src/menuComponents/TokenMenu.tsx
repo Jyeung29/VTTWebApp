@@ -175,10 +175,13 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
     //Update event listeners to display and hide context menu using the latest context 
     // menu boolean's state
     useEffect(() => {
-        document.removeEventListener('contextmenu', cmFunction);
-        document.removeEventListener('mousedown', mouseDownFunction);
+
         document.addEventListener('contextmenu', cmFunction);
         document.addEventListener('mousedown', mouseDownFunction);
+        return () => {
+            document.removeEventListener('contextmenu', cmFunction);
+            document.removeEventListener('mousedown', mouseDownFunction);
+        }
     }, [cmActive]);
 
     //Function called by the event listener for the click event added by the collectio rename button
@@ -197,15 +200,12 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
         //Check if renaming element is displayed and may need to be repositioned
         if (renameDisplay && renameDisplay == 'flex' && collectionIndex >= 0 && tokenCollection
             && tokenCollection.length > collectionIndex) {
-            console.log('trigger')
             //Get the position value that include 'left' to position the renaming element
             let rect = document.querySelector('.TokenCollection_' + collectionIndex)?.getBoundingClientRect();
             //Position the renaming element over the target collection to be renamed
             var renameField = document.querySelector(".RenameField");
-            console.log(rect)
             if (rect && renameField && renameField instanceof HTMLElement) {
                 renameField.style.top = `${rect.top}px`;
-                console.log('change')
             }
         }
     })
@@ -289,9 +289,6 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                                 let rect = document.querySelector('.TokenCollection_' + i)?.getBoundingClientRect();
                                 //Position the renaming element over the target collection to be renamed
                                 var renameField = document.querySelector(".RenameField");
-                                console.log(collectionIndex)
-                                console.log(i)
-                                console.log(document.querySelector('.TokenCollection_' + i))
                                 if (rect && renameField && renameField instanceof HTMLElement) {
                                     renameField.style.top = `${rect.top}px`;
                                 }
@@ -407,16 +404,15 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
         if (tryAddToken) {
             //Function for adding a base Token in the token collection onto the current Canvas
             const addToken = async () => {
-                console.log('effect')
                 if (canvas && canvas instanceof Canvas) {
-                    console.log('trigger')
                     let selectToken = tokenCollection[currentIndex[0]][1][currentIndex[1]];
                     //clone() only copies attributes of FabricImage. Must manually set Token attributes
                     let tokenEl = await selectToken.clone();
-                    tokenEl.setSizeCode(selectToken.getSizeCode());
-                    tokenEl.setName(selectToken.getName());
+                    tokenEl.cloneTokenMembers(selectToken);
+                    //tokenEl.setSizeCode(selectToken.getSizeCode());
+                    //tokenEl.setName(selectToken.getName());
+                    //tokenEl.copyURLArray(selectToken);
                     if (tokenEl) {
-                        console.log('token')
                         //Calculate Largest Radius Fitting in Image with Padding
                         let newRadius: number;
                         if (tokenEl.width >= tokenEl.height) {
@@ -477,7 +473,6 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                         //Add Token group to the canvas
                         canvas.add(group);
                         canvas.centerObject(group);
-                        console.log('added')
 
                         //Add textbox to canvas
                         //Align textbox to bottom center of the Token
@@ -491,7 +486,8 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
 
                         //Alert if Token was not added to Battle Map correctly
                         if (!scene.addToken(group, [nameBox])) {
-                            alert("Token not added correctly");
+                            alert("Error: Token not added correctly");
+                            return;
                         }
 
                         //When Token is selected, add a listener for the context menu
@@ -525,7 +521,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                                     });
                                     groupBox.on('mouseout', () => {
                                         document.removeEventListener('contextmenu', cmManager.updateContextMenuPosition);
-                                    })
+                                    });
                                 }
                                 else {
                                     cmManager.setMultiSelectionBool(false);
@@ -566,7 +562,6 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                 }
             }
             addToken();
-
             setTryAddToken(false);
         }
     }, [tryAddToken]);
@@ -648,7 +643,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
             <div className='BaseTokenContextMenu' >
                 <Flex className='BaseTokenElement' gap="0" direction="column"
                     backgroundColor={'rgba(240, 240, 240, 1)'} alignContent='center' width={200}>
-                    <Button className='BaseTokenElement' onClick={() => {setTryAddToken(true)}}>Add to Scene</Button>
+                    <Button className='BaseTokenElement' onClick={() => { setTryAddToken(true) }}>Add to Scene</Button>
                     <Menu.Root positioning={{ placement: "right-start" }}>
                         <Menu.Trigger asChild>
                             <Button variant="outline" size="sm">Add to a Collection</Button>
