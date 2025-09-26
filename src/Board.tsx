@@ -31,21 +31,20 @@ function Board() {
 
   //An array containing the name of a scene collection and an array of Scenes. For scenes not associated
   //with any collection, the name is empty and the Scene arrray only contains the Scene by itself 
-  const [sceneCollection, setSceneCollection] = useState<[string, Scene[]][]>([]);
+  //const [sceneCollection, setSceneCollection] = useState<[string, Scene[]][]>([]);
 
-  const [canvasCollection, setCanvasCollection] = useState<[string, Canvas[]][]>([]);
+  const [canvasCollection, setCanvasCollection] = useState<[string, Canvas[], Scene[]][]>([]);
 
   const [sceneIDMap, setSceneIDMap] = useState<Map<number, boolean>>(new Map<number, boolean>());
 
   const [resizeBool, setResizeBool] = useState<boolean>(false);
 
-  console.log('new render')
+  //console.log('new render')
 
   //Runs after detecting that new DOM element added which is the <canvas> so that 
   //Fabric.js Canvas element can be connected
   useEffect(() => {
     var newMap = new BattleMap("Test Map", 0);
-    setSceneCollection([['', [newMap]]]);
     setCurrentScene(newMap);
     let newIDMap = sceneIDMap;
     newIDMap.set(0, true);
@@ -81,7 +80,7 @@ function Board() {
         enableRetinaScaling: true
       });
 
-      setCanvasCollection([['', [initCanvas]]]);
+      setCanvasCollection([['', [initCanvas], [newMap]]]);
 
       var image = document.createElement('img');
       var source = document.createElement('source');
@@ -179,7 +178,12 @@ function Board() {
           }
         }
       };
-      canvas.on('object:moving', handleMove);
+
+      if(currentScene && currentScene instanceof BattleMap)
+      {
+        canvas.on('object:moving', handleMove);
+      }
+      
 
       //Function to pan across the canvas
       const panView = (event) => {
@@ -255,7 +259,10 @@ function Board() {
       //When canvas is updated make sure previous canvas viewing features are
       //turned off
       return () => {
+        if(currentScene && currentScene instanceof BattleMap)
+      {
         canvas.off('object:moving', handleMove);
+      }
         canvas.off('mouse:wheel', zoomView);
         canvas.off('mouse:move', panView);
         document.removeEventListener('keydown', detectKeydown);
@@ -277,12 +284,11 @@ function Board() {
   return (
     <div className="Board">
       <div className="ToolMenus">
-        <Toolbar canvas={canvas} scene={currentScene} cmManager={contextMenuManager} />
+        <Toolbar canvas={canvas} scene={currentScene} cmManager={contextMenuManager} canvasCollection={canvasCollection} />
         <SidebarMenu canvas={canvas} cmManager={contextMenuManager} scene={currentScene}
           setCurrentScene={setCurrentScene} setCanvas={setCanvas}
           tokenCollection={tokenCollection} setTokenCollection={setTokenCollection}
           linkFactory={linkFactory} sceneIDMap={sceneIDMap} setSceneIDMap={setSceneIDMap}
-          sceneCollection={sceneCollection} setSceneCollection={setSceneCollection}
           currentCanvasID={currentCanvasID} setCurrentCanvasID={setCurrentCanvasID}
           canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection} />
       </div>

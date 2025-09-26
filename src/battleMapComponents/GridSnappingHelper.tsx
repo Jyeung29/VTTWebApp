@@ -18,7 +18,7 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
     }
 
     //Check if current Battle Map set so elements snap. Return if not.
-    if(!map.getGridSnap()) return;
+    if(!map.getGridSnap() || !map.getGridPlaced()) return;
 
     //Get coordinates of base grid unit to calculate snapping coordinates
     let unitCenter = map.getCenterPoint();

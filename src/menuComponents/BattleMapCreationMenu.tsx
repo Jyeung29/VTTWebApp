@@ -17,8 +17,8 @@ import BattleMap from '../battleMapComponents/BattleMap';
 import '../index.css';
 import { ImageLinkFactory } from '../ImageLinkFactory';
 
-export function BattleMapCreationMenu({ linkFactory, sceneCollection, setCanvas, canvasCollection, setCanvasCollection,
-  setSceneCollection, sceneIDMap, setSceneIDMap, currentCanvasID, setCurrentCanvasID, setCurrentScene, setCollectionUpdate }) {
+export function BattleMapCreationMenu({ linkFactory, setCanvas, canvasCollection, setCanvasCollection,
+  sceneIDMap, setSceneIDMap, currentCanvasID, setCurrentCanvasID, setCurrentScene, setCollectionUpdate }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [spinState, setSpinState] = useState('none');
   const [checked, setChecked] = useState(true);
@@ -121,11 +121,10 @@ export function BattleMapCreationMenu({ linkFactory, sceneCollection, setCanvas,
             prevDiv.style.display = 'none';
           }
 
-          let newCollection = sceneCollection;
-          newCollection.push(['', [newBattleMap]]);
-          setSceneCollection(newCollection);
+          //let newCollection = sceneCollection;
+          //newCollection.push(['', [newBattleMap]]);
           let newCanvasCollection = canvasCollection;
-          newCanvasCollection.push(['', [fabricCanvas]]);
+          newCanvasCollection.push(['', [fabricCanvas], [newBattleMap]]);
           setCanvasCollection(newCanvasCollection);
 
           //Update the current canvas ID being used

@@ -6,6 +6,8 @@ import {
 import { Token } from '../tokenComponents/Token';
 import { handleObjectSnapping } from '../battleMapComponents/GridSnappingHelper';
 import { handleObjectMoving } from '../battleMapComponents/TokenMovingHelper';
+import { useEffect, useRef, useState } from 'react';
+import { Button } from '@chakra-ui/react';
 
 /*
 Function component Toolbar is displayed at the top of the user's window and provides a GM with tools to
@@ -14,15 +16,12 @@ adding shapes, setting grids, and dice rolls. Different TableTopRoleplayingGame 
 toolbar to display.
 */
 
-function Toolbar({ canvas, scene, cmManager }) {
+function Toolbar({ canvas, scene, cmManager, canvasCollection }) {
   //Array of references to TableTopRoleplayingGame exclusive features. Is not implemented currently.
-  const features = [];
+  const [featuresJSX, setFeaturesJSX] = useState([]);
 
-  //Boolean that checks whether map image has been added. Used for grid creation. Will be removed when Scene Switching functionality is implemented.
-  var mapAdded = false;
-
-  //Boolean that checks whether any map objects have been added. Only switches to true once.
-  var objectAdded = false;
+  const [gridTrigger, setGridTrigger] = useState<boolean>(false);
+  
 
   //Function called by a toolbar button to add a shape. Currently only adds a preset circle. The circle is able to scale with or without a grid.
   const addShape = () => {
@@ -32,7 +31,7 @@ function Toolbar({ canvas, scene, cmManager }) {
       let unitMultiplier = 4;
 
       //If grid has been set, set height and width to scale with multiplier
-      if (mapAdded && scene.getGridUnitHeight() != -1 && scene.getGridUnitWidth() != -1) {
+      if (scene.getGridUnitHeight() != -1 && scene.getGridUnitWidth() != -1) {
         newHeight = scene.getGridUnitHeight() * unitMultiplier;
         newWidth = scene.getGridUnitWidth() * unitMultiplier;
       }
@@ -49,7 +48,7 @@ function Toolbar({ canvas, scene, cmManager }) {
       });
 
       //If grid has not been set and the map image has been added, scale the shape to the map image
-      if(mapAdded && scene.getSmallestGridUnit() <= 0)
+      if(scene.getSmallestGridUnit() <= 0)
       {
         circle.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 15 * unitMultiplier);
       }
@@ -60,61 +59,83 @@ function Toolbar({ canvas, scene, cmManager }) {
 
       //Add to the BattleMap to track
       scene.addObject(circle, unitMultiplier);
-
-      //If no objects have been added, add event to handle all object grid snapping and non-snapping movement
-      //Will be removed once Scene Switching has been implemented
-      if (!objectAdded) {
-        canvas.on('object:moving', (event) => {
-          if(gridSet && scene.getGridSnap())
-          {
-            handleObjectSnapping(canvas, event.target, scene);
-          }
-          else
-          {
-            handleObjectMoving(canvas, event.target);
-          }
-        });
-      }
     }
   }
 
   //Boolean to determine whether a grid is being set
-  var resizing = false;
-  
-  //The user manipulatable rectangle that is the base unit of the grid
-  var resizeRect: Rect;
+  const [resizing, setResizing] = useState<boolean>(false);
 
-  //Boolean set when a grid has been created
-  var gridSet = false;
-  
-  //The Group of lines drawn onto the Canvas
-  var grid: Group = new Group([], { selectable: false, hasControls: false });
+  useEffect(() => {
+    let sidebar = document.getElementsByClassName('GridSettingHiddenElement');
+    if(resizing && sidebar)
+    {
+      for(let i = 0; i < sidebar.length; i++)
+      {
+        let element = sidebar[i] as HTMLElement;
+        element.style.display = 'none';
+      }
+    }
+    else if(sidebar){
+      for(let i = 0; i < sidebar.length; i++)
+      {
+        let element = sidebar[i] as HTMLElement;
+        element.style.display = 'block';
+      }
+    }
+  }, [resizing]);
 
-  //Function called by a toolbar button to create a grid.
-  var resizeGrid = () => {
-    //If no preexisting grid rect to use, create a new one
-    if (!resizeRect) {
-      resizeRect = new Rect({
+  useEffect(() => {
+    if(gridTrigger)
+    {
+      //If no preexisting grid rect to use on the canvas, create a new one for the canvas
+    if (!scene.getResizeRect()) {
+      let resizeRect = new Rect({
         lockRotation: true, lockScalingFlip: true, lockSkewingX: true, lockSkewingY: true,
         fill: 'transparent', strokeWidth: 1, stroke: 'red', height: window.innerHeight / 40,
       });
       resizeRect.width = resizeRect.height;
+      scene.setResizeRect(resizeRect);
     }
 
     //If no resizing occurred
     if (!resizing) {
-      if (gridSet) {
-        canvas.remove(grid);
+      //Make sure grid Group is not null and grid has been placed before
+      if (scene.getGridPlaced() && scene.getGridGroup()) {
+        canvas.remove(scene.getGridGroup());
+        let grid = scene.getGridGroup();
+
+        //Remove all the lines in the grid
         while (!grid.isEmpty()) {
           grid.remove(grid._objects[0]);
         }
-        gridSet = false;
+
+        //Indicate Grid has not been placed on the canvas
+        scene.setGridPlaced(false);
       }
-      canvas.add(resizeRect);
-      canvas.centerObject(resizeRect);
-      resizing = true;
+      //Add the resizing rectangle to the canvas
+      canvas.add(scene.getResizeRect());
+      canvas.centerObject(scene.getResizeRect());
+
+      //Deselect any objects on the canvas. Hides any contexts menus possibly opened
+      canvas.discardActiveObject();
+      
+      //Trigger useeffect to hide all non-relevant elements to grid placement
+      setResizing(true);
+
+      //Make sure all objects in the canvas are not selectable during the grid resizing process
+      let allObjects = canvas.getObjects();
+      //Account for the map image and the resizing rectangle
+      if(allObjects.length > 2)
+      {
+        //Skip map image and resizing rectangle and make elements unselectable
+        for(let i = 1; i < allObjects.length - 1; i++)
+        {
+          allObjects[i].selectable = false;
+        }
+      }
     }
-    else if (canvas.item(0) instanceof FabricImage) {
+    else if (canvas.item(0) instanceof FabricImage && scene.getResizeRect()) {
+      let resizeRect = scene.getResizeRect();
       //Get canvas coordinates of the 4 corners of both the map and resize rectangle
       let map = canvas.item(0);
       let mapBounds: TCornerPoint = map.aCoords;
@@ -134,14 +155,16 @@ function Toolbar({ canvas, scene, cmManager }) {
         return;
       }
 
+      let grid = scene.getGridGroup();
+
       //Draw vertical lines to right
       while (true) {
-        if (totalDistance + rectBounds.bl.x < mapBounds.br.x) {
+        if (totalDistance + rectBounds.bl.x < mapBounds.br.x && grid) {
           let newLine = new Line([rectBounds.bl.x + totalDistance, mapBounds.bl.y,
           rectBounds.bl.x + totalDistance, mapBounds.tl.y],
             { selectable: false, hasControls: false, stroke: 'red', strokeWidth: 1, opacity: 0.4 }
           );
-          grid.add(newLine);
+          scene.getGridGroup().add(newLine);
           totalDistance += xDistance;
         } else {
           break;
@@ -153,7 +176,7 @@ function Toolbar({ canvas, scene, cmManager }) {
 
       //Draw vertical lines to left
       while (true) {
-        if (rectBounds.bl.x - totalDistance > mapBounds.bl.x) {
+        if (rectBounds.bl.x - totalDistance > mapBounds.bl.x && grid) {
           let newLine = new Line([rectBounds.bl.x - totalDistance, mapBounds.bl.y,
           rectBounds.bl.x - totalDistance, mapBounds.tl.y],
             { selectable: false, hasControls: false, stroke: 'red', strokeWidth: 1, opacity: 0.4 }
@@ -171,7 +194,7 @@ function Toolbar({ canvas, scene, cmManager }) {
       //Draw horizontal line to above
       while (true) {
         //Fabric.js has y coordinates increase down
-        if (rectBounds.bl.y - totalDistance > mapBounds.tl.y) {
+        if (rectBounds.bl.y - totalDistance > mapBounds.tl.y && grid) {
           let newLine = new Line([mapBounds.bl.x, rectBounds.bl.y - totalDistance,
           mapBounds.br.x, rectBounds.bl.y - totalDistance],
             { selectable: false, hasControls: false, stroke: 'red', strokeWidth: 1, opacity: 0.4 }
@@ -189,7 +212,7 @@ function Toolbar({ canvas, scene, cmManager }) {
       //Draw horizontal line to below
       while (true) {
         //Fabric.js has y coordinates increase down
-        if (rectBounds.bl.y + totalDistance < mapBounds.bl.y) {
+        if (rectBounds.bl.y + totalDistance < mapBounds.bl.y && grid) {
           let newLine = new Line([mapBounds.bl.x, rectBounds.bl.y + totalDistance,
           mapBounds.br.x, rectBounds.bl.y + totalDistance],
             { selectable: false, hasControls: false, stroke: 'red', strokeWidth: 1, opacity: 0.4 }
@@ -202,10 +225,22 @@ function Toolbar({ canvas, scene, cmManager }) {
       }
 
       //Set true to remove grid lines on future resizes
-      gridSet = true;
+      scene.setGridPlaced(true);
 
       //Set false to allow new grid resizes on button press
-      resizing = false;
+      setResizing(false);
+
+      //Make sure all objects in the canvas are not selectable during the grid resizing process
+      let allObjects = canvas.getObjects();
+      //Account for the map image and the resizing rectangle
+      if(allObjects.length > 2)
+      {
+        //Skip map image and resizing rectangle and make elements unselectable
+        for(let i = 1; i < allObjects.length - 1; i++)
+        {
+          allObjects[i].selectable = true;
+        }
+      }
 
       //Add grid to canvas
       canvas.add(grid);
@@ -218,12 +253,21 @@ function Toolbar({ canvas, scene, cmManager }) {
       //Remove the grid resizing rectangle
       canvas.remove(resizeRect);
     }
+      setGridTrigger(false);
+    }
+  }, [gridTrigger]);
+
+  //Function called by a toolbar button to create a grid.
+  var resizeGrid = () => {
+    
   }
 
   return (
     <div className="Toolbar">
-      <button id="rect" onClick={addShape}>Shape</button>
-      <button id="grid" onClick={resizeGrid}>Grid</button>
+      <div className='GridSettingHiddenElement'>
+        <Button id="shape" onClick={addShape}>Shape</Button>
+      </div>
+      <Button id="grid" onClick={() => {setGridTrigger(true);}}>Grid</Button>
     </div>
   )
 }

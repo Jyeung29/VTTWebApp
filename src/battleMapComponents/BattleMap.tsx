@@ -1,4 +1,4 @@
-import { Canvas, Group, type TCornerPoint, Point, FabricImage, FabricObject, Circle } from 'fabric';
+import { Canvas, Group, type TCornerPoint, Point, FabricImage, FabricObject, Circle, Line, Rect } from 'fabric';
 import { useState } from 'react'
 import { Token } from '../tokenComponents/Token';
 import Scene from '../SceneComponents/Scene';
@@ -26,6 +26,12 @@ class BattleMap extends Scene {
   // want to have grid snapping in the Sidebar Menu.
   protected gridSnap: boolean = true;
 
+  protected gridGroup: Group = new Group([], { selectable: false, hasControls: false });
+
+  protected resizeRect: Rect;
+
+  protected gridPlaced: boolean = false;
+
   //The non-zero numbers of a single grid unit's width and height. Used for
   // performing snapping calculations in GridSnappingHelper. A negative number indicates no grid has been set.
   protected gridUnitHeight: number = -1;
@@ -48,6 +54,32 @@ class BattleMap extends Scene {
       this.gridSnap = gridSnap;
     }
     this.name = name;
+  }
+
+  public setGridPlaced(bool: boolean): boolean {
+    this.gridPlaced = bool;
+    return true;
+  }
+
+  public getGridPlaced(): boolean {
+    return this.gridPlaced;
+  }
+
+  public getResizeRect() {
+    return this.resizeRect;
+  }
+
+  public setResizeRect(rect: Rect): boolean {
+    if(rect)
+    {
+      this.resizeRect = rect;
+      return true;
+    }
+    return false;
+  }
+
+  public getGridGroup(): Group {
+    return this.gridGroup;
   }
 
   //Function that scales a specified Token according to the new size based on the grid.

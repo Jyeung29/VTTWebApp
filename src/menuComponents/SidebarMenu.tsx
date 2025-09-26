@@ -12,11 +12,11 @@ import {TokenMenu} from './TokenMenu';
 import { SceneMenu } from './SceneMenu';
 
 export function SidebarMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, 
-    linkFactory, sceneCollection, setSceneCollection, sceneIDMap, setSceneIDMap, currentCanvasID, 
+    linkFactory, sceneIDMap, setSceneIDMap, currentCanvasID, 
     setCurrentCanvasID, setCurrentScene, setCanvas, canvasCollection, setCanvasCollection}) {
     const [open, setOpen] = useState(false)
     return (
-        <div className='SidebarMenu'>
+        <div className='SidebarMenu GridSettingHiddenElement'>
             <Drawer.Root open={open} onOpenChange={(e) => setOpen(e.open)} closeOnInteractOutside={false}
                 trapFocus={false} modal={false} size={"md"} unmountOnExit={false}>
                 <Drawer.Trigger asChild>
@@ -26,7 +26,7 @@ export function SidebarMenu({ canvas, cmManager, scene, tokenCollection, setToke
                 </Drawer.Trigger>
                 <Portal>
                     <Drawer.Positioner pointerEvents={"none"}>
-                        <Drawer.Content>
+                        <Drawer.Content className='GridSettingHiddenElement'>
                             <Drawer.CloseTrigger asChild>
                                 <CloseButton position={'absolute'} _hover={{backgroundColor:'rgb(255,255,255,255)'}} 
                                 height={'55px'} left={-10} top={-2} backgroundColor={'rgb(255,255,255,255)'}/>
@@ -59,8 +59,7 @@ export function SidebarMenu({ canvas, cmManager, scene, tokenCollection, setToke
                                     Audio Coming Soon
                                 </Tabs.Content>
                                 <Tabs.Content value="scenes">
-                                    <SceneMenu linkFactory={linkFactory} sceneCollection={sceneCollection}
-                                    setSceneCollection={setSceneCollection} setCurrentScene={setCurrentScene}
+                                    <SceneMenu linkFactory={linkFactory} setCurrentScene={setCurrentScene}
                                     sceneIDMap={sceneIDMap} setSceneIDMap={setSceneIDMap} setCanvas={setCanvas}
                                     currentCanvasID={currentCanvasID} setCurrentCanvasID={setCurrentCanvasID}
                                     canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection}/>

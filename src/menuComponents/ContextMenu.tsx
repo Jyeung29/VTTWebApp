@@ -36,14 +36,10 @@ export function ContextMenu({ canvas, cmManager, scene }) {
   //Value displayed by image link input box
   const [imageLinkVal, setImageLinkVal] = useState("");
 
-  console.log('cm render')
-
   useEffect(() => {
     const exitFunction = (event) => {
-      console.log('exit')
       if (event.button == 0 && cmManager && cmManager.getContextMenuExit()) {
         let contextMenu = document.querySelector(".ContextMenu");
-        console.log('true exit')
         if (contextMenu && contextMenu instanceof HTMLElement) {
           contextMenu.style.display = "none";
         }
@@ -362,7 +358,6 @@ export function ContextMenu({ canvas, cmManager, scene }) {
   //Function that is called whenever the token name input box's value is changed
   var changeName = (event) => {
     setNameVal(event.target.value);
-    console.log(event.target.value + '_')
   };
 
   //Function prevents backspace key pressed from deleting Token while typing in input field
