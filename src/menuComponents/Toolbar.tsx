@@ -1,12 +1,9 @@
 import '../index.css';
 import {
-  FabricImage, Rect, Canvas, Circle, Group, LayoutManager, FixedLayout, type TCornerPoint,
-  Line, Textbox, Point
+  FabricImage, Rect, Circle, type TCornerPoint,
+  Line,
 } from "fabric";
-import { Token } from '../tokenComponents/Token';
-import { handleObjectSnapping } from '../battleMapComponents/GridSnappingHelper';
-import { handleObjectMoving } from '../battleMapComponents/TokenMovingHelper';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@chakra-ui/react';
 
 /*
@@ -17,11 +14,12 @@ toolbar to display.
 */
 
 function Toolbar({ canvas, scene, cmManager, canvasCollection }) {
-  //Array of references to TableTopRoleplayingGame exclusive features. Is not implemented currently.
-  const [featuresJSX, setFeaturesJSX] = useState([]);
 
+  //State used to manage grid setting
   const [gridTrigger, setGridTrigger] = useState<boolean>(false);
-  
+
+  //Boolean to determine whether a grid is currently being set
+  const [resizing, setResizing] = useState<boolean>(false);
 
   //Function called by a toolbar button to add a shape. Currently only adds a preset circle. The circle is able to scale with or without a grid.
   const addShape = () => {
@@ -62,13 +60,15 @@ function Toolbar({ canvas, scene, cmManager, canvasCollection }) {
     }
   }
 
-  //Boolean to determine whether a grid is being set
-  const [resizing, setResizing] = useState<boolean>(false);
-
+  
+  //Effect called whenever resizing is changed. Either hides or displays the Sidebar and non-grid Toolbar buttons
   useEffect(() => {
+    //Find elements that should be hidden
     let sidebar = document.getElementsByClassName('GridSettingHiddenElement');
+    //Check whether currently resizing and elements exist
     if(resizing && sidebar)
     {
+      //Iterate and hide all elements found
       for(let i = 0; i < sidebar.length; i++)
       {
         let element = sidebar[i] as HTMLElement;
@@ -76,6 +76,7 @@ function Toolbar({ canvas, scene, cmManager, canvasCollection }) {
       }
     }
     else if(sidebar){
+      //Iterate and display all elements found
       for(let i = 0; i < sidebar.length; i++)
       {
         let element = sidebar[i] as HTMLElement;
@@ -84,7 +85,9 @@ function Toolbar({ canvas, scene, cmManager, canvasCollection }) {
     }
   }, [resizing]);
 
+  //Effect triggered when Grid button is pressed to initiate grid setting
   useEffect(() => {
+    //Only run if gridTrigger is true to prevent infinite loop
     if(gridTrigger)
     {
       //If no preexisting grid rect to use on the canvas, create a new one for the canvas
@@ -121,6 +124,9 @@ function Toolbar({ canvas, scene, cmManager, canvasCollection }) {
       
       //Trigger useeffect to hide all non-relevant elements to grid placement
       setResizing(true);
+
+      //Prevent resizing rectangle from being deletable
+      scene.setAllowDelete(false);
 
       //Make sure all objects in the canvas are not selectable during the grid resizing process
       let allObjects = canvas.getObjects();
@@ -242,6 +248,8 @@ function Toolbar({ canvas, scene, cmManager, canvasCollection }) {
         }
       }
 
+      scene.setAllowDelete(true);
+
       //Add grid to canvas
       canvas.add(grid);
       canvas.sendObjectToBack(grid);
@@ -256,11 +264,6 @@ function Toolbar({ canvas, scene, cmManager, canvasCollection }) {
       setGridTrigger(false);
     }
   }, [gridTrigger]);
-
-  //Function called by a toolbar button to create a grid.
-  var resizeGrid = () => {
-    
-  }
 
   return (
     <div className="Toolbar">

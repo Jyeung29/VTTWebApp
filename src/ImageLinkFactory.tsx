@@ -18,6 +18,11 @@ export class ImageLinkFactory {
                 id = link.replace('https://1drv.ms/i/c/', '');
                 id = id.split('/')[0];
             }
+            else if(link.includes('src/DefaultImages/'))
+            {
+                let split = link.split('src/DefaultImages/');
+                id = split[1];
+            }
             else
             {
                 return ['',''];

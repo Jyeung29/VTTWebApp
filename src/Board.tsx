@@ -1,6 +1,6 @@
 import BattleMap from "./battleMapComponents/BattleMap";
 import { useRef, useState, useEffect } from 'react';
-import { Canvas, Rect, FabricImage, Point, Group, Textbox } from 'fabric';
+import { Canvas, FabricImage, Point, Group, Textbox } from 'fabric';
 import { Token } from "./tokenComponents/Token";
 import './index.css';
 import Toolbar from './menuComponents/Toolbar';
@@ -12,21 +12,32 @@ import { handleObjectMoving } from "./battleMapComponents/TokenMovingHelper";
 import { ImageLinkFactory } from "./ImageLinkFactory";
 import type Scene from "./SceneComponents/Scene";
 
+import defaultMap from './DefaultImages/defaultCliffMap.jpeg'
+
 function Board() {
+  //State used to access current Canvas to manipulate
   const [canvas, setCanvas] = useState<Canvas>();
+
+  //State used to access the current Scene child class associated with the current Canvas
   const [currentScene, setCurrentScene] = useState<Scene>();
+
+  //State used to store the current unique ID number of the current Canvas and Scene child class
   const [currentCanvasID, setCurrentCanvasID] = useState<number>(0);
+
+  //State that stores class that manages the Canvas Context Menu display and placement. Should refactor as useRef
   const [contextMenuManager, setContextMenuManager] = useState<ContextMenuManager>(new ContextMenuManager);
+
+  //State that stores class that returns image link and id pairs used by Token and Scene classes
   const [linkFactory, setLinkFactory] = useState<ImageLinkFactory>(new ImageLinkFactory);
 
   //tokenCollection is a array where each row contains the group's name and an array of Tokens 
   // placeable onto the scene
   const [tokenCollection, setTokenCollection] = useState<[string, Token[]][]>([['My Tokens', []]]);
 
-  //track Mouse Canvas Coordinate
+  //Reference used to track Mouse Canvas Coordinate
   const mouseLocation = useRef<Point>(null);
 
-  //Boolean to determine whether to Pan
+  //Reference boolean to determine whether to Pan
   const isPanning = useRef<boolean>(false);
 
   //An array containing the name of a scene collection and an array of Scenes. For scenes not associated
@@ -35,14 +46,10 @@ function Board() {
 
   const [canvasCollection, setCanvasCollection] = useState<[string, Canvas[], Scene[]][]>([]);
 
+  //A map containing IDs that are actively used or not used so that scene's can have unique ID's
   const [sceneIDMap, setSceneIDMap] = useState<Map<number, boolean>>(new Map<number, boolean>());
 
-  const [resizeBool, setResizeBool] = useState<boolean>(false);
-
-  //console.log('new render')
-
-  //Runs after detecting that new DOM element added which is the <canvas> so that 
-  //Fabric.js Canvas element can be connected
+  //Create the initial Canvas on startup with default BattleMap
   useEffect(() => {
     var newMap = new BattleMap("Test Map", 0);
     setCurrentScene(newMap);
@@ -87,10 +94,10 @@ function Board() {
 
       //Set image URL source
       image.appendChild(source);
-      image.src = 'https://1drv.ms/i/c/f3cddce27969a886/IQS5odtxa8NwSaFIM6eGBULFAd4w_Rj6p8iviKFIV5AhzKs';
+      image.src = defaultMap;
       //Make sure image's link source works
       image.onerror = function () {
-        alert('Image link is invalid or is not compatible');
+        alert('Map Image link is invalid or is not compatible');
       };
 
       //Make sure image loads before adding to Canvas
@@ -138,7 +145,8 @@ function Board() {
       function detectKeydown(event: KeyboardEvent) {
         //Check if key event was a Backspace
         if (event.key == "Backspace" && contextMenuManager && contextMenuManager.getDeleteValid()) {
-          if (canvas) {
+          //Prevent anything from being deleted when a scene disables deletes
+          if (canvas && currentScene && currentScene.getAllowDelete()) {
             //Get all selected FabricObjects on Canvas
             let actives = canvas.getActiveObjects();
             //Check if FabricObjects have been selected
@@ -195,11 +203,10 @@ function Board() {
 
           //pan in y direction
           vpt[5] += event.viewportPoint.y - mouseLocation.current.y;
-
+          
+          //Add panning range in future
           //let center = initCanvas.getCenterPoint()
           //let corners = initCanvas.calcViewportBoundaries();
-
-          //Add panning range in future
 
           canvas.setViewportTransform(vpt);
           canvas.requestRenderAll();
@@ -257,7 +264,7 @@ function Board() {
       window.addEventListener('resize', resizeCanvas);
 
       //When canvas is updated make sure previous canvas viewing features are
-      //turned off
+      //turned off to be reset
       return () => {
         if(currentScene && currentScene instanceof BattleMap)
       {

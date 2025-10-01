@@ -26,6 +26,8 @@ abstract class Scene {
   //The index number used to access the current FabricImage being displayed on the canvas. Currently not implemented.
   protected currentImage: number = 0;
 
+  protected allowDelete: boolean = true;
+
   //Variable that stores URLs of images while also storing the provided file's id in their associated
     //cloud storage service such as Google Drive or OneDrive.
     protected imageURLs: [string, string][] = [];
@@ -44,6 +46,15 @@ abstract class Scene {
   //Function that returns the string name of the Scene. 
   public getName(): string {
     return this.name;
+  }
+
+  public setAllowDelete(bool: boolean): boolean {
+    this.allowDelete = bool;
+    return true;
+  }
+
+  public getAllowDelete(): boolean {
+    return this.allowDelete;
   }
 
   //Function that sets the name of the Scene. Returns true if a valid name and false if invalid.

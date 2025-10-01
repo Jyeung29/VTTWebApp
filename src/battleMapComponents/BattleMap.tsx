@@ -26,10 +26,13 @@ class BattleMap extends Scene {
   // want to have grid snapping in the Sidebar Menu.
   protected gridSnap: boolean = true;
 
+  //Fabric Group object that contains the lines that create the grid
   protected gridGroup: Group = new Group([], { selectable: false, hasControls: false });
 
+  //Fabric Rect object that is used to create a grid based on it's size
   protected resizeRect: Rect;
 
+  //Boolean that indicates whether a grid has been placed and allows for snapping to occur if both it and gridSnap is set true
   protected gridPlaced: boolean = false;
 
   //The non-zero numbers of a single grid unit's width and height. Used for

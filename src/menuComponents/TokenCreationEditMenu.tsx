@@ -1,18 +1,14 @@
 import {
-    Menu, Button, Portal, Slider, Flex, Checkbox, useSlider, useCheckbox
-    , Input, Field, Select, Box,
+    Button, Portal,
+    Input, Field, Select, Box,
     createListCollection,
-    Textarea,
     CloseButton,
     Dialog,
     Spinner,
     Center
 } from '@chakra-ui/react';
 import { useEffect, useRef, useState } from 'react';
-import { Canvas, Group, Point, Circle, Textbox, } from 'fabric';
-import { ContextMenuManager } from './ContextMenuManager';
 import { Token } from '../tokenComponents/Token';
-import type BattleMap from '../battleMapComponents/BattleMap';
 import '../index.css';
 import { ImageLinkFactory } from '../ImageLinkFactory';
 
@@ -22,41 +18,63 @@ import { ImageLinkFactory } from '../ImageLinkFactory';
     button in the TokenMenu or "Edit" in the TokenMenu's context menu.
 */
 export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, linkFactory, setCollectionChange }) {
-    const sizeReference = useRef(null);
+    //State that stores the selected size value of the Token
     const [sizeVal, setSizeVal] = useState(['']);
+
+    //State that stores whether the loading icon is displayed
     const [spinState, setSpinState] = useState('none');
+
+    //State that stores the string value name of the Token
     const [nameVal, setNameVal] = useState('');
+
+    //State that stores the stirng value link of the Token
     const [linkVal, setLinkVal] = useState('');
+
+    //State that stores a string of what operation the Menu is in. Currently only implements 'Create'
     const [operation, setOperation] = useState('Create');
+
+    //State that sets whether the menu (which is a Dialogue) is open
     const [menuOpen, setMenuOpen] = useState(false);
+
+    //State that sets whether the fields in the menu are being submitted to create a new Token
     const [submitState, setSubmitState] = useState(false);
 
-    //Triggers on initial render to add event listener and hide the TokenCreationEditMenu (CSS problems with
-    //how react renders with a space seperated className with multiple names instead of classList)
+    //Effect called when Submit button is pressed in the menu. Creates a Token if all fields are valid and adds it to the TokenCollection
     useEffect(() => {
-    }, []);
-
-    useEffect(() => {
+        //Make sure submitState is true to prevent infinite loop
         if (submitState) {
+            //Check if the current operation uses the Token 'Creation' logic 
             if (operation == 'Create') {
+                    //Make sure the tokenCollection and linkFactory exist
                     if (tokenCollection && tokenCollection.length > 0 && linkFactory
                         && linkFactory instanceof ImageLinkFactory) {
+                        //Create an HTML img element
                         var source = document.createElement('source');
                         var image = document.createElement('img');
                         let idLink = linkFactory.getLinkAndID(linkVal);
                         image.src = idLink[1];
+                        //Set the loading spinner to display
                         setSpinState('block');
+
+                        //Called if image link was valid and able to be loaded
                         image.onload = () => {
                             image.appendChild(source);
+                            //Create a Token object
                             var tokenEl = new Token(image);
+                            //Store the link and ID pair in the Token
                             tokenEl.addURL(idLink[0], idLink[1]);
-                            var sizeCode = Number(sizeVal[0]);
+                            //Hide loading spinner
                             setSpinState('none');
+                            //Check whether size is valid and has been selected
+                            var sizeCode = Number(sizeVal[0]);
                             if (sizeCode <= 0) {
                                 alert('No Token Size Set');
                                 return;
                             }
+                            //Otherwise set the size code
                             tokenEl.setSizeCode(sizeCode);
+                            
+                            //Check if entered name is valid
                             if (nameVal.trim() == "") {
                                 alert('No Token Name Set');
                                 return;
@@ -65,20 +83,25 @@ export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, lin
                                 alert('Token name cannot be over 64 characters long');
                                 return;
                             }
+                            //Otherwise set the Token's name
                             tokenEl.setName(nameVal.trim());
+
+                            //Add the Token to the TokenCollection
                             var collection = tokenCollection;
                             collection[0][1].push(tokenEl);
                             setTokenCollection(collection);
                             setCollectionChange(true);
+                            //Close the TokenCreationEditMenu Dialogue
                             setMenuOpen(false);
                         }
-                        //Make sure image's link source works
+                        //Called if image link does not work or unable to be fetched
                         image.onerror = function () {
                             setSpinState('none');
                             alert('Image Link is Invalid or Incompatible');
                         };
                     }
             }
+            //Currently unimplemented
             else if (operation == 'Edit') {
 
             }

@@ -1,20 +1,23 @@
 import {
-    Menu, Button, Portal, Flex, Checkbox, useCheckbox
-    , Input, Field, Select, Drawer, Tabs, CloseButton, defineRecipe
+    Button, Portal, Drawer, Tabs, CloseButton,
 } from '@chakra-ui/react';
-import { useRef, useState } from 'react';
-import { Canvas, Group, Point, Circle, Textbox } from 'fabric';
-import { ContextMenuManager } from './ContextMenuManager';
-import { Token } from '../tokenComponents/Token';
-import type BattleMap from '../battleMapComponents/BattleMap';
+import { useState } from 'react';
 import '../index.css';
 import {TokenMenu} from './TokenMenu';
 import { SceneMenu } from './SceneMenu';
 
+/*
+The Sidebar Component uses the Chakra UI Drawer component as a top-level overlay that allows for the current canvas to
+be manipulatable. It contains five sub-menus: the GameLog, TokenMenu, SceneMenu, AudioMenu, and SettingsMenu.
+*/
+
 export function SidebarMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, 
     linkFactory, sceneIDMap, setSceneIDMap, currentCanvasID, 
     setCurrentCanvasID, setCurrentScene, setCanvas, canvasCollection, setCanvasCollection}) {
+    
+        //State that sets whether the Sidebar is open
     const [open, setOpen] = useState(false)
+    
     return (
         <div className='SidebarMenu GridSettingHiddenElement'>
             <Drawer.Root open={open} onOpenChange={(e) => setOpen(e.open)} closeOnInteractOutside={false}

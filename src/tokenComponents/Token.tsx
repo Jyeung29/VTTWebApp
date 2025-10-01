@@ -59,7 +59,7 @@ export class Token<
     protected currentImage: number = 0;
 
     //An array of index pairs that indicate where in the Base Token Collection a token is located
-    protected baseTokenIndexePairs: [number,number][] = [];
+    protected baseTokenIndexPairs: [number,number][] = [];
 
     //Returns string name of Token.
     public getName(): string {

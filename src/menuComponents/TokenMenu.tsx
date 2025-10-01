@@ -1,19 +1,17 @@
 import {
-    Menu, Button, Portal, Slider, Flex, Checkbox, useSlider, useCheckbox
-    , Input, Field, Select, Collapsible, Drawer, ActionBar, Box, Tabs, CloseButton, defineRecipe,
+    Menu, Button, Portal, Flex,
+    Input, Collapsible, Box,
     IconButton, Group as GroupElement,
     Center
 } from '@chakra-ui/react';
 import { useRef, useState, useEffect } from 'react';
 import { Canvas, Group, Point, Circle, Textbox, LayoutManager, FixedLayout, FabricImage } from 'fabric';
-import { ContextMenuManager } from './ContextMenuManager';
 import { Token } from '../tokenComponents/Token';
-import type BattleMap from '../battleMapComponents/BattleMap';
 import '../index.css';
-import { TbBoxMargin } from 'react-icons/tb';
 import { TokenCreationEditMenu } from './TokenCreationEditMenu';
 import { FaCheck, FaEdit, FaFolderPlus } from 'react-icons/fa';
 import { MdOutlineDelete } from "react-icons/md";
+import defaultTokenImage from '../DefaultImages/defaultPaladinOrc.png'
 
 export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, linkFactory }) {
     //State that contains JSX for showing all collections and their base tokens
@@ -44,26 +42,27 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
     //State that stores whether the rename 
     const [renameSubmit, setRenameSubmit] = useState(false);
 
+    //State used to set whether a collection is deleted
     const [deleteConfirm, setDeleteConfirm] = useState(false);
 
+    //State changed when user wants to add a Token to the current Canvas
     const [tryAddToken, setTryAddToken] = useState(false);
 
     //Testing Purposes to Preload Tokens
     useEffect(() => {
         var image = document.createElement('img');
         var source = document.createElement('source');
-        const URL = 'https://1drv.ms/i/c/f3cddce27969a886/IQSCoe-0AIJ6Srgj_3uRaZUeAVikDU3YF8nBo756hwebF1E?width=224&height=224';
-        image.src = URL;
+        image.src = defaultTokenImage;
         image.onload = () => {
             image.appendChild(source);
             var tokenEl = new Token(image);
             var sizeCode = 1;
             tokenEl.setSizeCode(sizeCode);
             tokenEl.setName("TestName");
-            let linkPair = linkFactory.getLinkAndID(URL);
+            let linkPair = linkFactory.getLinkAndID(defaultTokenImage);
             tokenEl.addURL(linkPair[0], linkPair[1]);
             var collection = tokenCollection;
-            collection[0][1].push(tokenEl);
+            collection[0][1] = [tokenEl];
             setTokenCollection(collection);
             setCollectionChange(true);
         }
@@ -309,8 +308,8 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                     </IconButton>
                     <Collapsible.Content
                     >
-                        <Box gap={3} display={'flex'} justifyContent={'left'} justifyItems={'left'} marginLeft={2}
-                            scrollbar='visible' overflowX='scroll' css={{
+                        <Box gap={3} display={'flex'} justifyContent={'left'} justifyItems={'left'} marginLeft={1} flexWrap={'wrap'}
+                            scrollbar='visible' overflowY='scroll' css={{
                                 '&::-webkit-scrollbar': {
                                     width: '8px', // Adjust scrollbar width
                                 },
@@ -339,8 +338,8 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                     </Collapsible.Trigger>
                     <Collapsible.Content
                     >
-                        <Box gap={3} display={'flex'} justifyContent={'left'} justifyItems={'left'} marginLeft={2}
-                            scrollbar='visible' overflowX='scroll' css={{
+                        <Box gap={3} display={'flex'} justifyContent={'left'} justifyItems={'left'} marginLeft={1} flexWrap={'wrap'}
+                            scrollbar='visible' overflowY='scroll' css={{
                                 '&::-webkit-scrollbar': {
                                     width: '8px', // Adjust scrollbar width
                                 },
@@ -388,7 +387,6 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                 }
             }
         }
-
         if (num > 0) {
             name = 'New Group ' + num;
             allCollections.push([name, []]);
@@ -400,6 +398,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
         setCollectionChange(true);
     }
 
+    //Effect called when tryAddToken is changed by the 'Add to Scene' button in the TokenMenu's Context Menu
     useEffect(() => {
         if (tryAddToken) {
             //Function for adding a base Token in the token collection onto the current Canvas
@@ -516,12 +515,17 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                                 if (tokenNumber > 1) {
                                     cmManager.setMultiSelectionBool(true);
                                     let groupBox = canvas.getActiveObject();
-                                    groupBox.on('mouseover', () => {
+                                    if(groupBox)
+                                    {
+                                        //Should not cause memory leak due to the multi object selection being removed and deleted
+                                       groupBox.on('mouseover', () => {
                                         document.addEventListener('contextmenu', cmManager.updateContextMenuPosition)
-                                    });
-                                    groupBox.on('mouseout', () => {
-                                        document.removeEventListener('contextmenu', cmManager.updateContextMenuPosition);
-                                    });
+                                        });
+                                        groupBox.on('mouseout', () => {
+                                            document.removeEventListener('contextmenu', cmManager.updateContextMenuPosition);
+                                        });
+                                    }
+                                    
                                 }
                                 else {
                                     cmManager.setMultiSelectionBool(false);
@@ -683,7 +687,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                 maxW='md' display={renameDisplay}>
                 <Input flex='1' placeholder="Enter the collection's name" value={renameVal}
                     onChange={updateRename} className='RenameEl' height={50 + 'px'} />
-                <IconButton className='RenameEl' onClick={() => { setRenameSubmit(true); }}>
+                <IconButton height={50 + 'px'} left={-3} width={50+'px'} className='RenameEl' onClick={() => { setRenameSubmit(true); }}>
                     <Center><FaCheck /></Center>
                 </IconButton>
             </GroupElement>
@@ -694,7 +698,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
 function updateBaseTokenContextMenuPosition(event: Event): boolean {
     var contextMenu = document.querySelector(".BaseTokenContextMenu");
 
-    if (contextMenu && event.type == 'contextmenu') {
+    if (contextMenu && event.type == 'contextmenu' && contextMenu instanceof HTMLElement) {
         contextMenu.style.display = "flex";
         const maxTopValue = window.innerHeight - contextMenu.offsetHeight;
         const maxLeftValue = window.innerWidth - contextMenu.offsetWidth;
