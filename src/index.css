@@ -160,3 +160,12 @@ body {
   gap: 1px;
   align-items:center;
 }
+
+.SceneContextMenu {
+  display:none;
+  position:fixed;
+}
+
+.ArmorClassInitiativeRow {
+  display:inline;
+}

@@ -17,7 +17,7 @@ import { ImageLinkFactory } from '../ImageLinkFactory';
     The component is hidden and is displayed when the user presses the "Create New Token"
     button in the TokenMenu or "Edit" in the TokenMenu's context menu.
 */
-export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, linkFactory, setCollectionChange }) {
+export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, linkFactory, setCollectionChange, gameLog }) {
     //State that stores the selected size value of the Token
     const [sizeVal, setSizeVal] = useState(['']);
 

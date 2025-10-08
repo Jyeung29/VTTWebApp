@@ -1,5 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
-import BattleMap from '../battleMapComponents/BattleMap.tsx';
+import BattleMap from './BattleMap';
 
 //Test name cases
 const names = ["", "      ",
@@ -20,12 +20,12 @@ describe('BattleMap Class', () => {
     describe('Initializing BattleMap', () => {
         for (let i = 0; i < 3; i++) {
             test(nameDescriptions[i], () => {
-                expect(() => {testMap = new BattleMap(names[i])}).toThrow();
+                expect(() => {testMap = new BattleMap(names[i], 0)}).toThrow();
             });
         }
         for (let i = 3; i < names.length; i++) {
             test(nameDescriptions[i], () => {
-                expect(testMap = new BattleMap(names[i])).toBeDefined();
+                expect(testMap = new BattleMap(names[i], 0)).toBeDefined();
             });
         }
 
@@ -33,7 +33,7 @@ describe('BattleMap Class', () => {
 
     //Test for Setting Name
     describe('Setting Name', () => {
-        testMap = new BattleMap("TestName");
+        testMap = new BattleMap("TestName", 0);
         for (let i = 0; i < names.length; i++) {
             test(nameDescriptions[i], () => {
                 expect(testMap.setName(names[i])).toBe(setNameResults[i]);

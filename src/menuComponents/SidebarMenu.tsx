@@ -12,7 +12,7 @@ be manipulatable. It contains five sub-menus: the GameLog, TokenMenu, SceneMenu,
 */
 
 export function SidebarMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, 
-    linkFactory, sceneIDMap, setSceneIDMap, currentCanvasID, 
+    linkFactory, sceneIDMap, setSceneIDMap, currentCanvasID, gameLog,
     setCurrentCanvasID, setCurrentScene, setCanvas, canvasCollection, setCanvasCollection}) {
     
         //State that sets whether the Sidebar is open
@@ -56,7 +56,7 @@ export function SidebarMenu({ canvas, cmManager, scene, tokenCollection, setToke
                                 <Tabs.Content value="game log">Game Log Coming Soon</Tabs.Content>
                                 <Tabs.Content value="tokens">
                                     <TokenMenu canvas={canvas} cmManager={cmManager} scene={scene} tokenCollection={tokenCollection} 
-                                    setTokenCollection={setTokenCollection} linkFactory={linkFactory}/>
+                                    setTokenCollection={setTokenCollection} linkFactory={linkFactory} gameLog={gameLog}/>
                                     </Tabs.Content>
                                 <Tabs.Content value="audio">
                                     Audio Coming Soon

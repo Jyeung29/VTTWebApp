@@ -13,7 +13,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Canvas, Group, Point, Circle, Textbox, FabricImage, } from 'fabric';
 import { ContextMenuManager } from './ContextMenuManager';
 import { Token } from '../tokenComponents/Token';
-import BattleMap from '../battleMapComponents/BattleMap';
+import BattleMap from '../SceneComponents/BattleMap';
 import '../index.css';
 import { ImageLinkFactory } from '../ImageLinkFactory';
 
@@ -60,7 +60,7 @@ export function BattleMapCreationMenu({ linkFactory, setCanvas, canvasCollection
         newCanvas.id = 'scene_' + idNum;
         //newCanvas.style.display = 'block';
         parentDiv.appendChild(newCanvas);
-        const fabricCanvas = new Canvas(newCanvas, {
+        const fabricCanvas = new Canvas(negetwCanvas, {
           width: window.innerWidth,
           height: window.innerHeight,
           backgroundColor: 'rgb(0,0,0)',
@@ -201,20 +201,20 @@ export function BattleMapCreationMenu({ linkFactory, setCanvas, canvasCollection
                   <Field.Label>
                     Battle Map Name <Field.RequiredIndicator />
                   </Field.Label>
-                  <Input onChange={updateName} placeholder="Enter the Token's Name"></Input>
+                  <Input data-testid="NameField" onChange={updateName} placeholder="Enter the Token's Name"></Input>
                 </Field.Root>
                 <Field.Root>
                   <Field.Label>
                     Image Link <Field.RequiredIndicator />
                   </Field.Label>
-                  <Input onChange={updateLink} placeholder="Paste the Image Link"></Input>
+                  <Input data-testid="LinkField" onChange={updateLink} placeholder="Paste the Image Link"></Input>
                 </Field.Root>
-                <Switch.Root checked={checked} onClick={setGridSnap}>
+                <Switch.Root data-testid="GridSnapSwitch" checked={checked} onClick={setGridSnap}>
                   <Switch.HiddenInput />
                   <Switch.Control />
                   <Switch.Label>Grid Snapping</Switch.Label>
                 </Switch.Root>
-                <Button onClick={submitFields} display='block'>
+                <Button data-testid="SubmitButton" onClick={submitFields} display='block'>
                   Submit
                 </Button>
                 <Box pos={'absolute'} inset='0' bg='bg/80' display={spinState}>

@@ -35,7 +35,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
     const [sceneID, setSceneID] = useState<number>(-1)
 
     //State that stores the indexes of the Scene being renamed in the canvasCollection
-    const [sceneIndex, setSceneIndex] = useState<[number, number]>([-1, -1]);
+    const sceneIndex = useRef<[number, number]>([-1, -1]);
 
     //State that contains JSX for showing collection's names in the TokenMenu context menu for the
     //'Add to a Collection' button
@@ -83,13 +83,55 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
         let myCollection = canvasCollection;
         let collectionJSX = [];
 
+        let collectionContextMenuJSX = [];
+
+        const pushSceneToCollection = (event: MouseEvent) => {
+            let newCollection = canvasCollection;
+
+            //Get the target collection's index from the className scheme. Scheme should have index at 2
+            if (event.target && event.target instanceof HTMLElement) {
+                //Index 2 accounts for the className of Button to include the chakra-button className
+                let index = Number((event.target.className.split(' '))[2]);
+                console.log('new')
+                console.log(index)
+                console.log(sceneIndex)
+                //Check if index is valid and the Token to push's index is valid
+                if (index >= 0 && index < canvasCollection.length && sceneIndex.current[0] >= 0 && sceneIndex.current[1] >= 0) {
+                    let scene = canvasCollection[sceneIndex.current[0]][2][sceneIndex.current[1]];
+                    let canvas = canvasCollection[sceneIndex.current[0]][1][sceneIndex.current[1]];
+
+                    //Iterate over the target collection to check if the Token already exists
+                    for (let i = 0; i < canvasCollection[index][2].length; i++) {
+                        if (scene == canvasCollection[index][2][i]) {
+                            alert('Scene Already Exists in Collection');
+                            return;
+                        }
+                    }
+                    newCollection[sceneIndex.current[0]][2].splice(sceneIndex.current[1], 1);
+                    newCollection[sceneIndex.current[0]][1].splice(sceneIndex.current[1], 1);
+
+
+                    newCollection[index][2].push(scene);
+                    newCollection[index][1].push(canvas);
+                    if (newCollection[sceneIndex.current[0]][0] == '') {
+                        newCollection.splice(sceneIndex.current[0], 1);
+                    }
+                    console.log(newCollection)
+                    setCanvasCollection(newCollection);
+                    setCollectionUpdate(true);
+                    exitSceneCM();
+                }
+            }
+        }
+
         if (collectionUpdate && myCollection.length > 0) {
             for (let i = 0; i < myCollection.length; i++) {
                 //Check current array is a lone scene not in any collection
                 if (myCollection[i][0] == '') {
+                    //Check if the Scene is the active Scene. If so change GM button to not function
                     if (currentCanvasID == myCollection[i][2][0].getID()) {
                         collectionJSX.push(<div className={'SceneEl Scene_' + myCollection[i][2][0].getID() + ' Scene-' + i + '-0'} key={i}>
-                            <h3 className='SceneName'>{myCollection[i][2][0].getName()}</h3>
+                            <h3 className={'SceneName' + ' Scene-' + i + '-0'}>{myCollection[i][2][0].getName()}</h3>
                             <IconButton
                                 className='RenameButton'
                                 onClick={(event) => {
@@ -97,7 +139,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                                     setRenameDisplay('flex');
                                     //Indicate what collection is being renamed
                                     setSceneID(myCollection[i][2][0].getID());
-                                    setSceneIndex([i, 0]);
+                                    sceneIndex.current = [i, 0];
                                     let renameButton;
                                     //Check if event and target exist
                                     if (event && (renameButton = event.target as HTMLElement) != null) {
@@ -120,23 +162,18 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                                     alert('Scene ' + myCollection[i][2][0].getName() + ' is already displayed in GM mode');
                                 }}>GM</Button>
                             <Button>Player</Button>
-                            <IconButton>
-                                <Center>
-                                    <MdOutlineDelete />
-                                </Center>
-                            </IconButton>
                         </div>)
                     }
                     else {
                         collectionJSX.push(<div className={'SceneEl Scene_' + myCollection[i][2][0].getID() + ' Scene-' + i + '-0'} key={i}>
-                            <h3 className='SceneName'>{myCollection[i][2][0].getName()}</h3>
+                            <h3 className={'SceneName' + ' Scene-' + i + '-0'}>{myCollection[i][2][0].getName()}</h3>
                             <IconButton
                                 className='RenameButton' onClick={(event) => {
                                     //Display the renaming element
                                     setRenameDisplay('flex');
                                     //Indicate what collection is being renamed
                                     setSceneID(myCollection[i][2][0].getID());
-                                    setSceneIndex([i, 0]);
+                                    sceneIndex.current = [i, 0];
                                     let renameButton;
                                     //Check if event and target exist
                                     if (event && (renameButton = event.target as HTMLElement) != null) {
@@ -187,19 +224,20 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                     //Iterate over all the scenes in the collection
                     let groupJSX = [];
                     if (myCollection[i][2].length == 0) {
-                        groupJSX.push(<p>No Scenes are in this Collection</p>);
+                        groupJSX.push(<p key='0'>No Scenes are in this Collection</p>);
                     }
+                    collectionContextMenuJSX.push(<Button className={'SceneMenuElement ' + i} onClick={pushSceneToCollection} key={i}>{myCollection[i][0]}</Button>);
                     for (let j = 0; j < myCollection[i][2].length; j++) {
                         if (currentCanvasID == myCollection[i][2][j].getID()) {
-                            groupJSX.push(<div className={'SceneEl Scene_' + myCollection[i][2][j].getID() + ' Scene-' + i + '-' + j}>
-                                <h3 className='SceneName'>{myCollection[i][2][j].getName()}</h3>
+                            groupJSX.push(<div className={'SceneEl Scene_' + myCollection[i][2][j].getID() + ' Scene-' + i + '-' + j} key={i + '_' + j}>
+                                <h3 className={'SceneName' + ' Scene-' + i + '-' + j}>{myCollection[i][2][j].getName()}</h3>
                                 <IconButton
                                     className='RenameButton' onClick={(event) => {
                                         //Display the renaming element
                                         setRenameDisplay('flex');
                                         //Indicate what collection is being renamed
                                         setSceneID(myCollection[i][2][j].getID());
-                                        setSceneIndex([i, j]);
+                                        sceneIndex.current = [i, j];
                                         let renameButton;
                                         //Check if event and target exist
                                         if (event && (renameButton = event.target as HTMLElement) != null) {
@@ -217,28 +255,23 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                                         <FaEdit className='RenameIcon' />
                                     </Center>
                                 </IconButton>
-                                <Button bgColor={'rgba(95, 159, 255, 1)'} _hover={{ bg: 'rgba(130, 180, 255, 1)' }}
+                                <Button bgColor={'rgba(95, 159, 255, 1)'} _hover={{ bg: 'rgba(130, 180, 255, 1)' }} _focus={{ bg: 'rgba(130, 180, 255, 1)' }}
                                     onClick={() => {
                                         alert('Scene ' + myCollection[i][2][j].getName() + ' is already displayed in GM mode');
                                     }}>GM</Button>
                                 <Button>Player</Button>
-                                <IconButton>
-                                    <Center>
-                                        <MdOutlineDelete />
-                                    </Center>
-                                </IconButton>
                             </div>);
                         }
                         else {
-                            groupJSX.push(<div className={'SceneEl Scene_' + myCollection[i][2][j].getID() + ' Scene-' + i + '-' + j}>
-                                <h3 className='SceneName'>{myCollection[i][2][j].getName()}</h3>
+                            groupJSX.push(<div className={'SceneEl Scene_' + myCollection[i][2][j].getID() + ' Scene-' + i + '-' + j} key={i + '_' + j}>
+                                <h3 className={'SceneName' + ' Scene-' + i + '-' + j}>{myCollection[i][2][j].getName()}</h3>
                                 <IconButton
                                     className='RenameButton' onClick={(event) => {
                                         //Display the renaming element
                                         setRenameDisplay('flex');
                                         //Indicate what collection is being renamed
                                         setSceneID(myCollection[i][2][j].getID());
-                                        setSceneIndex([i, j]);
+                                        sceneIndex.current = [i, j];
                                         let renameButton;
                                         //Check if event and target exist
                                         if (event && (renameButton = event.target as HTMLElement) != null) {
@@ -288,9 +321,9 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                     collectionJSX.push(<div className='SceneGroup' key={i}>
                         <Collapsible.Root>
                             <Collapsible.Trigger>
-                                {myCollection[i][0]}
+                                <Center>{myCollection[i][0]}</Center>
                             </Collapsible.Trigger>
-                            <Collapsible.Content>
+                            <Collapsible.Content borderWidth='1px' borderColor={'gray'}>
                                 {groupJSX}
                             </Collapsible.Content>
                         </Collapsible.Root>
@@ -300,8 +333,9 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
             }
             setSceneCollectionJSX(collectionJSX);
             setCollectionUpdate(false);
+            setCollectionNames(collectionContextMenuJSX);
         }
-    }, [collectionUpdate, currentCanvasID]);
+    }, [collectionUpdate, currentCanvasID, sceneIndex]);
 
     //Function that adds a new collection for Tokens to be stored in
     const addCollection = () => {
@@ -338,12 +372,21 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
         let target;
         //Check whether context menu triggered on a BaseTokenImage
         if ((target = event.target) instanceof HTMLElement
-            && target.className.includes('SceneEl') || target.className.includes('SceneName')) {
+            && target.className.includes('SceneEl')) {
             updateSceneContextMenuPosition(event);
             setContextMenuActive(true);
             let classes = target.className.split(' ');
             let indexes = classes[2].split('-');
-            setSceneIndex([Number(indexes[1]), Number(indexes[2])]);
+            sceneIndex.current = [Number(indexes[1]), Number(indexes[2])];
+            console.log([Number(indexes[1]), Number(indexes[2])])
+        }
+        else if (target instanceof HTMLElement && target.className.includes('SceneName')) {
+            updateSceneContextMenuPosition(event);
+            setContextMenuActive(true);
+            let classes = target.className.split(' ');
+            let indexes = classes[1].split('-');
+            sceneIndex.current = [Number(indexes[1]), Number(indexes[2])];
+            console.log([Number(indexes[1]), Number(indexes[2])])
         }
     };
 
@@ -357,20 +400,26 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                 || target.className.includes('SceneMenuElement'))
         ) {
             //If not clicking inside, hide BaseTokenContextMenu
-            exitTokenCM();
+            exitSceneCM();
         }
     }
 
     //Helper function called by mouseDownFunction to hide the Token Context Menu
-    const exitTokenCM = () => {
+    const exitSceneCM = () => {
         //Hide context menu
         var contextMenu = document.querySelector(".SceneContextMenu");
+        var portal = document.querySelector('.SceneCollectionNames');
         if (contextMenu && contextMenu instanceof HTMLElement) {
             contextMenu.style.display = 'none';
         }
+        if(portal && portal instanceof HTMLElement)
+        {
+            portal.style.display = 'none';
+        }
         //Set related states to inactive states
         setContextMenuActive(false);
-        setSceneIndex([-1, -1]);
+        sceneIndex.current = [-1, -1];
+        console.log('set end')
     }
 
     //Update event listeners to display and hide context menu using the latest context 
@@ -394,8 +443,8 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
     //useEffect. Changes the name of the target selection.
     useEffect(() => {
         //Check if all states are valid
-        if (renameSubmit && canvasCollection && sceneID >= 0 && sceneIndex[0] >= 0 && sceneIndex[1] >= 0 && sceneIndex[0] < canvasCollection.length
-            && sceneIndex[1] < canvasCollection[sceneIndex[0]][2].length
+        if (renameSubmit && canvasCollection && sceneID >= 0 && sceneIndex.current[0] >= 0 && sceneIndex.current[1] >= 0 && sceneIndex.current[0] < canvasCollection.length
+            && sceneIndex.current[1] < canvasCollection[sceneIndex.current[0]][2].length
         ) {
             //Check if rename string is not empty or only spaces
             if (renameVal.trim() == '') {
@@ -412,7 +461,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                 for (let i = 0; i < myCollection.length; i++) {
                     for (let j = 0; j < myCollection[i][2].length; j++) {
                         //Considers spaces or tabs added before and after the rename value
-                        if ((sceneIndex[0] != i || (sceneIndex[0] == i && sceneIndex[1] != j)) && myCollection[i][2][j].getName() == renameVal.trim()) {
+                        if ((sceneIndex.current[0] != i || (sceneIndex.current[0] == i && sceneIndex.current[1] != j)) && myCollection[i][2][j].getName() == renameVal.trim()) {
                             if (!confirm('Another Scene already has this name. Do you want to rename this Scene?')) {
                                 setRenameSubmit(false);
                                 return;
@@ -423,7 +472,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
 
                 }
                 //Rename the collection
-                myCollection[sceneIndex[0]][2][sceneIndex[1]].setName(renameVal.trim());
+                myCollection[sceneIndex.current[0]][2][sceneIndex.current[1]].setName(renameVal.trim());
                 //Update the tokenCollection
                 //setTokenCollection(myCollection);
                 //Indicate change so Token Menu rerenders
@@ -431,7 +480,8 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                 //Update index to no longer pair to the target collection
                 setSceneID(-1);
 
-                setSceneIndex([-1, -1]);
+                sceneIndex.current = [-1, -1];
+                console.log('end rename')
                 //Hide the renaming element
                 hideRenameEl();
             }
@@ -440,6 +490,28 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
         //Reset confirm so useEffect can trigger on later submits
         setRenameSubmit(false);
     }, [renameSubmit]);
+
+    const removeFromCollection = () => {
+        if(sceneIndex && sceneIndex.current[0] >= 0 && sceneIndex.current[1] >= 0 && sceneIndex.current[0] < canvasCollection.length 
+            && sceneIndex.current[1] < canvasCollection[sceneIndex.current[0]][1].length)
+        {
+            if(canvasCollection[sceneIndex.current[0]][0] == '')
+            {
+                alert('Scene is not part of any collection');
+            }
+            else
+            {
+                let newCollection = canvasCollection;
+                let canvas = newCollection[sceneIndex.current[0]][1][sceneIndex.current[1]];
+                let scene = newCollection[sceneIndex.current[0]][2][sceneIndex.current[1]];
+                newCollection.push(['',[canvas],[scene]]);
+                newCollection[sceneIndex.current[0]][1].splice(sceneIndex.current[1],1);
+                newCollection[sceneIndex.current[0]][2].splice(sceneIndex.current[1],1);
+                setCanvasCollection(newCollection);
+                setCollectionUpdate(true);
+            }
+        }
+    }
 
     return (
         <div>
@@ -459,14 +531,14 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
             </div>
             <div className='SceneContextMenu' >
                 <Flex className='SceneMenuElement' gap="0" direction="column"
-                    backgroundColor={'rgba(240, 240, 240, 1)'} alignContent='center' width={200}>
+                    backgroundColor={'rgba(240, 240, 240, 1)'} alignContent='center' width={210}>
                     <Menu.Root positioning={{ placement: "right-start" }}>
                         <Menu.Trigger asChild>
                             <Button variant="outline" size="sm">Add to a Collection</Button>
                         </Menu.Trigger>
                         <Portal>
                             <Menu.Positioner zIndex={'sticky'}>
-                                <Menu.Content position="relative" zIndex={'modal'}>
+                                <Menu.Content position="relative" zIndex={'modal'} className='SceneCollectionNames'>
                                     <Flex className='SceneMenuElement' direction={'column'}
                                         scrollbar='visible' overflowY='scroll' css={{
                                             '&::-webkit-scrollbar': {
@@ -491,7 +563,8 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                             </Menu.Positioner>
                         </Portal>
                     </Menu.Root>
-                    <Button className='SceneMenuElement'>Remove from Collection</Button>
+                    <Button>Edit</Button>
+                    <Button className='SceneMenuElement' onClick={removeFromCollection}>Remove from Collection</Button>
                 </Flex>
             </div>
             <GroupElement className='SceneRenameField' attached w={'full'} position='absolute' bgColor={'rgb(255, 255, 255)'}

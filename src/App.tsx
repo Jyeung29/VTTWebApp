@@ -1,12 +1,12 @@
 import './index.css';
-import Board from './Board';
+import Campaign from './Campaign';
 import {ChakraProvider, defaultSystem} from '@chakra-ui/react';
 
 function App() {
   return (
     <ChakraProvider value={defaultSystem}>
     <div className="App">
-      <Board />
+      <Campaign />
     </div>
     </ChakraProvider>
   )

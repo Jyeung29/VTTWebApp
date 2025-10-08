@@ -13,7 +13,7 @@ import { FaCheck, FaEdit, FaFolderPlus } from 'react-icons/fa';
 import { MdOutlineDelete } from "react-icons/md";
 import defaultTokenImage from '../DefaultImages/defaultPaladinOrc.png'
 
-export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, linkFactory }) {
+export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, linkFactory, gameLog }) {
     //State that contains JSX for showing all collections and their base tokens
     const [collectionJSX, setCollectionJSX] = useState([]);
 
@@ -47,6 +47,8 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
 
     //State changed when user wants to add a Token to the current Canvas
     const [tryAddToken, setTryAddToken] = useState(false);
+
+    const groupNum = useRef(new Map<number, boolean>());
 
     //Testing Purposes to Preload Tokens
     useEffect(() => {
@@ -84,6 +86,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
             let indexes = classes[1].split('_');
             let numIndexes = [Number(indexes[0]), Number(indexes[1])];
             setCurrentIndex(numIndexes);
+            console.log('set index')
         }
     };
 
@@ -111,6 +114,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
         //Set related states to inactive states
         setContextMenuActive(false);
         setCurrentIndex([-1, -1]);
+        console.log('set index')
     }
 
     //Called when clicking delete in the Token Context Menu when hovering over a Token in the Token Menu.
@@ -160,6 +164,20 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
         if (deleteConfirm && collectionIndex != null && collectionIndex >= 0 && collectionIndex < tokenCollection.length
             && confirm('Are you sure you want to delete this collection?')
         ) {
+
+            if(tokenCollection[collectionIndex][0].includes('New Group'))
+            {
+                let parts = tokenCollection[collectionIndex][0].split(' ');
+                if(parts.length == 2)
+                {
+                    groupNum.current.set(0, false);
+                }
+                else if(parts.length == 3)
+                {
+                    groupNum.current.set(Number(parts[2]), false);
+                }
+            }
+
             //Remove the collection from the tokenCollection array
             let myCollection = tokenCollection;
             myCollection.splice(collectionIndex, 1);
@@ -220,7 +238,11 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
 
             //Get the target collection's index from the className scheme. Scheme should have index at 2
             if (event.target && event.target instanceof HTMLElement) {
+                //Index 2 accounts for the className of Button to include the chakra-button className
                 let index = Number((event.target.className.split(' '))[2]);
+                console.log(event.target.className)
+                console.log(index);
+                console.log(currentIndex)
 
                 //Check if index is valid and the Token to push's index is valid
                 if (index > 0 && index < tokenCollection.length && currentIndex[0] >= 0 && currentIndex[1] >= 0) {
@@ -373,20 +395,35 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
         var allCollections = tokenCollection;
         var num: number = 0;
         var name;
-        //Iterate over all Collections
+        /*//Iterate over all Collections
         for (let i = 0; i < tokenCollection.length; i++) {
             //Check if collection includes 'New Group'
             if (typeof (name = tokenCollection[i][0]) === 'string' && name.includes('New Group')) {
                 //Make sure the not a duplicate number otherwise increase the number
                 //Assumes that user cannot rename a collection to include 'New Group'
-                if (!name.includes(num.toString()) && name != 'New Group') {
-                    break;
+                let parts = name.split(' ');
+                if(parts.length == 2)
+                {
+                    groupNum.current.set()
                 }
-                else {
-                    num++;
+                else
+                {
+
                 }
             }
+        }*/
+
+
+        while(true)
+        {
+            if((groupNum.current.get(num) == null || !groupNum.current.get(num)))
+            {
+                groupNum.current.set(num,true);
+                break;
+            }
+            num++;
         }
+
         if (num > 0) {
             name = 'New Group ' + num;
             allCollections.push([name, []]);
@@ -598,7 +635,6 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                 alert('Collection name cannot exceed 64 characters');
             }
             else {
-
                 let myCollection = tokenCollection;
                 //Iterate over all collections and make sure the no collections have the same value 
                 for (let i = 0; i < myCollection.length; i++) {
@@ -609,8 +645,21 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                         return;
                     }
                 }
+                if(myCollection[collectionIndex][0].includes('New Group'))
+                {
+                    let parts = myCollection[collectionIndex][0].split(' ');
+                    if(parts.length == 2)
+                    {
+                        groupNum.current.set(0, false);
+                    }
+                    else if(parts.length == 3)
+                    {
+                        groupNum.current.set(Number(parts[2]), false);
+                    }
+                }
                 //Rename the collection
                 myCollection[collectionIndex][0] = renameVal.trim();
+
                 //Update the tokenCollection
                 setTokenCollection(myCollection);
                 //Indicate change so Token Menu rerenders
@@ -636,7 +685,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
         <div className='TokenMenu'>
             <div className='ButtonRow'>
                 <IconButton onClick={addCollection}><Center><FaFolderPlus /></Center></IconButton>
-                <TokenCreationEditMenu setCollectionChange={setCollectionChange} linkFactory={linkFactory} tokenCollection={tokenCollection} setTokenCollection={setTokenCollection} />
+                <TokenCreationEditMenu setCollectionChange={setCollectionChange} linkFactory={linkFactory} tokenCollection={tokenCollection} setTokenCollection={setTokenCollection} gameLog={gameLog} />
             </div>
             <div className='TokenCollections'>
                 <Box scrollbar='visible' overflowY='scroll' maxHeight={innerHeight - 140}
@@ -685,9 +734,9 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
             </div>
             <GroupElement className='RenameField' attached w={'full'} position='absolute'
                 maxW='md' display={renameDisplay}>
-                <Input flex='1' placeholder="Enter the collection's name" value={renameVal}
+                <Input flex='1' data-testid="RenameField" placeholder="Enter the collection's name" value={renameVal}
                     onChange={updateRename} className='RenameEl' height={50 + 'px'} />
-                <IconButton height={50 + 'px'} left={-3} width={50+'px'} className='RenameEl' onClick={() => { setRenameSubmit(true); }}>
+                <IconButton height={50 + 'px'} left={-3} width={50+'px'} className='RenameEl' data-testid="RenameSubmit" onClick={() => { setRenameSubmit(true); }}>
                     <Center><FaCheck /></Center>
                 </IconButton>
             </GroupElement>

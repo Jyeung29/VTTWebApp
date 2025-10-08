@@ -158,6 +158,7 @@ function Toolbar({ canvas, scene, cmManager, canvasCollection }) {
       if (rectBounds.bl.x < mapBounds.bl.x || rectBounds.bl.y > mapBounds.bl.y ||
         rectBounds.tr.x > mapBounds.tr.x || rectBounds.tr.y < mapBounds.tr.y) {
         alert('Grid Setting Rectangle is Out of Map\'s Bounds');
+        setGridTrigger(false);
         return;
       }
 

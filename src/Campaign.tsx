@@ -1,4 +1,4 @@
-import BattleMap from "./battleMapComponents/BattleMap";
+import BattleMap from "./SceneComponents/BattleMap";
 import { useRef, useState, useEffect } from 'react';
 import { Canvas, FabricImage, Point, Group, Textbox } from 'fabric';
 import { Token } from "./tokenComponents/Token";
@@ -7,14 +7,14 @@ import Toolbar from './menuComponents/Toolbar';
 import { ContextMenu } from './menuComponents/ContextMenu';
 import { ContextMenuManager } from "./menuComponents/ContextMenuManager";
 import { SidebarMenu } from "./menuComponents/SidebarMenu";
-import { handleObjectSnapping } from "./battleMapComponents/GridSnappingHelper";
-import { handleObjectMoving } from "./battleMapComponents/TokenMovingHelper";
+import { handleObjectSnapping } from "./SceneComponents/GridSnappingHelper";
+import { handleObjectMoving } from "./SceneComponents/TokenMovingHelper";
 import { ImageLinkFactory } from "./ImageLinkFactory";
 import type Scene from "./SceneComponents/Scene";
 
 import defaultMap from './DefaultImages/defaultCliffMap.jpeg'
 
-function Board() {
+function Campaign() {
   //State used to access current Canvas to manipulate
   const [canvas, setCanvas] = useState<Canvas>();
 
@@ -48,6 +48,8 @@ function Board() {
 
   //A map containing IDs that are actively used or not used so that scene's can have unique ID's
   const [sceneIDMap, setSceneIDMap] = useState<Map<number, boolean>>(new Map<number, boolean>());
+
+  const gameLog = useRef([]);
 
   //Create the initial Canvas on startup with default BattleMap
   useEffect(() => {
@@ -297,7 +299,8 @@ function Board() {
           tokenCollection={tokenCollection} setTokenCollection={setTokenCollection}
           linkFactory={linkFactory} sceneIDMap={sceneIDMap} setSceneIDMap={setSceneIDMap}
           currentCanvasID={currentCanvasID} setCurrentCanvasID={setCurrentCanvasID}
-          canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection} />
+          canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection} 
+          gameLog={gameLog}/>
       </div>
       <ContextMenu canvas={canvas} cmManager={contextMenuManager} scene={currentScene} />
       <div id='SceneDiv'>
@@ -307,4 +310,4 @@ function Board() {
   )
 }
 
-export default Board
+export default Campaign

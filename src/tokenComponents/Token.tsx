@@ -6,14 +6,6 @@ import type {
     ObjectEvents,
 } from 'fabric';
 
-//Interface Resource used for tracking game statistics like HP and Legendary Actions
-interface Resource {
-        val: number,
-        max: number,
-        index: number,
-        name: string
-}
-
 //Token class definition. Extends Fabric's FabricImage class but with additional Functionality to store
 // values regarding the Token's name, size, visibility, resources, and more. The class provides multiple
 //getter, setters, add, and remove functions to manipulate the Token's values.
@@ -37,9 +29,6 @@ export class Token<
 
     //Whether token's name is shown in Streaming Mode
     protected showName: boolean = true;
-
-    //The resources a Token has and can utilize. See interface Resource.
-    protected resources: Resource[] = [];
 
     //Whether resources like HP or Actions are displayed in Streaming Mode
     protected showResources: boolean[] = [];
@@ -129,6 +118,7 @@ export class Token<
         return false;
     }
 
+    /*
     //Return all Resources of Token
     public getAllResources(): Resource[] {
         return this.resources;
@@ -215,7 +205,7 @@ export class Token<
             return true;
         }
         return false;
-    }
+    }*/
 
     //Returns sizeCode of the Token. 
     public getShowName(): boolean {
@@ -237,12 +227,12 @@ export class Token<
         return this.shareResource;
     }
 
-    //Temp method must change
+    /*//Temp method must change
     public createStatBlock(): boolean {
         let health: Resource = {val:30, max:40, name:'HP', index:0};
         this.resources.push(health);
         return true;
-    }
+    }*/
 
     //Method that only adds a url string to be tracked. Does not change the 
     //Token's image. Assumes that ImageLinkFactory outputed correct file id and
