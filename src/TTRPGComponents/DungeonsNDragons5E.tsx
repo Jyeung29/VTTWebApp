@@ -30,7 +30,7 @@ const DAMAGERESISTANCES: string[] = ['Cold', 'Fire', 'Lightning', 'Acid', 'Thund
 const UNITMEASUREMENTS: string[] = ['ft.', 'm.']
 
 //Unimplemented when stat block displaying is complete
-const SPELLDESCRIPTIONS: [string,string, any][] = [];
+const SPELLDESCRIPTIONS: [string, string, any][] = [];
 
 export class DungeonsNDragons5E extends TabletopRoleplayingGame {
     protected generalToolJSX = [];
@@ -956,7 +956,7 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                                     let legendRes = rowArray[j].split('.')[0];
                                     let resResource = legendRes.split('(');
                                     if (resResource.length == 2) {
-                                        legendRes = resResource[1].replace(').', '').trim();
+                                        legendRes = resResource[1].replace(')', '').trim();
                                         resResource = legendRes.split(', or ');
                                         if (resResource.length == 1) {
                                             let parts = resResource[0].split('/');
@@ -1006,12 +1006,16 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                                         else {
                                             throw Error('Stat block Legendary Resistances can only indicate the number of resistances with and without a lair');
                                         }
-                                        traitJSX.push(<p key={keyCount}><b>Legendary Resistance.</b> {rowArray[j].replace('Legendary Resistance', '').trim()}</p>);
+                                        traitJSX.push(<p key={keyCount}><b>Legendary Resistance</b> {rowArray[j].replace('Legendary Resistance', '').trim()}</p>);
                                         keyCount++;
                                     }
                                     else {
                                         throw Error('Stat Block Trait including Legendary Resistance must have parentheses surounding the number per day');
                                     }
+                                }
+                                else if (spaceSeperated.length == 2 && spaceSeperated[1] == 'Actions') {
+                                    end = true;
+                                    break;
                                 }
                                 break;
                             case '':
@@ -1041,7 +1045,7 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                                     traits[index][1] = traits[index][1] + rowArray[j];
                                 }
                                 else if (!isName) {
-                                    throw Error('Stat block Traits must have a trait name before a trait description');
+                                    throw Error('Stat block must have a trait name before a trait description');
                                 }
                                 else {
                                     traits.push([newRow[0], rowArray[j].replace(newRow[0], '').trim()]);
@@ -1128,13 +1132,13 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                     jsx = jsx.concat(traitJSX);
                     i = j;
                 }
-                else if ((newRow = rowArray[i].split(' '))[0] == 'Actions') {
+                else if ((rowArray[i].split(' '))[0] == 'Actions') {
                     let end = false;
                     let j = i + 1;
                     let followingParagraph = false;
                     //Follows format of trait name, action description, 
                     let actions: any[] = [];
-                    let traitJSX = [<h4 key={keyCount} className='sectionHeaderDND5E'><b>Actions</b></h4>];
+                    let actionJSX = [<h4 key={keyCount} className='sectionHeaderDND5E'><b>Actions</b></h4>];
                     keyCount++;
                     while (!end) {
                         //Check if new section or still inside action section
@@ -1143,10 +1147,8 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                             break;
                         }
 
-                        let spaceSeperated = rowArray[j].split(' ');
-
                         switch (rowArray[j].split(' ')[0]) {
-                            case 'Trait':
+                            case 'Traits':
                                 end = true;
                                 alert('Warning: Stat block Trait section is improperly placed after the Actions section');
                                 break;
@@ -1154,6 +1156,9 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                                 end = true;
                                 break;
                             case 'Reactions':
+                                end = true;
+                                break;
+                            case 'Legendary':
                                 end = true;
                                 break;
                             case '':
@@ -1167,6 +1172,7 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
 
                                 let candidateName = newRow[0].split(' ');
                                 let isName = true;
+                                let colonName = false;
                                 //Iterate over all words in seperated by period
                                 for (let k = 0; k < candidateName.length; k++) {
                                     //If the first letter is not uppercase, indicate it as not a action name
@@ -1174,36 +1180,31 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                                     //Indicates is a resource
                                     if (letter == '(') {
                                         let resourceName = newRow[0].replace(candidateName[k], '').trim();
-                                        let resourceMax = candidateName[k].replace('(','').replace(')','').trim().split('/');
-                                        if(resourceMax.length == 2 && Number(resourceMax[0]) != null && Number.isInteger(Number(resourceMax[0])))
-                                        {
+                                        let resourceMax = candidateName[k].replace('(', '').replace(')', '').trim().split('/');
+                                        if (resourceMax.length == 2 && Number(resourceMax[0]) != null && Number.isInteger(Number(resourceMax[0]))) {
                                             resources.push(new Resource(resourceName, Number(resourceMax[0])));
                                         }
-                                        else
-                                        {
+                                        else {
                                             throw Error('Stat block found action resource but positive integer number per unit of time is not formatted correctly');
                                         }
-                                        
+
                                         break;
                                     }
 
-                                    //For spell cantrips
-                                    if(k == 0 && candidateName[k] == 'At' && candidateName.length > k + 1 && candidateName[k+1] == 'Will:')
-                                    {
-                                        
+                                    //For spell cantrips. May implement further logic when spells descriptions are implemented
+                                    if (k == 0 && candidateName[k] == 'At' && candidateName.length > k + 1 && candidateName[k + 1] == 'Will:') {
+                                        colonName = true;
                                     }
-                                    
+
                                     //Indicates a pooled resource. Typically for spells
-                                    if(k == 0 && Number(letter) != null && candidateName.length > k + 1 && candidateName[k + 1] == 'Each:')
-                                    {
+                                    if (k == 0 && Number(letter) != null && candidateName.length > k + 1 && candidateName[k + 1] == 'Each:') {
                                         let resourceParts = candidateName[k].split('/');
-                                        if(resourceParts.length == 2 && Number(resourceParts[0]) != null && Number.isInteger(Number(resourceParts[0])))
-                                        {
-                                            let name = rowArray[j].replace(candidateName[k] + ' Each:','').trim();
+                                        if (resourceParts.length == 2 && Number(resourceParts[0]) != null && Number.isInteger(Number(resourceParts[0]))) {
+                                            let name = rowArray[j].replace(candidateName[k] + ' Each:', '').trim();
                                             resources.push(new Resource(name, Number(resourceParts[0])));
+                                            colonName = true;
                                         }
-                                        else
-                                        {
+                                        else {
                                             throw Error('Stat block parsing detected Action that is limited per a unit of time but the format is not correct');
                                         }
                                         break;
@@ -1221,10 +1222,205 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                                     actions[index][1] = actions[index][1] + rowArray[j];
                                 }
                                 else if (!isName) {
-                                    throw Error('Stat block actions must have a trait name before a trait description');
+                                    throw Error('Stat block must have an action name before an action description');
+                                }
+                                else if (colonName) {
+                                    let colonSection = rowArray[j].split(':');
+                                    actions.push([colonSection[0], rowArray[j].replace(colonSection[0], '').trim()]);
+                                    descriptionJSX.push(<b>{colonSection[0]}: </b>);
+                                    actionJSX.push(<p key={keyCount}>{descriptionJSX}</p>);
+                                    keyCount++;
+                                    //Skip parsing for formatting dice rolls and bolds
+                                    break;
                                 }
                                 else {
                                     actions.push([newRow[0], rowArray[j].replace(newRow[0], '').trim()]);
+                                    descriptionJSX.push(<b>{newRow[0]}. </b>);
+                                }
+
+                                //Iterate over trait description to format JSX
+                                let description = rowArray[j].replace(newRow[0], '').trim();
+                                let descrParts = description.split('.');
+
+                                //Iterate over description seperated by periods
+                                for (let x = 0; x < descrParts.length; x++) {
+                                    let unparsedDesc = '';
+                                    if (descrParts[x].includes('Saving Throw: DC')) {
+                                        //Find index of saving throw
+                                        for (let k = 0; k < SAVINGTHROWS.length; k++) {
+                                            if (descrParts[x].includes(SAVINGTHROWS[k] + ' Saving Throw:')) {
+                                                descriptionJSX.push(<i>{SAVINGTHROWS[k] + ' Saving Throw:'}</i>);
+                                                unparsedDesc = descrParts[x].replace(SAVINGTHROWS[k] + ' Saving Throw:', '') + '.';
+                                            }
+                                        }
+                                    }
+                                    else if (descrParts[x].includes('Failure or Success:')) {
+                                        descriptionJSX.push(<i> Failure or Success:</i>);
+                                        unparsedDesc = descrParts[x].replace('Failure or Success:', '') + '.';
+                                    }
+                                    else if (descrParts[x].includes('Failure:')) {
+                                        descriptionJSX.push(<i> Failure:</i>);
+                                        unparsedDesc = descrParts[x].replace('Failure:', '') + '.';
+                                    }
+                                    else if (descrParts[x].includes('Success:')) {
+                                        descriptionJSX.push(<i> Success:</i>);
+                                        unparsedDesc = descrParts[x].replace('Success:', '') + '.';
+                                    }
+                                    else {
+                                        unparsedDesc = descrParts[x] + '.';
+                                    }
+                                    //Search for dice notation with regex
+                                    const regex = new RegExp('(\d+d\d+)( (\+|\-)\d+)?');
+                                    let match = unparsedDesc.match(regex);
+                                    if (match && match.length > 0) {
+                                        //Iterate over all matches of dice roll notations and add them as buttons to the JSX array
+                                        for (let k = 0; k < match.length; k++) {
+                                            let sides = unparsedDesc.split(match[k]);
+                                            descriptionJSX.push(sides[0]);
+
+                                            let rollAndMod = match[k].split(' ');
+                                            let diceNums = rollAndMod[0].split('d');
+
+                                            if (diceNums.length != 2 || Number(diceNums[0]) == null || Number(diceNums[1]) == null) {
+                                                throw Error('Stat block parses dice notations incorrectly');
+                                            }
+
+                                            if (rollAndMod.length == 2) {
+                                                if (Number(rollAndMod[1]) == null) {
+                                                    throw Error('Stat block parses dice notations incorrectly');
+                                                }
+
+                                                let myDice: Dice = {
+                                                    diceFace: Number(diceNums[1]), numDice: Number(diceNums[0]), valMethod: 0, staticMod: Number(rollAndMod[1]),
+                                                    operationType: 0
+                                                };
+                                            }
+                                            else if (rollAndMod.length == 1) {
+                                                let myDice: Dice = {
+                                                    diceFace: Number(diceNums[1]), numDice: Number(diceNums[0]), valMethod: 0, staticMod: 0,
+                                                    operationType: 0
+                                                };
+                                            }
+
+                                            unparsedDesc = sides[1];
+
+                                            descriptionJSX.push(<Button>{match[k]}</Button>)
+                                        }
+                                    }
+                                    //Place any leftover descriptions into the JSX array
+                                    descriptionJSX.push(unparsedDesc);
+                                }
+                                actionJSX.push(<p key={keyCount}>{descriptionJSX}</p>);
+                                keyCount++;
+                        }
+                        j++;
+                    }
+                    jsx = jsx.concat(actionJSX);
+                    i = j;
+                }
+                else if ((newRow = rowArray[i].split(' '))[0] == 'Bonus' && newRow.length > 1 && newRow[1] == 'Actions') {
+                    let end = false;
+                    let j = i + 1;
+                    let followingParagraph = false;
+                    //Follows format of trait name, action description, 
+                    let bActions: any[] = [];
+                    let bActionJSX = [<h4 key={keyCount} className='sectionHeaderDND5E'><b>Bonus Actions</b></h4>];
+                    keyCount++;
+                    while (!end) {
+                        //Check if new section or still inside action section
+                        if (rowArray.length <= j) {
+                            end = true;
+                            break;
+                        }
+
+                        switch (rowArray[j].split(' ')[0]) {
+                            case 'Traits':
+                                end = true;
+                                alert('Warning: Stat block Traits section is improperly placed after the Bonus Actions section');
+                                break;
+                            case 'Actions':
+                                end = true;
+                                alert('Warning: Stat block Actions section is improperly placed after the Bonus Actions section');
+                                break;
+                            case 'Reactions':
+                                end = true;
+                                break;
+                            case 'Legendary':
+                                end = true;
+                                break;
+                            case '':
+                                break;
+                            default:
+
+                                newRow = rowArray[j].split('.');
+                                if (newRow.length <= 1 && !followingParagraph) {
+                                    throw Error('Stat block bonus actions must follow the format of the action name ending in a \'.\' followed by the bonus action description');
+                                }
+
+                                let candidateName = newRow[0].split(' ');
+                                let isName = true;
+                                let colonName = false;
+                                //Iterate over all words in seperated by period
+                                for (let k = 0; k < candidateName.length; k++) {
+                                    //If the first letter is not uppercase, indicate it as not a action name
+                                    let letter = candidateName[k].at(0);
+                                    //Indicates is a resource
+                                    if (letter == '(') {
+                                        let resourceName = newRow[0].replace(candidateName[k], '').trim();
+                                        let resourceMax = candidateName[k].replace('(', '').replace(')', '').trim().split('/');
+                                        if (resourceMax.length == 2 && Number(resourceMax[0]) != null && Number.isInteger(Number(resourceMax[0]))) {
+                                            resources.push(new Resource(resourceName, Number(resourceMax[0])));
+                                        }
+                                        else {
+                                            throw Error('Stat block found bonus action resource but positive integer number per unit of time is not formatted correctly');
+                                        }
+
+                                        break;
+                                    }
+
+                                    //For spell cantrips
+                                    if (k == 0 && candidateName[k] == 'At' && candidateName.length > k + 1 && candidateName[k + 1] == 'Will:') {
+                                        colonName = true;
+                                    }
+
+                                    //Indicates a pooled resource. Typically for spells
+                                    if (k == 0 && Number(letter) != null && candidateName.length > k + 1 && candidateName[k + 1] == 'Each:') {
+                                        let resourceParts = candidateName[k].split('/');
+                                        if (resourceParts.length == 2 && Number(resourceParts[0]) != null && Number.isInteger(Number(resourceParts[0]))) {
+                                            let name = rowArray[j].replace(candidateName[k] + ' Each:', '').trim();
+                                            resources.push(new Resource(name, Number(resourceParts[0])));
+                                        }
+                                        else {
+                                            throw Error('Stat block parsing detected Bonus Action that is limited per a unit of time but the format is not correct');
+                                        }
+                                        break;
+                                    }
+
+                                    if (letter == null || !isUpperCase(letter)) {
+                                        isName = false;
+                                        break;
+                                    }
+                                }
+
+                                let descriptionJSX = [];
+                                if (!isName && followingParagraph) {
+                                    let index = bActions.length - 1;
+                                    bActions[index][1] = bActions[index][1] + rowArray[j];
+                                }
+                                else if (!isName) {
+                                    throw Error('Stat block must have a bonus action name before a bonus action description');
+                                }
+                                else if (colonName) {
+                                    let colonSection = rowArray[j].split(':');
+                                    bActions.push([colonSection[0], rowArray[j].replace(colonSection[0], '').trim()]);
+                                    descriptionJSX.push(<b>{colonSection[0]}: </b>);
+                                    bActionJSX.push(<p key={keyCount}>{descriptionJSX}</p>);
+                                    keyCount++;
+                                    //Skip parsing for formatting dice rolls and bolds
+                                    break;
+                                }
+                                else {
+                                    bActions.push([newRow[0], rowArray[j].replace(newRow[0], '').trim()]);
                                     descriptionJSX.push(<b>{newRow[0]}. </b>)
                                 }
 
@@ -1300,32 +1496,465 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                                     //Place any leftover descriptions into the JSX array
                                     descriptionJSX.push(unparsedDesc);
                                 }
-                                traitJSX.push(<p key={keyCount}>{descriptionJSX}</p>);
+                                bActionJSX.push(<p key={keyCount}>{descriptionJSX}</p>);
                                 keyCount++;
                         }
                         j++;
                     }
-                    jsx = jsx.concat(traitJSX);
+                    jsx = jsx.concat(bActionJSX);
                     i = j;
                 }
-                else if ((newRow = rowArray[i].split(' '))[0] == 'Bonus' && newRow.length > 1 && newRow[1] == 'Actions') {
-
-                }
                 else if ((newRow = rowArray[i].split(' '))[0] == 'Reactions') {
+                    let end = false;
+                    let j = i + 1;
+                    let followingParagraph = false;
+                    //Follows format of trait name, action description, 
+                    let reactions: any[] = [];
+                    let reactionJSX = [<h4 key={keyCount} className='sectionHeaderDND5E'><b>Bonus Actions</b></h4>];
+                    keyCount++;
+                    while (!end) {
+                        //Check if new section or still inside action section
+                        if (rowArray.length <= j) {
+                            end = true;
+                            break;
+                        }
 
-                }
-                else if ((newRow = rowArray[i].split(' '))[0] == 'Legendary' && newRow.length > 1 && newRow[1] == 'Actions') {
+                        switch (rowArray[j].split(' ')[0]) {
+                            case 'Traits':
+                                end = true;
+                                alert('Warning: Stat block Traits section is improperly placed after the Reactions section');
+                                break;
+                            case 'Actions':
+                                end = true;
+                                alert('Warning: Stat block Actions section is improperly placed after the Reactions section');
+                                break;
+                            case 'Bonus':
+                                end = true;
+                                alert('Warning: Stat block Bonus Action section is improperly placed after the Reactions section');
+                                break;
+                            case 'Legendary':
+                                end = true;
+                                break;
+                            case '':
+                                break;
+                            default:
 
+                                newRow = rowArray[j].split('.');
+                                if (newRow.length <= 1 && !followingParagraph) {
+                                    throw Error('Stat block reactions must follow the format of the reaction name ending in a \'.\' followed by the reaction description');
+                                }
+
+                                let candidateName = newRow[0].split(' ');
+                                let isName = true;
+                                let colonName = false;
+                                //Iterate over all words in seperated by period
+                                for (let k = 0; k < candidateName.length; k++) {
+                                    //If the first letter is not uppercase, indicate it as not a action name
+                                    let letter = candidateName[k].at(0);
+                                    //Indicates is a resource
+                                    if (letter == '(') {
+                                        let resourceName = newRow[0].replace(candidateName[k], '').trim();
+                                        let resourceMax = candidateName[k].replace('(', '').replace(')', '').trim().split('/');
+                                        if (resourceMax.length == 2 && Number(resourceMax[0]) != null && Number.isInteger(Number(resourceMax[0]))) {
+                                            resources.push(new Resource(resourceName, Number(resourceMax[0])));
+                                        }
+                                        else {
+                                            throw Error('Stat block found reaction resource but positive integer number per unit of time is not formatted correctly');
+                                        }
+
+                                        break;
+                                    }
+
+                                    //For spell cantrips
+                                    if (k == 0 && candidateName[k] == 'At' && candidateName.length > k + 1 && candidateName[k + 1] == 'Will:') {
+                                        colonName = true;
+                                    }
+
+                                    //Indicates a pooled resource. Typically for spells
+                                    if (k == 0 && Number(letter) != null && candidateName.length > k + 1 && candidateName[k + 1] == 'Each:') {
+                                        let resourceParts = candidateName[k].split('/');
+                                        if (resourceParts.length == 2 && Number(resourceParts[0]) != null && Number.isInteger(Number(resourceParts[0]))) {
+                                            let name = rowArray[j].replace(candidateName[k] + ' Each:', '').trim();
+                                            resources.push(new Resource(name, Number(resourceParts[0])));
+                                        }
+                                        else {
+                                            throw Error('Stat block parsing detected Reaction that is limited per a unit of time but the format is not correct');
+                                        }
+                                        break;
+                                    }
+
+                                    if (letter == null || !isUpperCase(letter)) {
+                                        isName = false;
+                                        break;
+                                    }
+                                }
+
+                                let descriptionJSX = [];
+                                if (!isName && followingParagraph) {
+                                    let index = reactions.length - 1;
+                                    reactions[index][1] = reactions[index][1] + rowArray[j];
+                                }
+                                else if (!isName) {
+                                    throw Error('Stat block reactions must have a reaction name before a reaction description');
+                                }
+                                else if (colonName) {
+                                    let colonSection = rowArray[j].split(':');
+                                    reactions.push([colonSection[0], rowArray[j].replace(colonSection[0], '').trim()]);
+                                    descriptionJSX.push(<b>{colonSection[0]}: </b>);
+                                    reactionJSX.push(<p key={keyCount}>{descriptionJSX}</p>);
+                                    keyCount++;
+                                    //Skip parsing for formatting dice rolls and bolds
+                                    break;
+                                }
+                                else {
+                                    reactions.push([newRow[0], rowArray[j].replace(newRow[0], '').trim()]);
+                                    descriptionJSX.push(<b>{newRow[0]}. </b>)
+                                }
+
+                                //Iterate over trait description to format JSX
+                                let description = rowArray[j].replace(newRow[0], '').trim();
+                                let descrParts = description.split('.');
+
+                                //Iterate over description seperated by periods
+                                for (let x = 0; x < descrParts.length; x++) {
+                                    let unparsedDesc = '';
+                                    if (descrParts[x].includes('Saving Throw: DC')) {
+                                        //Find index of saving throw
+                                        for (let k = 0; k < SAVINGTHROWS.length; k++) {
+                                            if (descrParts[x].includes(SAVINGTHROWS[k] + ' Saving Throw:')) {
+                                                descriptionJSX.push(<i>{SAVINGTHROWS[k] + ' Saving Throw:'}</i>);
+                                                unparsedDesc = descrParts[x].replace(SAVINGTHROWS[k] + ' Saving Throw:', '') + '.';
+                                            }
+                                        }
+                                    }
+                                    else if (descrParts[x].includes('Failure or Success:')) {
+                                        descriptionJSX.push(<i> Failure or Success:</i>);
+                                        unparsedDesc = descrParts[x].replace('Failure or Success:', '') + '.';
+                                    }
+                                    else if (descrParts[x].includes('Failure:')) {
+                                        descriptionJSX.push(<i> Failure:</i>);
+                                        unparsedDesc = descrParts[x].replace('Failure:', '') + '.';
+                                    }
+                                    else if (descrParts[x].includes('Success:')) {
+                                        descriptionJSX.push(<i> Success:</i>);
+                                        unparsedDesc = descrParts[x].replace('Success:', '') + '.';
+                                    }
+                                    else {
+                                        unparsedDesc = descrParts[x] + '.';
+                                    }
+                                    //Search for dice notation with regex
+                                    const regex = new RegExp('(\d+d\d+)( (\+|\-)\d+)?');
+                                    let match = unparsedDesc.match(regex);
+                                    if (match && match.length > 0) {
+                                        //Iterate over all matches of dice roll notations and add them as buttons to the JSX array
+                                        for (let k = 0; k < match.length; k++) {
+                                            let sides = unparsedDesc.split(match[k]);
+                                            descriptionJSX.push(sides[0]);
+
+                                            let rollAndMod = match[k].split(' ');
+                                            let diceNums = rollAndMod[0].split('d');
+
+                                            if (diceNums.length != 2 || Number(diceNums[0]) == null || Number(diceNums[1]) == null) {
+                                                throw Error('Stat block parses dice notations incorrectly');
+                                            }
+
+                                            if (rollAndMod.length == 2) {
+                                                if (Number(rollAndMod[1]) == null) {
+                                                    throw Error('Stat block parses dice notations incorrectly');
+                                                }
+
+                                                let myDice: Dice = {
+                                                    diceFace: Number(diceNums[1]), numDice: Number(diceNums[0]), valMethod: 0, staticMod: Number(rollAndMod[1]),
+                                                    operationType: 0
+                                                };
+                                            }
+                                            else if (rollAndMod.length == 1) {
+                                                let myDice: Dice = {
+                                                    diceFace: Number(diceNums[1]), numDice: Number(diceNums[0]), valMethod: 0, staticMod: 0,
+                                                    operationType: 0
+                                                };
+                                            }
+
+                                            unparsedDesc = sides[1];
+
+                                            descriptionJSX.push(<Button>{match[k]}</Button>)
+                                        }
+                                    }
+                                    //Place any leftover descriptions into the JSX array
+                                    descriptionJSX.push(unparsedDesc);
+                                }
+                                reactionJSX.push(<p key={keyCount}>{descriptionJSX}</p>);
+                                keyCount++;
+                        }
+                        j++;
+                    }
+                    jsx = jsx.concat(reactionJSX);
+                    i = j;
                 }
+                else if (rowArray[i].split(' ')[0] == 'Legendary' && newRow.length > 1 && newRow[1] == 'Actions') {
+                    let end = false;
+                    let j = i + 1;
+                    let followingParagraph = false;
+                    //Follows format of trait name, action description, 
+                    let legActions: any[] = [];
+                    let legActionJSX = [<h4 key={keyCount} className='sectionHeaderDND5E'><b>Bonus Actions</b></h4>];
+                    keyCount++;
+                    if (j >= rowArray.length) {
+                        throw Error('Stat block contains Legendary Actions section header but has no further action names or descriptions');
+                    }
+                    newRow = rowArray[j].split('.');
+                    if (newRow[0].includes('Legendary Action Uses:')) {
+                        let legendRes = newRow[0];
+                        let resResource = legendRes.split('(');
+                        if (resResource.length == 2) {
+                            legendRes = resResource[1].replace(')', '').trim();
+                            resResource = legendRes.split(', or ');
+                            if (resResource.length == 1) {
+                                let parts = resResource[0].split('/');
+                                if (parts.length == 2) {
+                                    if (Number(parts[0]) == null || !Number.isInteger(Number(parts[0]))) {
+                                        throw Error('Stat block Legendary Resistance value must be a positive integer');
+                                    }
+                                    resources.push(new Resource('Legendary Resistance', Number(parts[0])));
+                                    traits.push(['Legendary Resistance', [resources.length - 1, parts[1]], [-1, '']]);
+                                }
+                                else {
+                                    throw Error('Stat block Legendary Resistances amount indicated must be in format of positive integer value followed by \'/\' and the recharge unit of time');
+                                }
+                            }
+                            else if (resResource.length == 2) {
+                                let parts = resResource[0].split('/');
+                                let lairParts = resResource[1].split('/');
+
+                                if (parts.length == 2) {
+                                    if (Number(parts[0]) == null || !Number.isInteger(Number(parts[0]))) {
+                                        throw Error('Stat block Legendary Resistance value must be a positive integer');
+                                    }
+                                    resources.push(new Resource('Legendary Resistance', Number(parts[0])));
+
+                                }
+                                else {
+                                    throw Error('Stat block Legendary Resistances amount indicated must be in format of positive integer value followed by \'/\' and the recharge unit of time');
+                                }
+
+                                if (lairParts.length != 2) {
+                                    throw Error('Stat block Legendary Resistance value must include a \'/\' to seperate the number of legendary actions and the time to reset');
+                                }
+                                let lairReset = lairParts[1].split(' ');
+
+                                if (lairReset.length != 3 || lairReset[1] != 'in' || lairReset[2].toLowerCase() != 'lair') {
+                                    throw Error('Stat block Legendary Resistance for within a lair must include the value sperated by a \'/\', the recharge unit of time, and \'in Lair\'');
+                                }
+
+                                if (Number(lairParts[0]) == null || !Number.isInteger(Number(lairParts[0]))) {
+                                    throw Error('Stat block Legendary Resistance value must be a positive integer');
+                                }
+
+                                resources.push(new Resource('Legendary Resistance (Lair)', Number(lairParts[0])));
+
+                                traits.push(['Legendary Resistance', [resources.length - 2, parts[1]], [resources.length - 1, lairReset[0]]]);
+                            }
+                            else {
+                                throw Error('Stat block Legendary Resistances can only indicate the number of resistances with and without a lair');
+                            }
+                            traitJSX.push(<p key={keyCount}><b>Legendary Resistance</b> {rowArray[j].replace('Legendary Resistance', '').trim()}</p>);
+                            keyCount++;
+                        }
+                        else {
+                            throw Error('Stat Block Trait including Legendary Resistance must have parentheses surounding the number per day');
+                        }
+                    }
+
+
+                        while (!end) {
+                            //Check if new section or still inside action section
+                            if (rowArray.length <= j) {
+                                end = true;
+                                break;
+                            }
+
+                            switch (rowArray[j].split(' ')[0]) {
+                                case 'Traits':
+                                    end = true;
+                                    alert('Warning: Stat block Traits section is improperly placed after the Legendary Actions section');
+                                    break;
+                                case 'Actions':
+                                    end = true;
+                                    alert('Warning: Stat block Actions section is improperly placed after the Legendary Actions section');
+                                    break;
+                                case 'Bonus':
+                                    end = true;
+                                    alert('Warning: Stat block Bonus Actions section is improperly placed after the Legendary Actions section');
+                                    break;
+                                case 'Reactions':
+                                    end = true;
+                                    alert('Warning: Stat block Reactions section is improperly placed after the Legendary Actions section');
+                                    break;
+                                case '':
+                                    break;
+                                default:
+
+                                    newRow = rowArray[j].split('.');
+                                    if (newRow.length <= 1 && !followingParagraph) {
+                                        throw Error('Stat block reactions must follow the format of the reaction name ending in a \'.\' followed by the reaction description');
+                                    }
+
+                                    let candidateName = newRow[0].split(' ');
+                                    let isName = true;
+                                    let colonName = false;
+                                    //Iterate over all words in seperated by period
+                                    for (let k = 0; k < candidateName.length; k++) {
+                                        //If the first letter is not uppercase, indicate it as not a action name
+                                        let letter = candidateName[k].at(0);
+                                        //Indicates is a resource
+                                        if (letter == '(') {
+                                            let resourceName = newRow[0].replace(candidateName[k], '').trim();
+                                            let resourceMax = candidateName[k].replace('(', '').replace(')', '').trim().split('/');
+                                            if (resourceMax.length == 2 && Number(resourceMax[0]) != null && Number.isInteger(Number(resourceMax[0]))) {
+                                                resources.push(new Resource(resourceName, Number(resourceMax[0])));
+                                            }
+                                            else {
+                                                throw Error('Stat block found reaction resource but positive integer number per unit of time is not formatted correctly');
+                                            }
+
+                                            break;
+                                        }
+
+                                        //For spell cantrips
+                                        if (k == 0 && candidateName[k] == 'At' && candidateName.length > k + 1 && candidateName[k + 1] == 'Will:') {
+                                            colonName = true;
+                                        }
+
+                                        //Indicates a pooled resource. Typically for spells
+                                        if (k == 0 && Number(letter) != null && candidateName.length > k + 1 && candidateName[k + 1] == 'Each:') {
+                                            let resourceParts = candidateName[k].split('/');
+                                            if (resourceParts.length == 2 && Number(resourceParts[0]) != null && Number.isInteger(Number(resourceParts[0]))) {
+                                                let name = rowArray[j].replace(candidateName[k] + ' Each:', '').trim();
+                                                resources.push(new Resource(name, Number(resourceParts[0])));
+                                            }
+                                            else {
+                                                throw Error('Stat block parsing detected Reaction that is limited per a unit of time but the format is not correct');
+                                            }
+                                            break;
+                                        }
+
+                                        if (letter == null || !isUpperCase(letter)) {
+                                            isName = false;
+                                            break;
+                                        }
+                                    }
+
+                                    let descriptionJSX = [];
+                                    if (!isName && followingParagraph) {
+                                        let index = legActions.length - 1;
+                                        legActions[index][1] = legActions[index][1] + rowArray[j];
+                                    }
+                                    else if (!isName) {
+                                        throw Error('Stat block reactions must have a reaction name before a reaction description');
+                                    }
+                                    else if (colonName) {
+                                        let colonSection = rowArray[j].split(':');
+                                        legActions.push([colonSection[0], rowArray[j].replace(colonSection[0], '').trim()]);
+                                        descriptionJSX.push(<b>{colonSection[0]}: </b>);
+                                        legActionJSX.push(<p key={keyCount}>{descriptionJSX}</p>);
+                                        keyCount++;
+                                        //Skip parsing for formatting dice rolls and bolds
+                                        break;
+                                    }
+                                    else {
+                                        legActions.push([newRow[0], rowArray[j].replace(newRow[0], '').trim()]);
+                                        descriptionJSX.push(<b>{newRow[0]}. </b>)
+                                    }
+
+                                    //Iterate over trait description to format JSX
+                                    let description = rowArray[j].replace(newRow[0], '').trim();
+                                    let descrParts = description.split('.');
+
+                                    //Iterate over description seperated by periods
+                                    for (let x = 0; x < descrParts.length; x++) {
+                                        let unparsedDesc = '';
+                                        if (descrParts[x].includes('Saving Throw: DC')) {
+                                            //Find index of saving throw
+                                            for (let k = 0; k < SAVINGTHROWS.length; k++) {
+                                                if (descrParts[x].includes(SAVINGTHROWS[k] + ' Saving Throw:')) {
+                                                    descriptionJSX.push(<i>{SAVINGTHROWS[k] + ' Saving Throw:'}</i>);
+                                                    unparsedDesc = descrParts[x].replace(SAVINGTHROWS[k] + ' Saving Throw:', '') + '.';
+                                                }
+                                            }
+                                        }
+                                        else if (descrParts[x].includes('Failure or Success:')) {
+                                            descriptionJSX.push(<i> Failure or Success:</i>);
+                                            unparsedDesc = descrParts[x].replace('Failure or Success:', '') + '.';
+                                        }
+                                        else if (descrParts[x].includes('Failure:')) {
+                                            descriptionJSX.push(<i> Failure:</i>);
+                                            unparsedDesc = descrParts[x].replace('Failure:', '') + '.';
+                                        }
+                                        else if (descrParts[x].includes('Success:')) {
+                                            descriptionJSX.push(<i> Success:</i>);
+                                            unparsedDesc = descrParts[x].replace('Success:', '') + '.';
+                                        }
+                                        else {
+                                            unparsedDesc = descrParts[x] + '.';
+                                        }
+                                        //Search for dice notation with regex
+                                        const regex = new RegExp('(\d+d\d+)( (\+|\-)\d+)?');
+                                        let match = unparsedDesc.match(regex);
+                                        if (match && match.length > 0) {
+                                            //Iterate over all matches of dice roll notations and add them as buttons to the JSX array
+                                            for (let k = 0; k < match.length; k++) {
+                                                let sides = unparsedDesc.split(match[k]);
+                                                descriptionJSX.push(sides[0]);
+
+                                                let rollAndMod = match[k].split(' ');
+                                                let diceNums = rollAndMod[0].split('d');
+
+                                                if (diceNums.length != 2 || Number(diceNums[0]) == null || Number(diceNums[1]) == null) {
+                                                    throw Error('Stat block parses dice notations incorrectly');
+                                                }
+
+                                                if (rollAndMod.length == 2) {
+                                                    if (Number(rollAndMod[1]) == null) {
+                                                        throw Error('Stat block parses dice notations incorrectly');
+                                                    }
+
+                                                    let myDice: Dice = {
+                                                        diceFace: Number(diceNums[1]), numDice: Number(diceNums[0]), valMethod: 0, staticMod: Number(rollAndMod[1]),
+                                                        operationType: 0
+                                                    };
+                                                }
+                                                else if (rollAndMod.length == 1) {
+                                                    let myDice: Dice = {
+                                                        diceFace: Number(diceNums[1]), numDice: Number(diceNums[0]), valMethod: 0, staticMod: 0,
+                                                        operationType: 0
+                                                    };
+                                                }
+
+                                                unparsedDesc = sides[1];
+
+                                                descriptionJSX.push(<Button>{match[k]}</Button>)
+                                            }
+                                        }
+                                        //Place any leftover descriptions into the JSX array
+                                        descriptionJSX.push(unparsedDesc);
+                                    }
+                                    legActionJSX.push(<p key={keyCount}>{descriptionJSX}</p>);
+                                    keyCount++;
+                            }
+                            j++;
+                        }
+                        jsx = jsx.concat(legActionJSX);
+                        i = j;
+                    }
+                }
+
             }
-
-        }
         //2014 version
         else {
-            throw Error('2014 stat block parsing not available');
+                throw Error('2014 stat block parsing not available');
+            }
         }
     }
-}
 
 function isUpperCase(letter: string): boolean {
     if (letter.length != 1 || letter !== letter.toUpperCase() || letter === letter.toLowerCase()) {
