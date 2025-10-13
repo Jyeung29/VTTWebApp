@@ -3,8 +3,11 @@ import type { Token } from "../tokenComponents/Token";
 import TabletopRoleplayingGame from "./TabletopRoleplayingGame";
 import { DiceRoll, type Dice } from "../DiceRollComponents/DiceRoll";
 import { Button, Table } from "@chakra-ui/react";
+import { emitKeypressEvents } from "readline";
 
 const ABILITYSCORENAMES = ['Str', 'Dex', 'Con', 'Int', 'Wis', 'Cha'];
+
+const SAVINGTHROWS = ['Strength', 'Dexterity', 'Constitution', 'Intelligence', 'Wisdom', 'Charisma'];
 
 const SIZECATEGORIES: [string, number][] = [['Tiny', 0.5], ['Small', 1], ['Medium', 2], ['Large', 3], ['Huge', 4], ['Gargantuan', 5]];
 
@@ -26,6 +29,9 @@ const DAMAGERESISTANCES: string[] = ['Cold', 'Fire', 'Lightning', 'Acid', 'Thund
 
 const UNITMEASUREMENTS: string[] = ['ft.', 'm.']
 
+//Unimplemented when stat block displaying is complete
+const SPELLDESCRIPTIONS: [string,string, any][] = [];
+
 export class DungeonsNDragons5E extends TabletopRoleplayingGame {
     protected generalToolJSX = [];
     protected battleMapToolJSX = [];
@@ -40,7 +46,7 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
     public parseStatBlock(rawText: string, gameLog) {
 
         let rowArray = rawText.split('\n');
-        let stats = [];
+        let stats: any[] = [];
         let jsx = [];
         let resources: Resource[] = [];
 
@@ -118,8 +124,7 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                 throw Error('Stat block text contains an invalid Armor Class or Initiative value');
             }
 
-            if(!Number.isInteger(Number(newRow[1])) || !Number.isInteger(Number(newRow[3])))
-            {
+            if (!Number.isInteger(Number(newRow[1])) || !Number.isInteger(Number(newRow[3]))) {
                 throw Error('Stat block text contains a non-integer Armor Class or Intiative value');
             }
 
@@ -152,8 +157,7 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                 throw Error('Static HP is not specified in correct 2024 format');
             }
 
-            if(!Number.isInteger(Number(staticHP[1])))
-            {
+            if (!Number.isInteger(Number(staticHP[1]))) {
                 throw Error('Static HP is not an integer value');
             }
 
@@ -172,8 +176,7 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                 throw Error('Stat block does not contain numbers at the dice notation of HP');
             }
 
-            if(!Number.isInteger(Number(diceNotation[0])) || !Number.isInteger(Number(diceNotation[1])))
-            {
+            if (!Number.isInteger(Number(diceNotation[0])) || !Number.isInteger(Number(diceNotation[1]))) {
                 throw Error('Stat block HP dice notation contains non-integer numbers');
             }
 
@@ -182,8 +185,7 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                     throw Error('Stat block does not contain numbers at the HP dice modifier');
                 }
 
-                if(!Number.isInteger(Number(rollVals[2])))
-                {
+                if (!Number.isInteger(Number(rollVals[2]))) {
                     throw Error('Stat block HP modifier contains non-integer numbers');
                 }
 
@@ -206,7 +208,8 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                 };
             }
 
-            stats.push(['HP', new DiceRoll([myDice]), Number(staticHP[1].trim())]);
+            //HP array shows string, static value, dice roll, and index of HP in resource array
+            stats.push(['HP', Number(staticHP[1].trim()), new DiceRoll([myDice]), 0]);
             jsx.push(<div className='StatBlockTextAndButton' key='3'>
                 <p><b>HP</b> {staticHP[1].trim()} <Button size='xs'>{rollHP}</Button></p>
             </div>);
@@ -224,26 +227,22 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                 if (speedLine.length != 3 || Number(speedLine[1]) == null) {
                     throw Error('Stat block does not contain correct Speed format with Speed type, speed value, and unit of measurement')
                 }
-                if(!Number.isInteger(Number(speedLine[1])))
-                {
+                if (!Number.isInteger(Number(speedLine[1]))) {
                     throw Error('Stat block contains a non-integer speed value');
                 }
 
                 let standardMeasurement = false;
-                for(let j = 0; j < UNITMEASUREMENTS.length; j++)
-                {
-                    if(speedLine[2] == UNITMEASUREMENTS[j])
-                    {
+                for (let j = 0; j < UNITMEASUREMENTS.length; j++) {
+                    if (speedLine[2] == UNITMEASUREMENTS[j]) {
                         standardMeasurement = true;
                         break;
                     }
                 }
-                if(!standardMeasurement && !confirm('Speed is using ' + speedLine[2] + ' which is a non-standard unit of measurement. Do you want to proceed to use this measurement?'))
-                {
+                if (!standardMeasurement && !confirm('Speed is using ' + speedLine[2] + ' which is a non-standard unit of measurement. Do you want to proceed to use this measurement?')) {
                     throw Error('Stat block Speed uses a non-standard unit of measurement');
                 }
 
-                stats.push([speedLine[0], Number(speedLine[1]), speedLine[2]]);
+                stats.push([speedLine[0], Number(speedLine[1]), speedLine[2], 1]);
                 resources.push(new Resource(speedLine[0], Number(speedLine[1])));
             }
 
@@ -289,8 +288,7 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                     throw Error('Stat block ' + ability + ' row in the Ability Score Table is not formatted correctly');
                 }
 
-                if(!Number.isInteger(Number(newRow[1])) || !Number.isInteger(Number(newRow[2])) || !Number.isInteger(Number(newRow[3])))
-                {
+                if (!Number.isInteger(Number(newRow[1])) || !Number.isInteger(Number(newRow[2])) || !Number.isInteger(Number(newRow[3]))) {
                     let ability = ABILITYSCORENAMES[i - 10];
                     if (i > 13) {
                         ability = ABILITYSCORENAMES[i - 11];
@@ -298,8 +296,7 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                     throw Error('Stat block ' + ability + ' contains a non-integer value');
                 }
 
-                if(Number(newRow[1]) < 0)
-                {
+                if (Number(newRow[1]) < 0) {
                     let ability = ABILITYSCORENAMES[i - 10];
                     if (i > 13) {
                         ability = ABILITYSCORENAMES[i - 11];
@@ -341,6 +338,24 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                 </Table.Body>
             </Table.Root>);
 
+            //Index 14
+            stats.push(['Skills', []]);
+            stats.push(['Vulnerabilities', []]);
+            stats.push(['Resistances', []]);
+            //Imunities two arrays are Damage Types and Conditions
+            stats.push(['Immunities', [], []]);
+            stats.push(['Senses', []]);
+            //Languages two arrays are of languages and telepathy
+            stats.push(['Languages', [], []]);
+            //CR arrays are CR value in fraction form and XP value (no lair, and in lair)
+            stats.push(['CR', [], []]);
+            stats.push('Proficiency Bonus', 0)
+            stats.push(['Traits', []]);
+            stats.push(['Actions', []]);
+            stats.push(['Bonus Actions', []]);
+            stats.push(['Reactions', []]);
+            stats.push(['Legendary Actions', []]);
+
             let keyCount = 6;
             //Iterate over rest of stat block which will vary in length and stat sections
             for (let i = 17; i < rowArray.length; i++) {
@@ -351,15 +366,14 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                     for (let j = 0; j < newRow.length; j++) {
                         let skill = newRow[j].split(' ');
                         if (skill.length != 2) {
-                            throw Error('Stat Block Skills are not formatted correctly');
+                            throw Error('Stat Block Skills are not formatted correctly with the skill name and skill modifier (that considers proficiency bonus)');
                         }
 
                         if (Number(skill[1]) == null) {
                             throw Error('Stat Block Skills must include a modifier');
                         }
 
-                        if(!Number.isInteger(Number(skill[1])))
-                        {
+                        if (!Number.isInteger(Number(skill[1]))) {
                             throw Error('Stat Block contains a skill with a non-integer modifier');
                         }
 
@@ -376,7 +390,7 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                         throw Error('Stat Block Skill parsing encountered an error');
                     }
 
-                    stats.push(['Skills', skillArray]);
+                    stats[14][1] = (skillArray);
                     jsx.push(<div className='StatBlockTextAndButton' key={keyCount}><b>Skills</b> {skillArray}</div>)
                     keyCount++;
                 }
@@ -411,7 +425,7 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                         }
                     }
                     if (vulnArray.length > 0) {
-                        stats.push(['Vulnerabilities', vulnArray]);
+                        stats[15][1] = vulnArray;
                         jsx.push(<div key={keyCount}><p><b>Vulnerabilities</b> {rowArray[i].replace('Vulnerabilities', '').trim()}</p></div>);
                         keyCount++;
                     }
@@ -447,7 +461,7 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                         }
                     }
                     if (resArray.length > 0) {
-                        stats.push(['Vulnerabilities', resArray]);
+                        stats[16][1] = resArray;
                         jsx.push(<div key={keyCount}><p><b>Vulnerabilities</b> {rowArray[i].replace('Resistances', '').trim()}</p></div>);
                         keyCount++;
                     }
@@ -558,10 +572,10 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                         }
 
                         if (immuneType == 0) {
-                            stats.push(['Damage Immunities', damageImmune.concat(customImmunities)]);
+                            stats[17][1] = damageImmune.concat(customImmunities);
                         }
                         else if (immuneType == 1) {
-                            stats.push(['Condition Immunities', conditionImmune.concat(customImmunities)]);
+                            stats[17][2] = conditionImmune.concat(customImmunities);
                         }
 
                         if (immuneType != -1) {
@@ -664,16 +678,16 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
 
                             //Switch sides
                             if (switched && !invalid) {
-                                stats.push(['Damage Immunities', rightCustom]);
-                                stats.push(['Condition Immunities', leftCustom]);
+                                stats[17][1] = rightCustom;
+                                stats[17][2] = leftCustom;
                                 alert('Warning: Stat Block Immunities section has a non-standard ordering of conditions,\';\', and damage types');
                                 jsx.push(<div key={keyCount}><p><b>Immunities</b> {newRow[0]};{newRow[1]}</p></div>)
                                 keyCount++;
                             }
                             //Do not switch sides
                             else if (!invalid) {
-                                stats.push(['Damage Immunities', leftCustom]);
-                                stats.push(['Condition Immunities', rightCustom]);
+                                stats[17][1] = leftCustom;
+                                stats[17][2] = rightCustom;
                                 jsx.push(<div key={keyCount}><p><b>Immunities</b> {rowArray[i].replace('Immunities', '').trim()}</p></div>)
                                 keyCount++;
                             }
@@ -716,8 +730,8 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                             }
 
                             //Is correct and are custom Immunities
-                            stats.push(['Damage Immunities', damageImmune.concat(leftCustom)]);
-                            stats.push(['Condition Immunities', conditionImmune.concat(rightCustom)]);
+                            stats[17][1] = damageImmune.concat(leftCustom);
+                            stats[17][2] = conditionImmune.concat(rightCustom);
                             jsx.push(<div key={keyCount}><p><b>Immunities</b> {rowArray[i].replace('Immunities', '').trim()}</p></div>)
                             keyCount++;
                         }
@@ -731,109 +745,568 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
                     let senseArray = [];
                     let standardSenses = true;
                     let standardMeasurement = true;
-                    for(let j = 0; j < newRow.length; j++)
-                    {
+                    for (let j = 0; j < newRow.length; j++) {
                         let sense = newRow[j].split(' ');
-                        if(sense.length == 3)
-                        {
-                            if(sense[1] == 'Perception' && sense[0] == 'Passive')
-                            {
-                                if(Number(sense[2]) == null)
-                                {
+                        if (sense.length == 3) {
+                            if (sense[1] == 'Perception' && sense[0] == 'Passive') {
+                                if (Number(sense[2]) == null) {
                                     throw Error('Stat Block senses contains a Passive Perception without a valid value');
                                 }
-                                else if(Number(sense[2]) < 0)
-                                {
+                                else if (Number(sense[2]) < 0) {
                                     throw Error('Stat Block senses contains a Passive Perception with an invalid negative value');
                                 }
-                                else if(!Number.isInteger(sense[2]))
-                                {
+                                else if (!Number.isInteger(sense[2])) {
                                     throw Error('Stat Block senses contains a Passive Perception with an invalid non-integer value');
                                 }
-                                else
-                                {
+                                else {
                                     senseArray.push(['Passive Perception', Number(sense[2])]);
                                 }
                             }
-                            else if(Number(sense[1]) != null && !Number.isInteger(Number(sense[1])))
-                            {
+                            else if (Number(sense[1]) != null && !Number.isInteger(Number(sense[1]))) {
                                 throw Error('A sense in the stat block contains an invalid non-integer value');
                             }
-                            else if(Number(sense[1]) != null && Number(sense[1]) > 0)
-                            {
+                            else if (Number(sense[1]) != null && Number(sense[1]) > 0) {
                                 let localSense = false;
                                 let localMeasurement = false;
                                 //Check if any custom senses are included
-                                for(let k = 0; k < SENSES.length; k++)
-                                {
-                                    if(SENSES[k] == sense[0])
-                                    {
+                                for (let k = 0; k < SENSES.length; k++) {
+                                    if (SENSES[k] == sense[0]) {
                                         localSense = true;
                                         break;
                                     }
                                 }
 
                                 //Set overall boolean to indicate to user all at once if there are custom senses
-                                if(!localSense && standardSenses)
-                                {
+                                if (!localSense && standardSenses) {
                                     standardSenses = false;
                                 }
 
-                                for(let k = 0; k < UNITMEASUREMENTS.length; k++)
-                                {
-                                    if(UNITMEASUREMENTS[k] == sense[2])
-                                    {
+                                for (let k = 0; k < UNITMEASUREMENTS.length; k++) {
+                                    if (UNITMEASUREMENTS[k] == sense[2]) {
                                         localMeasurement = true;
                                         break;
                                     }
                                 }
 
                                 //Set overall boolean to indicate to user all at once if there are custom measurements
-                                if(!localMeasurement && standardMeasurement)
-                                {
+                                if (!localMeasurement && standardMeasurement) {
                                     standardMeasurement = false;
                                 }
 
                                 senseArray.push([sense[0], Number(sense[1]), sense[2]]);
                             }
-                            else
-                            {
+                            else {
                                 throw Error('A sense in the stat block is not formatted correctly with the sense, distance, and unit of measurement');
                             }
                         }
-                        else
-                        {
+                        else {
                             throw Error('Stat Block Senses section contains a sense that is not \'Passive Perception\' with a number or a sense with a distance and unit of measurement');
                         }
                     }
 
                     //Custom senses were detected check if it was intentional and should be included
-                    if(!standardSenses && !confirm('Stat block Senses section contains custom senses. Proceed with using these senses?'))
-                    {
+                    if (!standardSenses && !confirm('Stat block Senses section contains custom senses. Proceed with using these senses?')) {
                         throw Error('Stat block contains custom senses are not used');
                     }
 
-                    if(!standardMeasurement && !confirm('Stat block Senses section contains senses with custom units of measurement. Proceed with using these measurements?'))
-                    {
+                    if (!standardMeasurement && !confirm('Stat block Senses section contains senses with custom units of measurement. Proceed with using these measurements?')) {
                         throw Error('Stat block contains custom unit measures that are not used');
                     }
 
                     jsx.push(<div key={keyCount}><p><b>Senses</b> {rowArray[i].replace('Senses', '').trim()}</p></div>);
-                    stats.push(['Senses', senseArray]);
+                    stats[18][1] = senseArray;
                     keyCount++;
 
                 }
-                else if ((newRow = rowArray[i].split(' '))[0] == 'Languages') {
+                else if ((rowArray[i].split(' '))[0] == 'Languages') {
+                    newRow = rowArray[i].replace('Languages', '').trim().split(';');
+                    //Telepathy section detected
+                    if (newRow.length == 2) {
+                        let telepathy = newRow[1].split(' ');
+                        if (telepathy.length != 3 || (telepathy.length == 3 && (telepathy[0] != 'telepathy' || Number(telepathy[1] == null)))) {
+                            throw Error('Stat block Languages section indicates telepathy but telepathy is incorrectly formatted or not provided');
+                        }
+                        if (Number(telepathy[1]) <= 0 || !Number.isInteger(Number(telepathy[1]))) {
+                            throw Error('Stat block Languages section indicates a telepathy that is an invalid negative or non-integer distance value');
+                        }
 
+                        let standardMeasurement = false;
+                        for (let j = 0; j < UNITMEASUREMENTS.length; j++) {
+                            if (UNITMEASUREMENTS[j] == telepathy[2]) {
+                                standardMeasurement = true;
+                                break;
+                            }
+                        }
+                        if (!standardMeasurement && !confirm('Telepathy distance is provided in a non-standard unit of measurement. Would you like to proceed using this measurement?')) {
+                            throw Error('Stat block Languages section contains telepathy that has a non-standard unit of measurement');
+                        }
+                        stats[19][2] = ['telepathy', Number(telepathy[1]), telepathy[2]];
+                    }
+
+                    newRow = newRow[0].trim().split(',');
+                    if (newRow.length == 1 && newRow[0] == '') {
+                        throw Error('Stat block is formatted incorrectly. To indicate no languages, include \'None\' after languages');
+                    }
+
+                    let languages = [];
+
+                    for (let j = 0; j < newRow.length; j++) {
+                        if (newRow[j] == 'None' && newRow.length > 1) {
+                            throw Error('Stat block includes \'None\' when multiple languages are indicated in the languages section');
+                        }
+                        languages.push(newRow[j]);
+                    }
+
+                    stats[19][1] = languages;
+                    jsx.push(<p><b>Languages</b> {rowArray[i].replace('Languages', '').trim()}</p>);
                 }
-                else if ((newRow = rowArray[i].split(' '))[0] == 'CR') {
+                else if ((rowArray[i].split(' '))[0] == 'CR') {
+                    newRow = rowArray[i].replace('CR', '').trim().split('(');
+                    if (newRow.length != 2) {
+                        throw Error('Stat block Combat Rating section is incorrectly formatted and may not include parentheses around the experience points and proficiency bonus');
+                    }
 
+                    let rating = newRow[0].trim().split('/');
+                    if (rating.length == 1) {
+                        if (Number(rating[0]) == null || !Number.isInteger(Number(rating[0]))) {
+                            throw Error('Stat block Combat Rating value must be a positive integer value');
+                        }
+                        stats[20][1] = [Number(rating[0]), 1];
+                    }
+                    else if (rating.length == 2) {
+                        if (Number(rating[0]) == null || !Number.isInteger(Number(rating[0])) || Number(rating[1]) == null || !Number.isInteger(Number(rating[1]))) {
+                            throw Error('Stat block Combat Rating fraction values must each be a positive integer value');
+                        }
+                        stats[20][1] = [Number(rating[0]), Number(rating[1])];
+                    }
+                    else {
+                        throw Error('Stat block Combat Rating cannot have more than a single \'/\' to indicate a fraction');
+                    }
+
+                    newRow[1] = newRow[1].replace(')', '');
+                    let parentheses = newRow[1].split(';');
+                    if (parentheses.length != 2) {
+                        throw Error('Stat block Combat Rating parentheses must contain an experience and proficiency bonus section seperated by \';\'');
+                    }
+                    let exp = parentheses[0].split('or');
+
+                    //No lair experience
+                    exp[0] = exp[0].replace(',', '').trim();
+                    let part = exp[0].split(' ');
+                    if (part.length != 2) {
+                        throw Error('Stat block experience point must be in the format of \'XP\' and the experience value');
+                    }
+                    if (Number(part[1]) == null || !Number.isInteger(Number(part[1])) || Number(part[1]) <= 0) {
+                        throw Error('Stat block experience points can only be a positive integer value');
+                    }
+                    stats[20][2] = [Number(part[1]), 0];
+                    //Has lair experience
+                    if (exp.length == 2) {
+                        exp[1] = exp[1].replace(',', '').trim();
+                        let lair = exp[1].split(' ');
+                        if (lair.length != 3 || (lair[1] != 'in' || lair[2] != 'lair')) {
+                            throw Error('Stat block experience point for a lair must be in the format of the experience value and \'in lair\'');
+                        }
+                        if (Number(lair[0]) == null || !Number.isInteger(Number(lair[0])) || Number(lair[0]) <= 0) {
+                            throw Error('Stat block lair experience points can only be a positive integer value');
+                        }
+                        stats[20][2] = [Number(part[1]), Number(lair[0])];
+                    }
+                    else if (exp.length > 2 || exp.length <= 0) {
+                        throw Error('Stat block experience points can only include one or up to 2 sections containing exp values not in or within a lair');
+                    }
+
+                    let proficiency = parentheses[1].split(' ');
+                    if (proficiency.length != 2 || proficiency[0] != 'PB' || Number(proficiency[1]) == null || !Number.isInteger(Number(proficiency[1]))) {
+                        throw Error('Stat block proficiency bonus must be in format of \'PB\' and a positive integer modifier');
+                    }
+
+                    stats[21][1] = Number(proficiency[1]);
+                    jsx.push(<p><b>CR</b> {rowArray[i].replace('CR', '').trim()}</p>);
                 }
-                else if ((newRow = rowArray[i].split(' '))[0] == 'Traits') {
+                else if ((rowArray[i].split(' '))[0] == 'Traits') {
+                    let end = false;
+                    let j = i + 1;
+                    let followingParagraph = false;
+                    //Follows format of trait name, trait description, 
+                    let traits: any[] = [];
+                    let traitJSX = [<h4 key={keyCount} className='sectionHeaderDND5E'><b>Traits</b></h4>];
+                    keyCount++;
+                    while (!end) {
+                        //Check if new section or still inside Trait section
+                        if (rowArray.length <= j) {
+                            end = true;
+                            break;
+                        }
 
+                        let spaceSeperated = rowArray[j].split(' ');
+
+                        switch (rowArray[j].split(' ')[0]) {
+                            case 'Actions':
+                                end = true;
+                                break;
+                            case 'Bonus':
+                                end = true;
+                                break;
+                            case 'Reactions':
+                                end = true;
+                                break;
+                            case 'Legendary':
+                                if (spaceSeperated.length > 3 && spaceSeperated[1] == 'Resistance') {
+                                    let legendRes = rowArray[j].split('.')[0];
+                                    let resResource = legendRes.split('(');
+                                    if (resResource.length == 2) {
+                                        legendRes = resResource[1].replace(').', '').trim();
+                                        resResource = legendRes.split(', or ');
+                                        if (resResource.length == 1) {
+                                            let parts = resResource[0].split('/');
+                                            if (parts.length == 2) {
+                                                if (Number(parts[0]) == null || !Number.isInteger(Number(parts[0]))) {
+                                                    throw Error('Stat block Legendary Resistance value must be a positive integer');
+                                                }
+                                                resources.push(new Resource('Legendary Resistance', Number(parts[0])));
+                                                traits.push(['Legendary Resistance', [resources.length - 1, parts[1]], [-1, '']]);
+                                            }
+                                            else {
+                                                throw Error('Stat block Legendary Resistances amount indicated must be in format of positive integer value followed by \'/\' and the recharge unit of time');
+                                            }
+                                        }
+                                        else if (resResource.length == 2) {
+                                            let parts = resResource[0].split('/');
+                                            let lairParts = resResource[1].split('/');
+
+                                            if (parts.length == 2) {
+                                                if (Number(parts[0]) == null || !Number.isInteger(Number(parts[0]))) {
+                                                    throw Error('Stat block Legendary Resistance value must be a positive integer');
+                                                }
+                                                resources.push(new Resource('Legendary Resistance', Number(parts[0])));
+
+                                            }
+                                            else {
+                                                throw Error('Stat block Legendary Resistances amount indicated must be in format of positive integer value followed by \'/\' and the recharge unit of time');
+                                            }
+
+                                            if (lairParts.length != 2) {
+                                                throw Error('Stat block Legendary Resistance value must include a \'/\' to seperate the number of legendary actions and the time to reset');
+                                            }
+                                            let lairReset = lairParts[1].split(' ');
+
+                                            if (lairReset.length != 3 || lairReset[1] != 'in' || lairReset[2].toLowerCase() != 'lair') {
+                                                throw Error('Stat block Legendary Resistance for within a lair must include the value sperated by a \'/\', the recharge unit of time, and \'in Lair\'');
+                                            }
+
+                                            if (Number(lairParts[0]) == null || !Number.isInteger(Number(lairParts[0]))) {
+                                                throw Error('Stat block Legendary Resistance value must be a positive integer');
+                                            }
+
+                                            resources.push(new Resource('Legendary Resistance (Lair)', Number(lairParts[0])));
+
+                                            traits.push(['Legendary Resistance', [resources.length - 2, parts[1]], [resources.length - 1, lairReset[0]]]);
+                                        }
+                                        else {
+                                            throw Error('Stat block Legendary Resistances can only indicate the number of resistances with and without a lair');
+                                        }
+                                        traitJSX.push(<p key={keyCount}><b>Legendary Resistance.</b> {rowArray[j].replace('Legendary Resistance', '').trim()}</p>);
+                                        keyCount++;
+                                    }
+                                    else {
+                                        throw Error('Stat Block Trait including Legendary Resistance must have parentheses surounding the number per day');
+                                    }
+                                }
+                                break;
+                            case '':
+                                break;
+                            default:
+
+                                newRow = rowArray[j].split('.');
+                                if (newRow.length <= 1 && !followingParagraph) {
+                                    throw Error('Stat block Traits must follow the format of the trait name ending in a \'.\' followed by the trait description');
+                                }
+
+                                let candidateName = newRow[0].split(' ');
+                                let isName = true;
+                                //Iterate over all words in seperated by period
+                                for (let k = 0; k < candidateName.length; k++) {
+                                    //If the first letter is not uppercase, indicate it as not a trait name
+                                    let letter = candidateName[k].at(0);
+
+                                    if (letter == null || !isUpperCase(letter)) {
+                                        isName = false;
+                                        break;
+                                    }
+                                }
+                                let descriptionJSX = [];
+                                if (!isName && followingParagraph) {
+                                    let index = traits.length - 1;
+                                    traits[index][1] = traits[index][1] + rowArray[j];
+                                }
+                                else if (!isName) {
+                                    throw Error('Stat block Traits must have a trait name before a trait description');
+                                }
+                                else {
+                                    traits.push([newRow[0], rowArray[j].replace(newRow[0], '').trim()]);
+                                    descriptionJSX.push(<b>{newRow[0]}. </b>)
+                                }
+
+                                //Iterate over trait description to format JSX
+                                let description = rowArray[j].replace(newRow[0], '').trim();
+                                let descrParts = description.split('.');
+
+                                //Iterate over description seperated by periods
+                                for (let x = 0; x < descrParts.length; x++) {
+                                    let unparsedDesc = '';
+                                    if (descrParts[x].includes('Saving Throw: DC')) {
+                                        //Find index of saving throw
+                                        for (let k = 0; k < SAVINGTHROWS.length; k++) {
+                                            if (descrParts[x].includes(SAVINGTHROWS[k] + ' Saving Throw:')) {
+                                                descriptionJSX.push(<i>{SAVINGTHROWS[k] + ' Saving Throw:'}</i>);
+                                                unparsedDesc = descrParts[x].replace(SAVINGTHROWS[k] + ' Saving Throw:', '') + '.';
+                                            }
+                                        }
+                                    }
+                                    else if (descrParts[x].includes('Failure or Success:')) {
+                                        descriptionJSX.push(<i> Failure or Success:</i>);
+                                        unparsedDesc = descrParts[x].replace('Failure or Success:', '') + '.';
+                                    }
+                                    else if (descrParts[x].includes('Failure:')) {
+                                        descriptionJSX.push(<i> Failure:</i>);
+                                        unparsedDesc = descrParts[x].replace('Failure:', '') + '.';
+                                    }
+                                    else if (descrParts[x].includes('Success:')) {
+                                        descriptionJSX.push(<i> Success:</i>);
+                                        unparsedDesc = descrParts[x].replace('Success:', '') + '.';
+                                    }
+                                    else {
+                                        unparsedDesc = descrParts[x] + '.';
+                                    }
+                                    //Search for 
+                                    const regex = new RegExp('(\d+d\d+)( (\+|\-)\d+)?');
+                                    let match = unparsedDesc.match(regex);
+                                    if (match && match.length > 0) {
+                                        //Iterate over all matches of dice roll notations and add them as buttons to the JSX array
+                                        for (let k = 0; k < match.length; k++) {
+                                            let sides = unparsedDesc.split(match[k]);
+                                            descriptionJSX.push(sides[0]);
+
+                                            let rollAndMod = match[k].split(' ');
+                                            let diceNums = rollAndMod[0].split('d');
+
+                                            if (diceNums.length != 2 || Number(diceNums[0]) == null || Number(diceNums[1]) == null) {
+                                                throw Error('Stat block parses dice notations incorrectly');
+                                            }
+
+                                            if (rollAndMod.length == 2) {
+                                                if (Number(rollAndMod[1]) == null) {
+                                                    throw Error('Stat block parses dice notations incorrectly');
+                                                }
+
+                                                let myDice: Dice = {
+                                                    diceFace: Number(diceNums[1]), numDice: Number(diceNums[0]), valMethod: 0, staticMod: Number(rollAndMod[1]),
+                                                    operationType: 0
+                                                };
+                                            }
+                                            else if (rollAndMod.length == 1) {
+                                                let myDice: Dice = {
+                                                    diceFace: Number(diceNums[1]), numDice: Number(diceNums[0]), valMethod: 0, staticMod: 0,
+                                                    operationType: 0
+                                                };
+                                            }
+
+                                            unparsedDesc = sides[1];
+
+                                            descriptionJSX.push(<Button>{match[k]}</Button>)
+                                        }
+                                    }
+                                    //Place any leftover descriptions into the JSX array
+                                    descriptionJSX.push(unparsedDesc);
+                                }
+                                traitJSX.push(<p key={keyCount}>{descriptionJSX}</p>);
+                                keyCount++;
+                        }
+                        j++;
+                    }
+                    jsx = jsx.concat(traitJSX);
+                    i = j;
                 }
                 else if ((newRow = rowArray[i].split(' '))[0] == 'Actions') {
+                    let end = false;
+                    let j = i + 1;
+                    let followingParagraph = false;
+                    //Follows format of trait name, action description, 
+                    let actions: any[] = [];
+                    let traitJSX = [<h4 key={keyCount} className='sectionHeaderDND5E'><b>Actions</b></h4>];
+                    keyCount++;
+                    while (!end) {
+                        //Check if new section or still inside action section
+                        if (rowArray.length <= j) {
+                            end = true;
+                            break;
+                        }
 
+                        let spaceSeperated = rowArray[j].split(' ');
+
+                        switch (rowArray[j].split(' ')[0]) {
+                            case 'Trait':
+                                end = true;
+                                alert('Warning: Stat block Trait section is improperly placed after the Actions section');
+                                break;
+                            case 'Bonus':
+                                end = true;
+                                break;
+                            case 'Reactions':
+                                end = true;
+                                break;
+                            case '':
+                                break;
+                            default:
+
+                                newRow = rowArray[j].split('.');
+                                if (newRow.length <= 1 && !followingParagraph) {
+                                    throw Error('Stat block actions must follow the format of the action name ending in a \'.\' followed by the action description');
+                                }
+
+                                let candidateName = newRow[0].split(' ');
+                                let isName = true;
+                                //Iterate over all words in seperated by period
+                                for (let k = 0; k < candidateName.length; k++) {
+                                    //If the first letter is not uppercase, indicate it as not a action name
+                                    let letter = candidateName[k].at(0);
+                                    //Indicates is a resource
+                                    if (letter == '(') {
+                                        let resourceName = newRow[0].replace(candidateName[k], '').trim();
+                                        let resourceMax = candidateName[k].replace('(','').replace(')','').trim().split('/');
+                                        if(resourceMax.length == 2 && Number(resourceMax[0]) != null && Number.isInteger(Number(resourceMax[0])))
+                                        {
+                                            resources.push(new Resource(resourceName, Number(resourceMax[0])));
+                                        }
+                                        else
+                                        {
+                                            throw Error('Stat block found action resource but positive integer number per unit of time is not formatted correctly');
+                                        }
+                                        
+                                        break;
+                                    }
+
+                                    //For spell cantrips
+                                    if(k == 0 && candidateName[k] == 'At' && candidateName.length > k + 1 && candidateName[k+1] == 'Will:')
+                                    {
+                                        
+                                    }
+                                    
+                                    //Indicates a pooled resource. Typically for spells
+                                    if(k == 0 && Number(letter) != null && candidateName.length > k + 1 && candidateName[k + 1] == 'Each:')
+                                    {
+                                        let resourceParts = candidateName[k].split('/');
+                                        if(resourceParts.length == 2 && Number(resourceParts[0]) != null && Number.isInteger(Number(resourceParts[0])))
+                                        {
+                                            let name = rowArray[j].replace(candidateName[k] + ' Each:','').trim();
+                                            resources.push(new Resource(name, Number(resourceParts[0])));
+                                        }
+                                        else
+                                        {
+                                            throw Error('Stat block parsing detected Action that is limited per a unit of time but the format is not correct');
+                                        }
+                                        break;
+                                    }
+
+                                    if (letter == null || !isUpperCase(letter)) {
+                                        isName = false;
+                                        break;
+                                    }
+                                }
+
+                                let descriptionJSX = [];
+                                if (!isName && followingParagraph) {
+                                    let index = actions.length - 1;
+                                    actions[index][1] = actions[index][1] + rowArray[j];
+                                }
+                                else if (!isName) {
+                                    throw Error('Stat block actions must have a trait name before a trait description');
+                                }
+                                else {
+                                    actions.push([newRow[0], rowArray[j].replace(newRow[0], '').trim()]);
+                                    descriptionJSX.push(<b>{newRow[0]}. </b>)
+                                }
+
+                                //Iterate over trait description to format JSX
+                                let description = rowArray[j].replace(newRow[0], '').trim();
+                                let descrParts = description.split('.');
+
+                                //Iterate over description seperated by periods
+                                for (let x = 0; x < descrParts.length; x++) {
+                                    let unparsedDesc = '';
+                                    if (descrParts[x].includes('Saving Throw: DC')) {
+                                        //Find index of saving throw
+                                        for (let k = 0; k < SAVINGTHROWS.length; k++) {
+                                            if (descrParts[x].includes(SAVINGTHROWS[k] + ' Saving Throw:')) {
+                                                descriptionJSX.push(<i>{SAVINGTHROWS[k] + ' Saving Throw:'}</i>);
+                                                unparsedDesc = descrParts[x].replace(SAVINGTHROWS[k] + ' Saving Throw:', '') + '.';
+                                            }
+                                        }
+                                    }
+                                    else if (descrParts[x].includes('Failure or Success:')) {
+                                        descriptionJSX.push(<i> Failure or Success:</i>);
+                                        unparsedDesc = descrParts[x].replace('Failure or Success:', '') + '.';
+                                    }
+                                    else if (descrParts[x].includes('Failure:')) {
+                                        descriptionJSX.push(<i> Failure:</i>);
+                                        unparsedDesc = descrParts[x].replace('Failure:', '') + '.';
+                                    }
+                                    else if (descrParts[x].includes('Success:')) {
+                                        descriptionJSX.push(<i> Success:</i>);
+                                        unparsedDesc = descrParts[x].replace('Success:', '') + '.';
+                                    }
+                                    else {
+                                        unparsedDesc = descrParts[x] + '.';
+                                    }
+                                    //Search for dice notation with regex
+                                    const regex = new RegExp('(\d+d\d+)( (\+|\-)\d+)?');
+                                    let match = unparsedDesc.match(regex);
+                                    if (match && match.length > 0) {
+                                        //Iterate over all matches of dice roll notations and add them as buttons to the JSX array
+                                        for (let k = 0; k < match.length; k++) {
+                                            let sides = unparsedDesc.split(match[k]);
+                                            descriptionJSX.push(sides[0]);
+
+                                            let rollAndMod = match[k].split(' ');
+                                            let diceNums = rollAndMod[0].split('d');
+
+                                            if (diceNums.length != 2 || Number(diceNums[0]) == null || Number(diceNums[1]) == null) {
+                                                throw Error('Stat block parses dice notations incorrectly');
+                                            }
+
+                                            if (rollAndMod.length == 2) {
+                                                if (Number(rollAndMod[1]) == null) {
+                                                    throw Error('Stat block parses dice notations incorrectly');
+                                                }
+
+                                                let myDice: Dice = {
+                                                    diceFace: Number(diceNums[1]), numDice: Number(diceNums[0]), valMethod: 0, staticMod: Number(rollAndMod[1]),
+                                                    operationType: 0
+                                                };
+                                            }
+                                            else if (rollAndMod.length == 1) {
+                                                let myDice: Dice = {
+                                                    diceFace: Number(diceNums[1]), numDice: Number(diceNums[0]), valMethod: 0, staticMod: 0,
+                                                    operationType: 0
+                                                };
+                                            }
+
+                                            unparsedDesc = sides[1];
+
+                                            descriptionJSX.push(<Button>{match[k]}</Button>)
+                                        }
+                                    }
+                                    //Place any leftover descriptions into the JSX array
+                                    descriptionJSX.push(unparsedDesc);
+                                }
+                                traitJSX.push(<p key={keyCount}>{descriptionJSX}</p>);
+                                keyCount++;
+                        }
+                        j++;
+                    }
+                    jsx = jsx.concat(traitJSX);
+                    i = j;
                 }
                 else if ((newRow = rowArray[i].split(' '))[0] == 'Bonus' && newRow.length > 1 && newRow[1] == 'Actions') {
 
@@ -852,4 +1325,11 @@ export class DungeonsNDragons5E extends TabletopRoleplayingGame {
             throw Error('2014 stat block parsing not available');
         }
     }
+}
+
+function isUpperCase(letter: string): boolean {
+    if (letter.length != 1 || letter !== letter.toUpperCase() || letter === letter.toLowerCase()) {
+        return false;
+    }
+    return true;
 }

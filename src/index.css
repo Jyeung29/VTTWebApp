@@ -7,7 +7,6 @@ body {
 }
 
 .Board {
-  font-family: sans-serif;
   text-align: center;
   display: flex;
   align-items: center;
@@ -47,7 +46,6 @@ body {
 }
 
 .App {
-  font-family: sans-serif;
   text-align: center;
   display: flex;
   align-items: center;
