@@ -10,10 +10,10 @@ export interface Dice {
 
 
 export class DiceRoll {
-
+    protected sourceName = '';
     protected diceArray: Dice[] = [];
 
-    constructor(dice: Dice[]) {
+    constructor(dice: Dice[], source:string) {
         for (let i = 0; i < dice.length; i++) {
             if (dice[i].numDice == 0) {
                 throw Error('DiceRoll cannot roll 0 dice');
@@ -21,6 +21,10 @@ export class DiceRoll {
             if (dice[i].diceFace == 0) {
                 throw Error('DiceRoll cannot roll a 0 sided dice');
             }
+        }
+        if(source.length > 64)
+        {
+            throw Error('DiceRoll source name cannot exceed 64 characters');
         }
         this.diceArray = dice;
     }

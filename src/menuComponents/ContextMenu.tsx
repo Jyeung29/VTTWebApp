@@ -4,10 +4,10 @@ import {
   createListCollection
 } from '@chakra-ui/react';
 import { useEffect, useRef, useState } from 'react';
-import { Canvas, Group, Point, Circle, Textbox } from 'fabric';
+import { Canvas, Group, Point, Circle, Textbox, FabricImage } from 'fabric';
 import { ContextMenuManager } from './ContextMenuManager';
 import { Token } from '../tokenComponents/Token';
-import type BattleMap from '../battleMapComponents/BattleMap';
+import type BattleMap from '../SceneComponents/BattleMap';
 import '../index.css';
 
 /*
@@ -15,7 +15,7 @@ Function component ContextMenu is used for whenever a context menu is called whe
 on the Canvas. The ContextMenu contains buttons and sub-menus to manipulate and interact with Tokens.
 The ContextMenu is not interactable if non-Token groups are selected. 
 */
-export function ContextMenu({ canvas, cmManager, scene }) {
+export function ContextMenu({ canvas, cmManager, scene, canvasCollection, canvasIndex }) {
 
   //Reference to the token name input box in ContextMenu
   const displayNameInput = useRef(null);
@@ -73,7 +73,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
             //Check again whether all active objects are Token groups. Should be passed since this is checked
             //in Toolbar as well.
             if (groups[i] instanceof Group && (currentGroup = groups[i].getObjects()).length > 1 &&
-              currentGroup[0] instanceof Token) {
+              currentGroup[0] instanceof FabricImage) {
               //Max value that clipPath circle can move in one direction while fitting in image
               let xLimit = currentGroup[0].width / 2;
               //Radius token to subtract from offset max to fit in image
@@ -108,7 +108,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
           let tokenGroup = canvas.getActiveObject();
           let tokenEl = tokenGroup.getObjects()[0];
 
-          if (tokenGroup && tokenEl && tokenEl instanceof Token) {
+          if (tokenGroup && tokenEl && tokenEl instanceof FabricImage) {
             //Max value that clipPath circle can move in one direction while fitting in image
             let xLimit = tokenEl.width / 2;
 
@@ -163,7 +163,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
             //Check again whether all active objects are Token groups. Should be passed since this is checked
             //in Toolbar as well.
             if (groups[i] instanceof Group && (currentGroup = groups[i].getObjects()).length > 1 &&
-              currentGroup[0] instanceof Token) {
+              currentGroup[0] instanceof FabricImage) {
               //Max value that clipPath circle can move in one direction while fitting in image
               let yLimit = currentGroup[0].height / 2;
 
@@ -200,7 +200,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
           let tokenGroup = canvas.getActiveObject();
           let tokenEl = tokenGroup.getObjects()[0];
 
-          if (tokenGroup && tokenEl && tokenEl instanceof Token) {
+          if (tokenGroup && tokenEl && tokenEl instanceof FabricImage) {
             //Max value that clipPath circle can move in one direction while fitting in image
             let yLimit = tokenEl.height / 2;
             //Radius token to subtract from offset max to fit in image
@@ -248,7 +248,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
           for (let i = 0; i < activeObjects.length; i++) {
             //Check if selected objects are Token Groups
             if ((tokenGroup = activeObjects[i]) instanceof Group
-              && tokenGroup.getObjects().length > 1 && (token = tokenGroup.getObjects()[0]) instanceof Token) {
+              && tokenGroup.getObjects().length > 1 && (token = tokenGroup.getObjects()[0]) instanceof FabricImage) {
               let index = canvas.getObjects().indexOf(tokenGroup) + 1;
               let tokenName;
               //Get the index of the name textbox and set visibility to reflect the checkbox
@@ -268,7 +268,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
         }
         //Single Token selection
         else if (!cmManager.getMultiSelectionBool() && (tokenGroup = canvas.getActiveObject()) instanceof Group
-          && tokenGroup.getObjects().length > 1 && (token = tokenGroup.getObjects()[0]) instanceof Token) {
+          && tokenGroup.getObjects().length > 1 && (token = tokenGroup.getObjects()[0]) instanceof FabricImage) {
           let tokenName;
           let index = canvas.getObjects().indexOf(tokenGroup) + 1;
           //Get the index of the name textbox and set visibility to reflect the checkbox
@@ -305,7 +305,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
           for (let i = 0; i < activeObjects.length; i++) {
             //Check if object is a Token group
             if ((tokenGroup = activeObjects[i]) instanceof Group && tokenGroup.getObjects().length > 1 &&
-              (token = tokenGroup.getObjects()[0]) instanceof Token) {
+              (token = tokenGroup.getObjects()[0]) instanceof FabricImage) {
               //Calculate index of Token's name textbox 
               let index = canvas.getObjects().indexOf(tokenGroup) + 1;
 
@@ -331,7 +331,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
         }
         //Single Token selection
         else if ((tokenGroup = canvas.getActiveObject()) instanceof Group && tokenGroup.getObjects().length > 1
-          && (token = tokenGroup.getObjects()[0]) instanceof Token) {
+          && (token = tokenGroup.getObjects()[0]) instanceof FabricImage) {
           //Calculate index of Token's name textbox
           let index = canvas.getObjects().indexOf(tokenGroup) + 1;
 
@@ -389,7 +389,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
         let activeObjects = canvas.getActiveObjects();
         for (let i = 0; i < activeObjects.length; i++) {
           if ((tokenGroup = activeObjects[i]) instanceof Group && (tokenGroup.getObjects().length > 1) &&
-            (token = tokenGroup.getObjects()[0]) instanceof Token) {
+            (token = tokenGroup.getObjects()[0]) instanceof FabricImage) {
             //Call BattleMap to resize the Tokens
             scene.resizeToken(tokenGroup, (event.value)[0] as number, canvas);
 
@@ -400,7 +400,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
       }
       //Single Selection
       else if ((tokenGroup = canvas.getActiveObject()) instanceof Group &&
-        (tokenGroup.getObjects().length > 1) && (token = tokenGroup.getObjects()[0]) instanceof Token) {
+        (tokenGroup.getObjects().length > 1) && (token = tokenGroup.getObjects()[0]) instanceof FabricImage) {
         //Call BattleMap to resize the Tokens
         scene.resizeToken(tokenGroup, (event.value)[0] as number, canvas);
 
@@ -421,7 +421,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
         let token;
         //Values for a single Token selection
         if (!cmManager.getMultiSelectionBool() && (tokenGroup = canvas.getActiveObject()) instanceof Group
-          && tokenGroup.getObjects().length > 1 && (token = tokenGroup.getObjects()[0]) instanceof Token) {
+          && tokenGroup.getObjects().length > 1 && (token = tokenGroup.getObjects()[0]) instanceof FabricImage) {
           //Calculate x and y slider values from the selected Token
           let xLimit = token.width / 2;
           let yLimit = token.height / 2;
@@ -458,7 +458,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
           for (let i = 0; i < tokenGroup.length; i++) {
             //Should never trigger since Context Menu Event in Toolbar checks if non-token groups are present
             if (!(tokenGroup[i] instanceof Group) || tokenGroup[i].getObjects().length <= 1 ||
-              !(tokenGroup[i].getObjects()[0] instanceof Token)) {
+              !(tokenGroup[i].getObjects()[0] instanceof FabricImage)) {
               return;
             }
           }
@@ -634,7 +634,7 @@ function deleteToken(canvas: Canvas, cmManager: ContextMenuManager, scene: Battl
     for (let i = 0; i < activeObjects.length; i++) {
       //Check if they are Token groups and remove them from canvas
       if ((selectedToken = activeObjects[i]) instanceof Group && selectedToken.getObjects().length > 1
-        && selectedToken.getObjects()[0] instanceof Token) {
+        && selectedToken.getObjects()[0] instanceof FabricImage) {
         let canvasObjects = canvas.getObjects();
         index = canvasObjects.indexOf(selectedToken) + 1;
         if (index > 0 && index < canvasObjects.length) {
@@ -655,7 +655,7 @@ function deleteToken(canvas: Canvas, cmManager: ContextMenuManager, scene: Battl
   else if (canvas.getActiveObjects().length == 1) {
     let selectedObject = canvas.getActiveObject();
     if (selectedObject && selectedObject instanceof Group && selectedObject.getObjects().length > 1
-      && selectedObject.getObjects()[0] instanceof Token) {
+      && selectedObject.getObjects()[0] instanceof FabricImage) {
       let index = canvas.getObjects().indexOf(selectedObject) + 1;
       //Remove Text Box
       if (index > 0 && index < canvas.getObjects().length) {

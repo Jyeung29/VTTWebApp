@@ -13,7 +13,7 @@ import { FaCheck, FaEdit, FaFolderPlus } from 'react-icons/fa';
 import { MdOutlineDelete } from "react-icons/md";
 import defaultTokenImage from '../DefaultImages/defaultPaladinOrc.png'
 
-export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, linkFactory, gameLog }) {
+export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, linkFactory, gameLog, canvasCollection, canvasIndex, setCanvasCollection }) {
     //State that contains JSX for showing all collections and their base tokens
     const [collectionJSX, setCollectionJSX] = useState([]);
 
@@ -57,14 +57,16 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
         image.src = defaultTokenImage;
         image.onload = () => {
             image.appendChild(source);
-            var tokenEl = new Token(image);
+            var tokenEl = new FabricImage(image);
+            var tokenInfo = new Token();
             var sizeCode = 1;
-            tokenEl.setSizeCode(sizeCode);
-            tokenEl.setName("TestName");
+            tokenInfo.setSizeCode(sizeCode);
+            tokenInfo.setName("TestName");
             let linkPair = linkFactory.getLinkAndID(defaultTokenImage);
-            tokenEl.addURL(linkPair[0], linkPair[1]);
+            tokenInfo.addURL(linkPair[0], linkPair[1]);
             var collection = tokenCollection;
             collection[0][1] = [tokenEl];
+            collection[0][2] = [tokenInfo];
             setTokenCollection(collection);
             setCollectionChange(true);
         }
@@ -134,6 +136,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                         //If same base token found then remove it from the collection
                         if (tokenCollection[i][1][j] == tokenCollection[currentIndex[0]][1][currentIndex[1]]) {
                             myCollection[i][1].splice(j, 1);
+                            myCollection[i][2].splice(j, 1);
                             //Exit from current collection's loop and move to next collection
                             //Assumes that there can only be 1 identical base token in a collection
                             break;
@@ -142,6 +145,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                 }
                 //Remove from 1st Base Token Collection
                 myCollection[0][1].splice(currentIndex[1], 1);
+                myCollection[0][2].splice(currentIndex[1], 1);
             }
             //Remove from a Collection
             else if (confirm('Are you sure you want to remove this Token from the collection?')) {
@@ -150,6 +154,11 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                 //Remove Target Base Token
                 newRow.splice(currentIndex[1], 1);
                 myCollection[currentIndex[0]][1] = newRow;
+
+                newRow = myCollection[currentIndex[0]][2];
+                //Remove Target Base Token
+                newRow.splice(currentIndex[1], 1);
+                myCollection[currentIndex[0]][2] = newRow;
             }
             //Update States to Reflect Changes
             setTokenCollection(myCollection);
@@ -240,13 +249,11 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
             if (event.target && event.target instanceof HTMLElement) {
                 //Index 2 accounts for the className of Button to include the chakra-button className
                 let index = Number((event.target.className.split(' '))[2]);
-                console.log(event.target.className)
-                console.log(index);
-                console.log(currentIndex)
 
                 //Check if index is valid and the Token to push's index is valid
                 if (index > 0 && index < tokenCollection.length && currentIndex[0] >= 0 && currentIndex[1] >= 0) {
                     let token = tokenCollection[currentIndex[0]][1][currentIndex[1]];
+                    let tokenInfo = tokenCollection[currentIndex[0]][2][currentIndex[1]];
 
                     //Iterate over the target collection to check if the Token already exists
                     for (let i = 0; i < tokenCollection[index][1].length; i++) {
@@ -256,6 +263,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                         }
                     }
                     newCollection[index][1].push(token);
+                    newCollection[index][2].push(tokenInfo);
                     setTokenCollection(newCollection);
                     setCollectionChange(true);
                 }
@@ -269,7 +277,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
             //Iterate over tokens in each group
             for (let j = 0; j < tokenCollection[i][1].length; j++) {
                 //Get the image URL to use for an img element
-                var url = tokenCollection[i][1][j].getCurrentURL();
+                var url = tokenCollection[i][2][j].getCurrentURL();
                 //Requires unique keys!
                 //Display a base token's image and name in the collection
                 baseTokens.push(
@@ -426,10 +434,10 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
 
         if (num > 0) {
             name = 'New Group ' + num;
-            allCollections.push([name, []]);
+            allCollections.push([name, [], []]);
         }
         else if (num == 0) {
-            allCollections.push(['New Group', []]);
+            allCollections.push(['New Group', [], []]);
         }
         setTokenCollection(allCollections);
         setCollectionChange(true);
@@ -442,9 +450,11 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
             const addToken = async () => {
                 if (canvas && canvas instanceof Canvas) {
                     let selectToken = tokenCollection[currentIndex[0]][1][currentIndex[1]];
+                    let selectTokenInfo = tokenCollection[currentIndex[0]][2][currentIndex[1]];
                     //clone() only copies attributes of FabricImage. Must manually set Token attributes
-                    let tokenEl = await selectToken.clone();
-                    tokenEl.cloneTokenMembers(selectToken);
+                    let tokenEl: FabricImage = await selectToken.clone();
+                    let tokenInfo = new Token();
+                    tokenInfo.cloneTokenMembers(selectTokenInfo);
                     //tokenEl.setSizeCode(selectToken.getSizeCode());
                     //tokenEl.setName(selectToken.getName());
                     //tokenEl.copyURLArray(selectToken);
@@ -490,7 +500,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
 
                         //Textbox element to show Token's name. Must be added after Token added to canvas because
                         //textbox must not be in same group.
-                        var nameBox = new Textbox(tokenEl.getName(), {
+                        var nameBox = new Textbox(tokenInfo.getName(), {
                             selectable: false, lockRotation: true, lockScalingFlip: true,
                             lockSkewingX: true, lockSkewingY: true, fill: 'rgba(227, 207, 207, 1)', fontSize: newRadius * 2 / 20,
                             textAlign: 'center'
@@ -498,17 +508,21 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
 
                         //When adding Tokens check whether a grid has been added and resize accordingly
                         if (scene.getSmallestGridUnit() > 0) {
-                            group.scaleToHeight(scene.getSmallestGridUnit() * tokenEl.getSizeCode());
+                            group.scaleToHeight(scene.getSmallestGridUnit() * tokenInfo.getSizeCode());
                             nameBox.scaleToHeight(scene.getGridUnitHeight() / 5);
                         }
                         //Otherwise scale height to the Token's image
                         else if (canvas.getObjects()[0] instanceof FabricImage) {
-                            group.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 15 * tokenEl.getSizeCode());
+                            group.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 15 * tokenInfo.getSizeCode());
                         }
 
                         //Add Token group to the canvas
                         canvas.add(group);
                         canvas.centerObject(group);
+                        let newCollection = canvasCollection;
+                        newCollection[canvasIndex.current[0]][4][canvasIndex.current[1]].push(tokenEl);
+                        newCollection[canvasIndex.current[0]][3][canvasIndex.current[1]].push(tokenInfo);
+                        setCanvasCollection(newCollection);
 
                         //Add textbox to canvas
                         //Align textbox to bottom center of the Token
@@ -535,7 +549,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                             //Iterate over selected objects and determine if all are Token groups
                             for (let i = 0; i < selectedObjects.length; i++) {
                                 if ((selectedObjects[i] instanceof Group) && (selectedObjects[i].getObjects().length > 1)
-                                    && (selectedObjects[i].getObjects()[0] instanceof Token)) {
+                                    && (selectedObjects[i].getObjects()[0] instanceof FabricImage)) {
                                     tokenNumber++;
                                 }
                                 else //If not a Token Group end loop
@@ -685,7 +699,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
         <div className='TokenMenu'>
             <div className='ButtonRow'>
                 <IconButton onClick={addCollection}><Center><FaFolderPlus /></Center></IconButton>
-                <TokenCreationEditMenu setCollectionChange={setCollectionChange} linkFactory={linkFactory} tokenCollection={tokenCollection} setTokenCollection={setTokenCollection} gameLog={gameLog} />
+                <TokenCreationEditMenu setCollectionChange={setCollectionChange} linkFactory={linkFactory} tokenCollection={tokenCollection} setTokenCollection={setTokenCollection} gameLog={gameLog} canvasCollection={canvasCollection}/>
             </div>
             <div className='TokenCollections'>
                 <Box scrollbar='visible' overflowY='scroll' maxHeight={innerHeight - 140}

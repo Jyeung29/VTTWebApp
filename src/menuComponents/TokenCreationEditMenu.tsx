@@ -11,13 +11,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Token } from '../tokenComponents/Token';
 import '../index.css';
 import { ImageLinkFactory } from '../ImageLinkFactory';
+import { FabricImage } from 'fabric';
 
 /*Function component TokenCreationEditMenu is a draggable pane where the user
     creates a new token or edits a preexisting base Token in the token collection.
     The component is hidden and is displayed when the user presses the "Create New Token"
     button in the TokenMenu or "Edit" in the TokenMenu's context menu.
 */
-export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, linkFactory, setCollectionChange, gameLog }) {
+export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, linkFactory, setCollectionChange, gameLog, canvasCollection }) {
     //State that stores the selected size value of the Token
     const [sizeVal, setSizeVal] = useState(['']);
 
@@ -60,9 +61,10 @@ export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, lin
                         image.onload = () => {
                             image.appendChild(source);
                             //Create a Token object
-                            var tokenEl = new Token(image);
+                            var tokenEl = new FabricImage(image);
+                            var tokenInfo = new Token();
                             //Store the link and ID pair in the Token
-                            tokenEl.addURL(idLink[0], idLink[1]);
+                            tokenInfo.addURL(idLink[0], idLink[1]);
                             //Hide loading spinner
                             setSpinState('none');
                             //Check whether size is valid and has been selected
@@ -72,7 +74,7 @@ export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, lin
                                 return;
                             }
                             //Otherwise set the size code
-                            tokenEl.setSizeCode(sizeCode);
+                            tokenInfo.setSizeCode(sizeCode);
                             
                             //Check if entered name is valid
                             if (nameVal.trim() == "") {
@@ -84,11 +86,12 @@ export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, lin
                                 return;
                             }
                             //Otherwise set the Token's name
-                            tokenEl.setName(nameVal.trim());
+                            tokenInfo.setName(nameVal.trim());
 
                             //Add the Token to the TokenCollection
                             var collection = tokenCollection;
                             collection[0][1].push(tokenEl);
+                            collection[0][1].push(tokenInfo);
                             setTokenCollection(collection);
                             setCollectionChange(true);
                             //Close the TokenCreationEditMenu Dialogue

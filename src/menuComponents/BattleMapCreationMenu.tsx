@@ -60,7 +60,7 @@ export function BattleMapCreationMenu({ linkFactory, setCanvas, canvasCollection
         newCanvas.id = 'scene_' + idNum;
         //newCanvas.style.display = 'block';
         parentDiv.appendChild(newCanvas);
-        const fabricCanvas = new Canvas(negetwCanvas, {
+        const fabricCanvas = new Canvas(newCanvas, {
           width: window.innerWidth,
           height: window.innerHeight,
           backgroundColor: 'rgb(0,0,0)',
@@ -124,7 +124,7 @@ export function BattleMapCreationMenu({ linkFactory, setCanvas, canvasCollection
           //let newCollection = sceneCollection;
           //newCollection.push(['', [newBattleMap]]);
           let newCanvasCollection = canvasCollection;
-          newCanvasCollection.push(['', [fabricCanvas], [newBattleMap]]);
+          newCanvasCollection.push(['', [fabricCanvas], [newBattleMap], []]);
           setCanvasCollection(newCanvasCollection);
 
           //Update the current canvas ID being used

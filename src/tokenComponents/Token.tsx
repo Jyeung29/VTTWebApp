@@ -4,17 +4,31 @@ import type {
     TOptions, 
     SerializedImageProps, 
     ObjectEvents,
+    TClassProperties,
+    Abortable,
 } from 'fabric';
+
+//Import types and variables from Fabric.js in order to allow for toObject to function
+import 
+{
+    loadImage,
+    enlivenObjectEnlivables,
+    enlivenObjects
+}
+from '../../node_modules/fabric/dist/src/util/misc/objectEnlive'
+
+import type { BaseFilter } from '../../node_modules/fabric/src/filters/BaseFilter';
+
 
 //Token class definition. Extends Fabric's FabricImage class but with additional Functionality to store
 // values regarding the Token's name, size, visibility, resources, and more. The class provides multiple
 //getter, setters, add, and remove functions to manipulate the Token's values.
-export class Token<
+export class Token/*<
     Props extends TOptions<ImageProps> = Partial<ImageProps>,
     SProps extends SerializedImageProps = SerializedImageProps,
     EventSpec extends ObjectEvents = ObjectEvents,
   >extends FabricImage<Props, SProps, EventSpec>
-  implements ImageProps{
+  implements ImageProps*/{
 
     //Name displayed on Battle Maps. Multiple tokens can have same name.
     protected name: string = "";
@@ -31,13 +45,16 @@ export class Token<
     protected showName: boolean = true;
 
     //Whether resources like HP or Actions are displayed in Streaming Mode
+    //Not implemented in cloneTokenMembers
     protected showResources: boolean[] = [];
 
     //Whether resources are synced and shared across multiple token instances
+    //Not implemented in cloneTokenMembers
     protected shareResource: boolean = false;
 
     //Number that is added onto the end of a Token's name if GM group toggles name numbering.
     //-1 value indicates it should not be displayed. Otherwise must be positive integer starting at 1
+    //Not implemented in cloneTokenMembers
     protected nameNumber: number = -1;
 
     //Variable that stores URLs of images while also storing the provided file's id in their associated
@@ -48,6 +65,7 @@ export class Token<
     protected currentImage: number = 0;
 
     //An array of index pairs that indicate where in the Base Token Collection a token is located
+    //Not implemented in cloneTokenMembers
     protected baseTokenIndexPairs: [number,number][] = [];
 
     //Returns string name of Token.
@@ -117,6 +135,57 @@ export class Token<
         }
         return false;
     }
+    
+
+/*
+    toObject<
+    T extends Omit<Props & TClassProperties<this>, keyof SProps>,
+    K extends keyof T = never,
+  >(propertiesToInclude: K[] = []): Pick<T, K> & SProps {
+    const filters: Record<string, any>[] = [];
+    this.filters.forEach((filterObj) => {
+      filterObj && filters.push(filterObj.toObject());
+    });
+    return {
+      ...super.toObject(),
+    name: this.getName(),
+    
+    visibility: this.getVisibility(),
+
+    sizeCode: this.getSizeCode(),
+
+    showName: this.getShowName(),
+
+    nameNumber: this.getNameNumber(),
+
+    imageURLs: this.getImageURLs(),
+
+    currentImage: this.getCurrentImageIndex(),
+
+    };
+  }
+/*
+  static fromObject<T extends TOptions<SerializedImageProps>>(
+    { filters: f, resizeFilter: rf, src, crossOrigin, type, ...object }: T,
+    options?: Abortable,
+  ) {
+    return Promise.all([
+      loadImage(src!, { ...options, crossOrigin }),
+      f && enlivenObjects<BaseFilter<string>>(f, options),
+      // redundant - handled by enlivenObjectEnlivables, but nicely explicit
+      rf ? enlivenObjects<Resize>([rf], options) : [],
+      enlivenObjectEnlivables(object, options),
+    ]).then(([el, filters = [], [resizeFilter], hydratedProps = {}]) => {
+      return new this(el, {
+        ...object,
+        // TODO: passing src creates a difference between image creation and restoring from JSON
+        src,
+        filters,
+        resizeFilter,
+        ...hydratedProps,
+      });
+    });
+  }
 
     /*
     //Return all Resources of Token
@@ -262,10 +331,22 @@ export class Token<
         return this.imageURLs[this.currentImage][1];
     }
 
+    protected getCurrentImageIndex(): number {
+        return this.currentImage;
+    }
+
+    protected getImageURLs(): [string,string][]
+    {
+        return this.imageURLs;
+    }
+
     public cloneTokenMembers(copyToken: Token): boolean {
         this.imageURLs = copyToken.imageURLs
         this.name = copyToken.name;
         this.sizeCode = copyToken.sizeCode;
+        this.visibility = copyToken.visibility;
+        this.showName = copyToken.showName;
+        this.currentImage = copyToken.currentImage;
         return true;
     }
 

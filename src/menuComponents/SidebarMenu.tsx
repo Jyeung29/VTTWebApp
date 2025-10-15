@@ -12,7 +12,7 @@ be manipulatable. It contains five sub-menus: the GameLog, TokenMenu, SceneMenu,
 */
 
 export function SidebarMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, 
-    linkFactory, sceneIDMap, setSceneIDMap, currentCanvasID, gameLog,
+    linkFactory, sceneIDMap, setSceneIDMap, currentCanvasID, gameLog, canvasIndex,
     setCurrentCanvasID, setCurrentScene, setCanvas, canvasCollection, setCanvasCollection}) {
     
         //State that sets whether the Sidebar is open
@@ -55,8 +55,8 @@ export function SidebarMenu({ canvas, cmManager, scene, tokenCollection, setToke
                                 <Drawer.Body>
                                 <Tabs.Content value="game log">Game Log Coming Soon</Tabs.Content>
                                 <Tabs.Content value="tokens">
-                                    <TokenMenu canvas={canvas} cmManager={cmManager} scene={scene} tokenCollection={tokenCollection} 
-                                    setTokenCollection={setTokenCollection} linkFactory={linkFactory} gameLog={gameLog}/>
+                                    <TokenMenu canvas={canvas} cmManager={cmManager} scene={scene} tokenCollection={tokenCollection} canvasIndex={canvasIndex}
+                                    setTokenCollection={setTokenCollection} linkFactory={linkFactory} gameLog={gameLog} canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection}/>
                                     </Tabs.Content>
                                 <Tabs.Content value="audio">
                                     Audio Coming Soon
@@ -65,7 +65,7 @@ export function SidebarMenu({ canvas, cmManager, scene, tokenCollection, setToke
                                     <SceneMenu linkFactory={linkFactory} setCurrentScene={setCurrentScene}
                                     sceneIDMap={sceneIDMap} setSceneIDMap={setSceneIDMap} setCanvas={setCanvas}
                                     currentCanvasID={currentCanvasID} setCurrentCanvasID={setCurrentCanvasID}
-                                    canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection}/>
+                                    canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection} canvasIndex={canvasIndex}/>
                                 </Tabs.Content>
                                 <Tabs.Content value="settings">
                                     Settings Coming Soon

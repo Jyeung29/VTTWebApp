@@ -13,7 +13,7 @@ import { FaCheck, FaEdit, FaFolderPlus } from 'react-icons/fa';
 import { MdOutlineDelete } from 'react-icons/md';
 import { BattleMapCreationMenu } from './BattleMapCreationMenu';
 
-export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
+export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory, canvasIndex,
     currentCanvasID, setCurrentCanvasID, setCurrentScene, setCanvas, canvasCollection, setCanvasCollection,
 }) {
     //State containing JSX that reflects all Scene's in the sceneCollection
@@ -92,13 +92,12 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
             if (event.target && event.target instanceof HTMLElement) {
                 //Index 2 accounts for the className of Button to include the chakra-button className
                 let index = Number((event.target.className.split(' '))[2]);
-                console.log('new')
-                console.log(index)
-                console.log(sceneIndex)
                 //Check if index is valid and the Token to push's index is valid
                 if (index >= 0 && index < canvasCollection.length && sceneIndex.current[0] >= 0 && sceneIndex.current[1] >= 0) {
                     let scene = canvasCollection[sceneIndex.current[0]][2][sceneIndex.current[1]];
                     let canvas = canvasCollection[sceneIndex.current[0]][1][sceneIndex.current[1]];
+                    let tokens = canvasCollection[sceneIndex.current[0]][3][sceneIndex.current[1]];
+                    let tokenImages = canvasCollection[sceneIndex.current[0]][4][sceneIndex.current[1]];
 
                     //Iterate over the target collection to check if the Token already exists
                     for (let i = 0; i < canvasCollection[index][2].length; i++) {
@@ -109,14 +108,23 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                     }
                     newCollection[sceneIndex.current[0]][2].splice(sceneIndex.current[1], 1);
                     newCollection[sceneIndex.current[0]][1].splice(sceneIndex.current[1], 1);
-
+                    newCollection[sceneIndex.current[0]][3].splice(sceneIndex.current[1],1);
+                    newCollection[sceneIndex.current[0]][4].splice(sceneIndex.current[1],1);
 
                     newCollection[index][2].push(scene);
                     newCollection[index][1].push(canvas);
+                    newCollection[index][3].push(tokens);
+                    newCollection[index][4].push(tokenImages);
+                    
+
                     if (newCollection[sceneIndex.current[0]][0] == '') {
                         newCollection.splice(sceneIndex.current[0], 1);
                     }
-                    console.log(newCollection)
+
+                    if(sceneIndex.current == canvasIndex.current)
+                    {
+                        canvasIndex.current = [index, newCollection[index][2].length];   
+                    }
                     setCanvasCollection(newCollection);
                     setCollectionUpdate(true);
                     exitSceneCM();
@@ -201,6 +209,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                                     newDiv.style.display = 'block';
                                     setCurrentCanvasID(myCollection[i][2][0].getID());
                                     setCanvas(myCollection[i][1][0]);
+                                    canvasIndex.current = [i,0];
                                     setCurrentScene(myCollection[i][2][0]);
                                     setCollectionUpdate(true);
                                 }
@@ -299,6 +308,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                                         newDiv.style.display = 'block';
                                         setCurrentCanvasID(myCollection[i][2][j].getID());
                                         setCanvas(myCollection[i][1][j]);
+                                        canvasIndex.current = [i, j];
                                         setCurrentScene(myCollection[i][2][j]);
                                         setCollectionUpdate(true);
                                     }
@@ -358,10 +368,10 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
         }
         if (num > 0) {
             name = 'New Group ' + num;
-            allCollections.push([name, [], []]);
+            allCollections.push([name, [], [], [], []]);
         }
         else if (num == 0) {
-            allCollections.push(['New Group', [], []]);
+            allCollections.push(['New Group', [], [], [], []]);
         }
         setCanvasCollection(allCollections);
         setCollectionUpdate(true);
@@ -501,12 +511,20 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
             }
             else
             {
+                if(canvasIndex.current == sceneIndex.current)
+                {
+                    canvasIndex.current = [canvasCollection.length - 1, 0];
+                }
                 let newCollection = canvasCollection;
                 let canvas = newCollection[sceneIndex.current[0]][1][sceneIndex.current[1]];
                 let scene = newCollection[sceneIndex.current[0]][2][sceneIndex.current[1]];
-                newCollection.push(['',[canvas],[scene]]);
+                let tokens = newCollection[sceneIndex.current[0]][3][sceneIndex.current[1]];
+                let tokenImages = newCollection[sceneIndex.current[0]][4][sceneIndex.current[1]];
+                newCollection.push(['',[canvas],[scene], [tokens], [tokenImages]]);
                 newCollection[sceneIndex.current[0]][1].splice(sceneIndex.current[1],1);
                 newCollection[sceneIndex.current[0]][2].splice(sceneIndex.current[1],1);
+                newCollection[sceneIndex.current[0]][3].splice(sceneIndex.current[1],1);
+                newCollection[sceneIndex.current[0]][4].splice(sceneIndex.current[1],1);
                 setCanvasCollection(newCollection);
                 setCollectionUpdate(true);
             }
