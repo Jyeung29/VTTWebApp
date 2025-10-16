@@ -1,4 +1,4 @@
-import { FabricObject, Canvas, Group, Point } from "fabric";
+import { FabricObject, Canvas, Group, Point, FabricImage } from "fabric";
 import type BattleMap from "./BattleMap";
 import { Token } from '../tokenComponents/Token';
 
@@ -22,7 +22,7 @@ export const handleObjectMoving = (canvas: Canvas, obj: FabricObject) => {
             //If object is a Token move associated name Textbox
             if ((tokenGroup = activeObjects[i]) instanceof Group &&
                 (tokenGroup = tokenGroup.getObjects()).length > 1 &&
-                (token = tokenGroup[0]) instanceof Token
+                (token = tokenGroup[0]) instanceof FabricImage
             ) {
                 //Find index of name Textbox
                 index = canvasObjects.indexOf(activeObjects[i]) + 1;
@@ -46,7 +46,7 @@ export const handleObjectMoving = (canvas: Canvas, obj: FabricObject) => {
     //Single Token Selection
     else if (activeObjects.length == 1 && activeObjects[0] instanceof Group &&
         (tokenGroup = activeObjects[0].getObjects()).length > 1 &&
-        (token = tokenGroup[0]) instanceof Token) {
+        (token = tokenGroup[0]) instanceof FabricImage) {
         //Find index of name Textbox
         index = canvasObjects.indexOf(obj) + 1;
 

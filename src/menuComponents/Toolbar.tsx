@@ -14,7 +14,7 @@ adding shapes, setting grids, and dice rolls. Different TableTopRoleplayingGame 
 toolbar to display.
 */
 
-function Toolbar({ canvas, scene, cmManager, canvasCollection, campaignName }) {
+function Toolbar({ canvas, scene, cmManager, campaignName }) {
 
   //State used to manage grid setting
   const [gridTrigger, setGridTrigger] = useState<boolean>(false);

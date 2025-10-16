@@ -87,18 +87,34 @@ class BattleMap extends Scene {
 
   //Function that scales a specified Token according to the new size based on the grid.
   // Used by ContextMenu when setting Token size
-  public resizeToken(token: Group, sizeCode: number, canvas: Canvas): boolean {
+  public resizeToken(token: Group, sizeCode: number, canvas: Canvas, 
+    canvasCollection: [string, Canvas[], Scene[], Token[][], FabricImage[][]][], canvasIndex:number[] ): boolean {
     let resizeToken;
 
     //Validate if Group is a valid Token group and the sizeCode is valid
     if (token && sizeCode > 0 &&
-      token.getObjects().length > 1 && (resizeToken = token.getObjects()[0]) instanceof Token) {
+      token.getObjects().length > 1 && (resizeToken = token.getObjects()[0]) instanceof FabricImage) {
       //Iterate over Tokens groups
       for (let i = 0; i < this.tokenGroups.length; i++) {
         //Check if Token group found
         if (token == this.tokenGroups[i][0]) {
+          let tokenInfo;
+              let infoIndex = -1;
+              for(let j = 0; j < canvasCollection[canvasIndex[0]][4][canvasIndex[1]].length; j++)
+              {
+                if(canvasCollection[canvasIndex[0]][4][canvasIndex[1]][j] == resizeToken)
+                {
+                  tokenInfo = canvasCollection[canvasIndex[0]][3][canvasIndex[1]][j];
+                  infoIndex = j;
+                  break;
+                }
+              }
+        if(tokenInfo == null)
+        {
+          throw Error('Token Info not found');
+        }
           //Set the Token's size code
-          resizeToken.setSizeCode(sizeCode);
+          tokenInfo.setSizeCode(sizeCode);
           //Account for grid not yet created. Map must be used as baseline size. Currently
           //does not account for multiple Map Images for a calculation of size
           if (this.smallestGridUnit <= 0 && this.images.length > 0) {
@@ -132,7 +148,8 @@ class BattleMap extends Scene {
 
   //Function that scales all objects and Tokens tracked by the BattleMap. Returns either error that
   //indicates invalid size number or number of objects unable to be resized. Called when grid is created or resized by Toolbar.
-  public resizeAllObjects(width: number, height: number, corners: TCornerPoint, center: Point): number {
+  public resizeAllObjects(width: number, height: number, corners: TCornerPoint, center: Point, 
+    canvasCollection: [string, Canvas[], Scene[], Token[][], FabricImage[][]][], canvasIndex:[number,number]): number {
     //Check whether necessary grid information is provided
     if (!width || !height || !corners || !center || width <= 0 || height <= 0) {
       return -1; //Indicates error
@@ -152,12 +169,33 @@ class BattleMap extends Scene {
 
     var errorCount = 0; //Indicates number of objects not resized
 
+    if(canvasIndex[0] < 0 || canvasIndex[1] < 0)
+    {
+      throw Error('Index for accessing Token Info is negative');
+    }
+
     //Iterate over Token groups and resize them all
     for (let i = 0; i < this.tokenGroups.length; i++) {
       let currentToken = this.tokenGroups[i][0].getObjects()[0];
       //Double check if 
-      if (currentToken instanceof Token) {
-        let sizeMultiplier = currentToken.getSizeCode();
+      if (currentToken instanceof FabricImage) {
+        let tokenInfo;
+              let infoIndex = -1;
+              for(let j = 0; j < canvasCollection[canvasIndex[0]][4][canvasIndex[1]].length; j++)
+              {
+                if(canvasCollection[canvasIndex[0]][4][canvasIndex[1]][j] == currentToken)
+                {
+                  tokenInfo = canvasCollection[canvasIndex[0]][3][canvasIndex[1]][j];
+                  infoIndex = j;
+                  break;
+                }
+              }
+        if(tokenInfo == null)
+        {
+          throw Error('Token Info not found');
+        }
+
+        let sizeMultiplier = tokenInfo.getSizeCode();
         this.tokenGroups[i][0].scaleToHeight(this.smallestGridUnit * sizeMultiplier);
 
         //Resize Associated Token Elements such as name textbox

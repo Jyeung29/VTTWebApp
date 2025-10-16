@@ -44,7 +44,7 @@ function Campaign() {
   //with any collection, the name is empty and the Scene arrray only contains the Scene by itself 
   //const [sceneCollection, setSceneCollection] = useState<[string, Scene[]][]>([]);
 
-  const [canvasCollection, setCanvasCollection] = useState<[string, Canvas[], Scene[], [Token[]][], [FabricImage[]][]][]>([]);
+  const [canvasCollection, setCanvasCollection] = useState<[string, Canvas[], Scene[]][]>([]);
 
   //A map containing IDs that are actively used or not used so that scene's can have unique ID's
   const [sceneIDMap, setSceneIDMap] = useState<Map<number, boolean>>(new Map<number, boolean>());
@@ -53,7 +53,7 @@ function Campaign() {
 
   const campaignName = useRef('testCampaign');
 
-  const canvasIndex = useRef([-1, -1]);
+  //const canvasIndex = useRef([-1, -1]);
 
   //Create the initial Canvas on startup with default BattleMap
   useEffect(() => {
@@ -93,8 +93,8 @@ function Campaign() {
         enableRetinaScaling: true
       });
 
-      setCanvasCollection([['', [initCanvas], [newMap], [], []]]);
-      canvasIndex.current = [0,0];
+      setCanvasCollection([['', [initCanvas], [newMap]]]);
+      //canvasIndex.current = [0,0];
 
       var image = document.createElement('img');
       var source = document.createElement('source');
@@ -302,16 +302,16 @@ function Campaign() {
   return (
     <div className="Board">
       <div className="ToolMenus">
-        <Toolbar canvas={canvas} scene={currentScene} cmManager={contextMenuManager} canvasCollection={canvasCollection} campaignName={campaignName}/>
+        <Toolbar canvas={canvas} scene={currentScene} cmManager={contextMenuManager} campaignName={campaignName}/>
         <SidebarMenu canvas={canvas} cmManager={contextMenuManager} scene={currentScene}
           setCurrentScene={setCurrentScene} setCanvas={setCanvas}
           tokenCollection={tokenCollection} setTokenCollection={setTokenCollection}
           linkFactory={linkFactory} sceneIDMap={sceneIDMap} setSceneIDMap={setSceneIDMap}
           currentCanvasID={currentCanvasID} setCurrentCanvasID={setCurrentCanvasID}
           canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection} 
-          gameLog={gameLog} canvasIndex={canvasIndex}/>
+          gameLog={gameLog}/>
       </div>
-      <ContextMenu canvasCollection={canvasCollection} canvasIndex={canvasIndex} canvas={canvas} cmManager={contextMenuManager} scene={currentScene} />
+      <ContextMenu canvasCollection={canvasCollection} canvas={canvas} cmManager={contextMenuManager} scene={currentScene} />
       <div id='SceneDiv'>
         <canvas id='scene_0' />
       </div>

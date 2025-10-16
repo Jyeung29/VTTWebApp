@@ -16,6 +16,8 @@ abstract class Scene {
   // and an array of references to associated FabricObjects such as a token name textbox
   protected tokenGroups: [Group, FabricObject[]][] = [];
 
+  protected tokenInfo: Token[] = [];
+
   //A list which contains a reference to non-token interactable objects on a Scene such as a circle and an associated
   // size multiplier used to scale the object to the grid.
   protected objects: [FabricObject, number][] = [];
@@ -71,13 +73,34 @@ abstract class Scene {
   //A function that adds new token and associated list of FabricObjects to be tracked in instance of Scene. 
   // Returns boolean depending on success of Token addition. Function validates whether the Group object is
   // a Token group.
-  public addToken(newToken: Group, tokenObjects: FabricObject[]): boolean {
+  public addToken(newToken: Group, tokenObjects: FabricObject[], tokenInfo:Token): boolean {
     //Check if provided Group is a valid Token Group. If so, add to tokenGroups data member.
-    if (newToken && newToken.getObjects().length > 1 && newToken.getObjects()[0] instanceof Token) {
+    if (newToken && newToken.getObjects().length > 1 && newToken.getObjects()[0] instanceof FabricImage && tokenInfo) {
       this.tokenGroups.push([newToken, tokenObjects]);
+      this.tokenInfo.push(tokenInfo);
       return true;
     }
     return false;
+  }
+
+  public retrieveTokenInfo(targetToken: Group)
+  {
+    let index = -1;
+    if (targetToken && targetToken.getObjects().length > 1 && targetToken.getObjects()[0] instanceof FabricImage) {
+      for(let i = 0; i < this.tokenGroups.length; i++)
+      {
+        if(this.tokenGroups[i][0] == targetToken)
+        {
+          index = i;
+          break;
+        }
+      }
+      if(index >= 0)
+      {
+        return this.tokenInfo[index];
+      }
+    }
+      return null;
   }
 
   //Function that Removes token from being tracked in instance of Scene. Returns the
@@ -85,7 +108,7 @@ abstract class Scene {
   //is a Token group. Removes any associated Token elements such as name textbox.
   public removeToken(removeToken: Group, canvas: Canvas) {
     //Validate whether provided Group is a Token Group
-    if (removeToken && removeToken.getObjects().length > 1 && removeToken.getObjects()[0] instanceof Token) {
+    if (removeToken && removeToken.getObjects().length > 1 && removeToken.getObjects()[0] instanceof FabricImage) {
       let index = -1;
       //Iterate over tracked Tokens and if found, track the index of the Token.
       for (let i = 0; i < this.tokenGroups.length; i++) {
@@ -97,7 +120,8 @@ abstract class Scene {
       //Pop the Token Group and associated FabricObjects and return the Token group.
       if (index > -1) {
         let removedTokens = this.tokenGroups.splice(index, 1);
-        return removedTokens[0];
+        let removedInfo = this.tokenInfo.splice(index, 1);
+        return [removedTokens, removedInfo];
       }
     }
     return null;

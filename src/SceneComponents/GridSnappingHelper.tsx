@@ -1,6 +1,7 @@
-import { FabricObject, Canvas, Group, Point } from "fabric";
+import { FabricObject, Canvas, Group, Point, FabricImage } from "fabric";
 import type BattleMap from "./BattleMap";
 import { Token } from '../tokenComponents/Token';
+import type Scene from "./Scene";
 
 /*
 Function called when Canvas FabricObjects are moved by the user and a grid has been set while snapping is true.
@@ -8,7 +9,7 @@ The function handles snapping objects according to their size (how many spaces t
 Tokens or other objects. Sizes snapped are either 1/4 of a square (0.5), are centered inside a square (odds), or centered 
 at the intersection of four squares (even).
 */
-export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: BattleMap) => {
+export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: BattleMap, canvasIndex: number[], canvasCollection: [string, Canvas[], Scene[], Token[][], FabricImage[][]][]) => {
     let mapEl = map.getCurrentImage();
     let token;
 
@@ -18,7 +19,7 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
     }
 
     //Check if current Battle Map set so elements snap. Return if not.
-    if(!map.getGridSnap() || !map.getGridPlaced()) return;
+    if (!map.getGridSnap() || !map.getGridPlaced()) return;
 
     //Get coordinates of base grid unit to calculate snapping coordinates
     let unitCenter = map.getCenterPoint();
@@ -34,11 +35,28 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
 
     let canvasObjects = canvas.getObjects();
 
+    if (canvasIndex[0] < 0 || canvasIndex[1] < 0) {
+        throw Error('Index to access Token information is negative and incorrect')
+    }
+
     //Check if obj is a Token group
     if (obj && obj instanceof Group && obj.getObjects().length > 1 &&
-        (token = obj.getObjects()[0]) instanceof Token) {
+        (token = obj.getObjects()[0]) instanceof FabricImage) {
         let tokenCenter = obj.getCenterPoint();
-        let tokenSize = token.getSizeCode();
+        let tokenInfo;
+        let infoIndex = -1;
+        for (let j = 0; j < canvasCollection[canvasIndex[0]][4][canvasIndex[1]].length; j++) {
+            if (canvasCollection[canvasIndex[0]][4][canvasIndex[1]][j] == token) {
+                tokenInfo = canvasCollection[canvasIndex[0]][3][canvasIndex[1]][j];
+                infoIndex = j;
+                break;
+            }
+        }
+        if(!tokenInfo)
+        {
+            throw Error('Token Information not found');
+        }
+        let tokenSize = tokenInfo.getSizeCode();
 
         //Calculate index of the name Textbox
         let index = canvasObjects.indexOf(obj) + 1;
@@ -226,9 +244,8 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
                 translateX += unitXDistance;
             }
         }
-        else if(divideX == 2)
-        {
-            if(xHalves % 2 == 0) {
+        else if (divideX == 2) {
+            if (xHalves % 2 == 0) {
                 translateX += unitXDistance / 2;
             }
         }
@@ -245,10 +262,8 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
                 translateY += unitYDistance;
             }
         }
-        else if(divideY == 2)
-        {
-            if(yHalves % 2 == 0)
-            {
+        else if (divideY == 2) {
+            if (yHalves % 2 == 0) {
                 translateY += unitYDistance / 2;
             }
         }
@@ -278,19 +293,18 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
         for (let i = 0; i < activeObjects.length; i++) {
             if ((tokenGroup = activeObjects[i]) instanceof Group &&
                 (tokenGroup = tokenGroup.getObjects()).length > 1
-                && (token = tokenGroup[0]) instanceof Token) {
-                    //Get index of the name textbox
-                    let index = canvas.getObjects().indexOf(activeObjects[i]) + 1;
-                    if(index > 0 && index < canvas.getObjects().length)
-                    {
-                        //Set name textbox to be underneath Token group
-                        let nameBox = canvas.getObjects()[index];
-                        let newX = tokenGroup[1].getCenterPoint().x;
-                        let newY = tokenGroup[1].getCoords()[3].y;
-                        let newPoint = new Point({x:newX,y:newY});
-                        nameBox.setXY(newPoint, 'center', 'top');
-                        nameBox.setCoords();
-                    }
+                && (token = tokenGroup[0]) instanceof FabricImage) {
+                //Get index of the name textbox
+                let index = canvas.getObjects().indexOf(activeObjects[i]) + 1;
+                if (index > 0 && index < canvas.getObjects().length) {
+                    //Set name textbox to be underneath Token group
+                    let nameBox = canvas.getObjects()[index];
+                    let newX = tokenGroup[1].getCenterPoint().x;
+                    let newY = tokenGroup[1].getCoords()[3].y;
+                    let newPoint = new Point({ x: newX, y: newY });
+                    nameBox.setXY(newPoint, 'center', 'top');
+                    nameBox.setCoords();
+                }
             }
         }
     }

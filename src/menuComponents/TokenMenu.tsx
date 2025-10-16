@@ -520,6 +520,8 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                         canvas.add(group);
                         canvas.centerObject(group);
                         let newCollection = canvasCollection;
+                        console.log(newCollection);
+                        console.log(newCollection[canvasIndex.current[0]][4][canvasIndex.current[1]]);
                         newCollection[canvasIndex.current[0]][4][canvasIndex.current[1]].push(tokenEl);
                         newCollection[canvasIndex.current[0]][3][canvasIndex.current[1]].push(tokenInfo);
                         setCanvasCollection(newCollection);
@@ -535,7 +537,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                         canvas.add(nameBox);
 
                         //Alert if Token was not added to Battle Map correctly
-                        if (!scene.addToken(group, [nameBox])) {
+                        if (!scene.addToken(group, [nameBox], tokenInfo)) {
                             alert("Error: Token not added correctly");
                             return;
                         }
