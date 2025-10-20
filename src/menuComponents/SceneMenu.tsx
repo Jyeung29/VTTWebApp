@@ -13,7 +13,7 @@ import { FaCheck, FaEdit, FaFolderPlus } from 'react-icons/fa';
 import { MdOutlineDelete } from 'react-icons/md';
 import { BattleMapCreationMenu } from './BattleMapCreationMenu';
 
-export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory, canvasIndex,
+export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
     currentCanvasID, setCurrentCanvasID, setCurrentScene, setCanvas, canvasCollection, setCanvasCollection,
 }) {
     //State containing JSX that reflects all Scene's in the sceneCollection
@@ -96,8 +96,6 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory, canvasIndex,
                 if (index >= 0 && index < canvasCollection.length && sceneIndex.current[0] >= 0 && sceneIndex.current[1] >= 0) {
                     let scene = canvasCollection[sceneIndex.current[0]][2][sceneIndex.current[1]];
                     let canvas = canvasCollection[sceneIndex.current[0]][1][sceneIndex.current[1]];
-                    let tokens = canvasCollection[sceneIndex.current[0]][3][sceneIndex.current[1]];
-                    let tokenImages = canvasCollection[sceneIndex.current[0]][4][sceneIndex.current[1]];
 
                     //Iterate over the target collection to check if the Token already exists
                     for (let i = 0; i < canvasCollection[index][2].length; i++) {
@@ -108,23 +106,15 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory, canvasIndex,
                     }
                     newCollection[sceneIndex.current[0]][2].splice(sceneIndex.current[1], 1);
                     newCollection[sceneIndex.current[0]][1].splice(sceneIndex.current[1], 1);
-                    newCollection[sceneIndex.current[0]][3].splice(sceneIndex.current[1],1);
-                    newCollection[sceneIndex.current[0]][4].splice(sceneIndex.current[1],1);
 
                     newCollection[index][2].push(scene);
                     newCollection[index][1].push(canvas);
-                    newCollection[index][3].push(tokens);
-                    newCollection[index][4].push(tokenImages);
                     
 
                     if (newCollection[sceneIndex.current[0]][0] == '') {
                         newCollection.splice(sceneIndex.current[0], 1);
                     }
 
-                    if(sceneIndex.current == canvasIndex.current)
-                    {
-                        canvasIndex.current = [index, newCollection[index][2].length];   
-                    }
                     setCanvasCollection(newCollection);
                     setCollectionUpdate(true);
                     exitSceneCM();
@@ -209,7 +199,6 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory, canvasIndex,
                                     newDiv.style.display = 'block';
                                     setCurrentCanvasID(myCollection[i][2][0].getID());
                                     setCanvas(myCollection[i][1][0]);
-                                    canvasIndex.current = [i,0];
                                     setCurrentScene(myCollection[i][2][0]);
                                     setCollectionUpdate(true);
                                 }
@@ -308,7 +297,6 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory, canvasIndex,
                                         newDiv.style.display = 'block';
                                         setCurrentCanvasID(myCollection[i][2][j].getID());
                                         setCanvas(myCollection[i][1][j]);
-                                        canvasIndex.current = [i, j];
                                         setCurrentScene(myCollection[i][2][j]);
                                         setCollectionUpdate(true);
                                     }
@@ -489,9 +477,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory, canvasIndex,
                 setCollectionUpdate(true);
                 //Update index to no longer pair to the target collection
                 setSceneID(-1);
-
                 sceneIndex.current = [-1, -1];
-                console.log('end rename')
                 //Hide the renaming element
                 hideRenameEl();
             }
@@ -511,20 +497,12 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory, canvasIndex,
             }
             else
             {
-                if(canvasIndex.current == sceneIndex.current)
-                {
-                    canvasIndex.current = [canvasCollection.length - 1, 0];
-                }
                 let newCollection = canvasCollection;
                 let canvas = newCollection[sceneIndex.current[0]][1][sceneIndex.current[1]];
                 let scene = newCollection[sceneIndex.current[0]][2][sceneIndex.current[1]];
-                let tokens = newCollection[sceneIndex.current[0]][3][sceneIndex.current[1]];
-                let tokenImages = newCollection[sceneIndex.current[0]][4][sceneIndex.current[1]];
-                newCollection.push(['',[canvas],[scene], [tokens], [tokenImages]]);
+                newCollection.push(['',[canvas],[scene]]);
                 newCollection[sceneIndex.current[0]][1].splice(sceneIndex.current[1],1);
                 newCollection[sceneIndex.current[0]][2].splice(sceneIndex.current[1],1);
-                newCollection[sceneIndex.current[0]][3].splice(sceneIndex.current[1],1);
-                newCollection[sceneIndex.current[0]][4].splice(sceneIndex.current[1],1);
                 setCanvasCollection(newCollection);
                 setCollectionUpdate(true);
             }
@@ -597,7 +575,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory, canvasIndex,
     );
 }
 
-function updateSceneContextMenuPosition(event: Event): boolean {
+function updateSceneContextMenuPosition(event: MouseEvent): boolean {
     var contextMenu = document.querySelector(".SceneContextMenu");
 
     if (contextMenu && event.type == 'contextmenu' && contextMenu instanceof HTMLElement) {

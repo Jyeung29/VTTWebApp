@@ -9,7 +9,7 @@ The function handles snapping objects according to their size (how many spaces t
 Tokens or other objects. Sizes snapped are either 1/4 of a square (0.5), are centered inside a square (odds), or centered 
 at the intersection of four squares (even).
 */
-export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: BattleMap, canvasIndex: number[], canvasCollection: [string, Canvas[], Scene[], Token[][], FabricImage[][]][]) => {
+export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: BattleMap) => {
     let mapEl = map.getCurrentImage();
     let token;
 
@@ -35,27 +35,18 @@ export const handleObjectSnapping = (canvas: Canvas, obj: FabricObject, map: Bat
 
     let canvasObjects = canvas.getObjects();
 
-    if (canvasIndex[0] < 0 || canvasIndex[1] < 0) {
-        throw Error('Index to access Token information is negative and incorrect')
-    }
-
     //Check if obj is a Token group
     if (obj && obj instanceof Group && obj.getObjects().length > 1 &&
         (token = obj.getObjects()[0]) instanceof FabricImage) {
         let tokenCenter = obj.getCenterPoint();
         let tokenInfo;
-        let infoIndex = -1;
-        for (let j = 0; j < canvasCollection[canvasIndex[0]][4][canvasIndex[1]].length; j++) {
-            if (canvasCollection[canvasIndex[0]][4][canvasIndex[1]][j] == token) {
-                tokenInfo = canvasCollection[canvasIndex[0]][3][canvasIndex[1]][j];
-                infoIndex = j;
-                break;
-            }
-        }
-        if(!tokenInfo)
+        tokenInfo = map.retrieveTokenInfo(obj);
+
+        if(tokenInfo == null)
         {
-            throw Error('Token Information not found');
+            throw Error('Token Info not found');
         }
+        
         let tokenSize = tokenInfo.getSizeCode();
 
         //Calculate index of the name Textbox

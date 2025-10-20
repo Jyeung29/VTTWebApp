@@ -290,6 +290,8 @@ function Campaign() {
 
   }, [canvas, currentScene]);
 
+  
+
   /*useEffect(() => {
     console.log('scene collection')
     console.log(sceneCollection);
@@ -302,7 +304,8 @@ function Campaign() {
   return (
     <div className="Board">
       <div className="ToolMenus">
-        <Toolbar canvas={canvas} scene={currentScene} cmManager={contextMenuManager} campaignName={campaignName}/>
+        <Toolbar canvas={canvas} scene={currentScene} cmManager={contextMenuManager} campaignName={campaignName} canvasCollection={canvasCollection}
+        tokenCollection={tokenCollection} sceneIDMap={sceneIDMap} currentCanvasID={currentCanvasID}/>
         <SidebarMenu canvas={canvas} cmManager={contextMenuManager} scene={currentScene}
           setCurrentScene={setCurrentScene} setCanvas={setCanvas}
           tokenCollection={tokenCollection} setTokenCollection={setTokenCollection}
@@ -311,7 +314,7 @@ function Campaign() {
           canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection} 
           gameLog={gameLog}/>
       </div>
-      <ContextMenu canvasCollection={canvasCollection} canvas={canvas} cmManager={contextMenuManager} scene={currentScene} />
+      <ContextMenu canvas={canvas} cmManager={contextMenuManager} scene={currentScene} />
       <div id='SceneDiv'>
         <canvas id='scene_0' />
       </div>

@@ -71,6 +71,11 @@ body {
   }
 }
 
+.HiddenToolbar {
+  display:flex;
+  flex-direction: row;
+}
+
 .SidebarMenu {
   display: flex;
   flex-direction: row;

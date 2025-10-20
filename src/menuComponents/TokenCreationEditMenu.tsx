@@ -91,7 +91,7 @@ export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, lin
                             //Add the Token to the TokenCollection
                             var collection = tokenCollection;
                             collection[0][1].push(tokenEl);
-                            collection[0][1].push(tokenInfo);
+                            collection[0][2].push(tokenInfo);
                             setTokenCollection(collection);
                             setCollectionChange(true);
                             //Close the TokenCreationEditMenu Dialogue

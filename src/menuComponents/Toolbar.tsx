@@ -5,7 +5,8 @@ import {
   Textbox,
 } from "fabric";
 import { useEffect, useState } from 'react';
-import { Button, DownloadTrigger } from '@chakra-ui/react';
+import { Button, DownloadTrigger, FileUpload } from '@chakra-ui/react';
+import { HiUpload } from "react-icons/hi"
 
 /*
 Function component Toolbar is displayed at the top of the user's window and provides a GM with tools to
@@ -14,7 +15,7 @@ adding shapes, setting grids, and dice rolls. Different TableTopRoleplayingGame 
 toolbar to display.
 */
 
-function Toolbar({ canvas, scene, cmManager, campaignName }) {
+function Toolbar({ canvas, scene, cmManager, campaignName, canvasCollection, tokenCollection, sceneIDMap, currentCanvasID }) {
 
   //State used to manage grid setting
   const [gridTrigger, setGridTrigger] = useState<boolean>(false);
@@ -266,10 +267,43 @@ function Toolbar({ canvas, scene, cmManager, campaignName }) {
 
   useEffect(() => {
     if (saveIndicator) {
-      let json = canvas.toJSON();
-      console.log(json);
+      //let json = canvas.toJSON();
+      //console.log(json);
       setSaveIndicator(false);
-      const blob = new Blob([JSON.stringify(json)], {
+
+      canvasCollection;
+      tokenCollection;
+      sceneIDMap;
+      currentCanvasID;
+
+      let canvasCol = [];
+      for (let i = 0; i < canvasCollection.length; i++) {
+        let canvasEntries = [];
+        let sceneEntries = [];
+        for (let j = 0; j < canvasCollection[i][1].length; j++) {
+          canvasEntries.push(canvasCollection[i][1][j].toJSON());
+          sceneEntries.push(canvasCollection[i][2][j].toObject());
+        }
+        canvasCol.push([canvasCollection[i][0], canvasEntries, sceneEntries]);
+      }
+
+      let tokenCol = [];
+      for (let i = 0; i < tokenCollection.length; i++) {
+        let imageEntries = [];
+        let infoEntries = [];
+        for (let j = 0; j < tokenCollection[i][1].length; j++) {
+          imageEntries.push(tokenCollection[i][1][j].toJSON());
+          infoEntries.push(tokenCollection[i][2][j].toObject());
+        }
+        tokenCol.push([tokenCollection[i][0], imageEntries, infoEntries]);
+      }
+
+      let mapObj = Object.fromEntries(sceneIDMap);
+
+      let jsonFile = { canvasCollection: canvasCol, tokenCollection: tokenCol, sceneIDMap: mapObj, currentCanvasID: currentCanvasID };
+
+
+      const blob = new Blob([JSON.stringify(jsonFile)], {
         type: 'application/json',
       });
       const url = URL.createObjectURL(blob);
@@ -286,13 +320,37 @@ function Toolbar({ canvas, scene, cmManager, campaignName }) {
     setSaveIndicator(true);
   }
 
+  const fileUploaded = (event) => {
+    let file = event.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      if(e.target && typeof e.target.result == 'string')
+      {
+        const fileContent = e.target.result;
+        console.log(fileContent);
+        let object = JSON.parse(fileContent);
+        console.log(object);
+      }
+    }
+    reader.readAsText(file);
+  }
+
   return (
     <div className="Toolbar">
-      <div className='GridSettingHiddenElement'>
-        <Button id="shape" onClick={addShape}>Shape</Button>
-        <Button onClick={initiateSave}>Download txt</Button>
-      </div>
+        <Button className='GridSettingHiddenElement' id="shape" onClick={addShape}>Shape</Button>
+        <Button className='GridSettingHiddenElement' onClick={initiateSave}>Save JSON</Button>
+        <FileUpload.Root className='GridSettingHiddenElement' accept={["application/json"]}
+        onFileAccept={fileUploaded}>
+          <FileUpload.HiddenInput />
+          <FileUpload.Trigger asChild>
+            <Button variant="outline" size="sm" display={'flex'}>
+              <HiUpload/> Upload JSON
+            </Button>
+          </FileUpload.Trigger>
+          <FileUpload.List />
+        </FileUpload.Root>
       <Button id="grid" onClick={() => { setGridTrigger(true); }}>Grid</Button>
+
     </div>
   )
 }

@@ -36,9 +36,56 @@ abstract class Scene {
 
   protected id = -1;
 
-  constructor(id: number)
+  protected SCENETYPE = -1;
+
+  //Overloaded toObject() must include a data member that indicates being a BattleMap or RoleplayingScene
+  public toObject(): Object
   {
-    this.id = id;
+    //Get all Token object representations
+    let tokenObjects = [];
+    for(let i = 0; i < this.tokenInfo.length; i++)
+    {
+      tokenObjects.push(this.tokenInfo[i].toObject());
+    }
+    return {SCENETYPE: this.SCENETYPE, name: this.name, currentImage: this.currentImage, allowDelete: this.allowDelete, imageURLs: this.imageURLs, id: this.id, tokenInfo:tokenObjects};
+  }
+
+  constructor(id: number);
+  constructor(obj: Object);
+
+  constructor(arg1: any)
+  {
+    if(typeof arg1 == 'number')
+    {
+      this.id = arg1;
+    }
+    else if(typeof arg1 == 'object')
+    {
+      if(arg1.SCENETYPE != null)
+      {
+        this.SCENETYPE = arg1.SCENETYPE;
+      }
+      if(arg1.allowDelete != null)
+      {
+        this.allowDelete = arg1.allowDelete;
+      }
+      if(arg1.currentImage != null)
+      {
+        this.currentImage = arg1.currentImage;
+      }
+      if(arg1.imageURLs != null)
+      {
+        this.imageURLs = arg1.imageURLs;
+      }
+      if(arg1.id != null)
+      {
+        this.id = arg1.id;
+      }
+      if(arg1.tokenInfo != null)
+      {
+        this.tokenInfo = arg1.tokenInfo;
+      }
+    }
   }
 
   public getID(): number {

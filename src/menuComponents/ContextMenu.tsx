@@ -251,21 +251,13 @@ export function ContextMenu({ canvas, cmManager, scene }) {
               && tokenGroup.getObjects().length > 1 && (token = tokenGroup.getObjects()[0]) instanceof FabricImage) {
               let index = canvas.getObjects().indexOf(tokenGroup) + 1;
               let tokenName;
-              let infoIndex = -1;
-              let tokenInfo;
-              //May need to make more efficient with refactoring
-              for(let j = 0; j < canvasCollection[canvasIndex.current[0]][4][canvasIndex.current[1]].length; j++)
-              {
-                if(canvasCollection[canvasIndex.current[0]][4][canvasIndex.current[1]][j] == token)
-                {
-                  tokenInfo = canvasCollection[canvasIndex.current[0]][3][canvasIndex.current[1]][j];
-                  infoIndex = j;
-                  break;
-                }
+              let tokenInfo = scene.retrieveTokenInfo(tokenGroup);
+              if (tokenGroup == null) {
+                throw Error('Token Info Not found');
               }
-              
+
               //Get the index of the name textbox and set visibility to reflect the checkbox
-              if (infoIndex >= 0 && index > 0 && index < canvas.getObjects().length &&
+              if (index > 0 && index < canvas.getObjects().length &&
                 (tokenName = canvas.getObjects()[index]) instanceof Textbox) {
                 //Set associated bool in Token to reflect change
                 tokenInfo.setShowName(event.checked as boolean);
@@ -284,19 +276,12 @@ export function ContextMenu({ canvas, cmManager, scene }) {
           && tokenGroup.getObjects().length > 1 && (token = tokenGroup.getObjects()[0]) instanceof FabricImage) {
           let tokenName;
           let index = canvas.getObjects().indexOf(tokenGroup) + 1;
-          let tokenInfo;
-          let infoIndex = -1;
-          for(let j = 0; j < canvasCollection[canvasIndex.current[0]][4][canvasIndex.current[1]].length; j++)
-              {
-                if(canvasCollection[canvasIndex.current[0]][4][canvasIndex.current[1]][j] == token)
-                {
-                  tokenInfo = canvasCollection[canvasIndex.current[0]][3][canvasIndex.current[1]][j];
-                  infoIndex = j;
-                  break;
-                }
-              }
+          let tokenInfo = scene.retrieveTokenInfo(tokenGroup);
+          if (tokenGroup == null) {
+            throw Error('Token Info Not found');
+          }
           //Get the index of the name textbox and set visibility to reflect the checkbox
-          if (infoIndex >= 0 && index > 0 && index < canvas.getObjects().length &&
+          if (index > 0 && index < canvas.getObjects().length &&
             (tokenName = canvas.getObjects()[index]) instanceof Textbox) {
             tokenName = canvas.getObjects()[index];
             //Set associated bool in Token to reflect change
@@ -332,23 +317,17 @@ export function ContextMenu({ canvas, cmManager, scene }) {
               (token = tokenGroup.getObjects()[0]) instanceof FabricImage) {
               //Calculate index of Token's name textbox 
               let index = canvas.getObjects().indexOf(tokenGroup) + 1;
-              let tokenInfo;
-              let infoIndex = -1;
-              for(let j = 0; j < canvasCollection[canvasIndex.current[0]][4][canvasIndex.current[1]].length; j++)
+              let tokenInfo = scene.retrieveTokenInfo(tokenGroup);
+              if(tokenGroup == null)
               {
-                if(canvasCollection[canvasIndex.current[0]][4][canvasIndex.current[1]][j] == token)
-                {
-                  tokenInfo = canvasCollection[canvasIndex.current[0]][3][canvasIndex.current[1]][j];
-                  infoIndex = j;
-                  break;
-                }
+                throw Error('Token Info Not found');
               }
 
               //Update the Token's name
               tokenInfo.setName(displayNameVal);
 
               //Check if Textbox index is valid and is a Textbox
-              if (infoIndex >= 0 && index > 0 && index < canvas.getObjects().length &&
+              if (index > 0 && index < canvas.getObjects().length &&
                 (nameBox = canvas.getObjects()[index]) instanceof Textbox) {
                 //Update the Textbox with new name and update position to be
                 //recentered
@@ -369,16 +348,10 @@ export function ContextMenu({ canvas, cmManager, scene }) {
           && (token = tokenGroup.getObjects()[0]) instanceof FabricImage) {
           //Calculate index of Token's name textbox
           let index = canvas.getObjects().indexOf(tokenGroup) + 1;
-            let tokenInfo;
-              let infoIndex = -1;
-              for(let j = 0; j < canvasCollection[canvasIndex.current[0]][4][canvasIndex.current[1]].length; j++)
+          let tokenInfo = scene.retrieveTokenInfo(tokenGroup);
+              if(tokenGroup == null)
               {
-                if(canvasCollection[canvasIndex.current[0]][4][canvasIndex.current[1]][j] == token)
-                {
-                  tokenInfo = canvasCollection[canvasIndex.current[0]][3][canvasIndex.current[1]][j];
-                  infoIndex = j;
-                  break;
-                }
+                throw Error('Token Info Not found');
               }
           //Update Token's name
           tokenInfo.setName(displayNameVal);
@@ -412,8 +385,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
 
   //Function that allows for spaces to be typed into input elements
   var allowSpace = (event) => {
-    if(event.key === " ")
-    {
+    if (event.key === " ") {
       //Stops spacebar from propogating to menu and stay in input element
       event.stopPropagation();
     }
@@ -436,7 +408,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
           if ((tokenGroup = activeObjects[i]) instanceof Group && (tokenGroup.getObjects().length > 1) &&
             (token = tokenGroup.getObjects()[0]) instanceof FabricImage) {
             //Call BattleMap to resize the Tokens
-            scene.resizeToken(tokenGroup, (event.value)[0] as number, canvas, canvasCollection, canvasIndex);
+            scene.resizeToken(tokenGroup, (event.value)[0] as number, canvas);
 
             //Update size Select component's display value
             setSizeVal(event.value);
@@ -447,7 +419,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
       else if ((tokenGroup = canvas.getActiveObject()) instanceof Group &&
         (tokenGroup.getObjects().length > 1) && (token = tokenGroup.getObjects()[0]) instanceof FabricImage) {
         //Call BattleMap to resize the Tokens
-        scene.resizeToken(tokenGroup, (event.value)[0] as number, canvas, canvasCollection, canvasIndex);
+        scene.resizeToken(tokenGroup, (event.value)[0] as number, canvas);
 
         //Update size Select component's display value
         setSizeVal(event.value);
@@ -480,21 +452,11 @@ export function ContextMenu({ canvas, cmManager, scene }) {
           xSlider.value[0] = Math.round((token.left + xLimit) / (xLimit - radius) * 100);
           ySlider.value[0] = Math.round((token.top + yLimit) / (yLimit - radius) * 100);
 
-          let tokenInfo;
-              let infoIndex = -1;
-              for(let j = 0; j < canvasCollection[canvasIndex.current[0]][4][canvasIndex.current[1]].length; j++)
+          let tokenInfo = scene.retrieveTokenInfo(tokenGroup);
+              if(tokenGroup == null)
               {
-                if(canvasCollection[canvasIndex.current[0]][4][canvasIndex.current[1]][j] == token)
-                {
-                  tokenInfo = canvasCollection[canvasIndex.current[0]][3][canvasIndex.current[1]][j];
-                  infoIndex = j;
-                  break;
-                }
+                throw Error('Token Info Not found');
               }
-          if(tokenInfo == null)
-          {
-            throw Error('Token Info not found');
-          }
 
           //Set the checked box to Token's show name bool
           showName.setChecked(tokenInfo.getShowName());
@@ -528,7 +490,7 @@ export function ContextMenu({ canvas, cmManager, scene }) {
           ySlider.value[0] = 0;
           showName.setChecked(true);
           setNameVal("");
-          
+
           if (sizeReference) {
             setSizeVal(['1']);
           }
@@ -596,11 +558,11 @@ export function ContextMenu({ canvas, cmManager, scene }) {
                 <Field.Root>
                   <Field.Label>Display Name</Field.Label>
                   <Input onChange={changeName} value={displayNameVal}
-                    placeholder="Enter Display Name"  onFocus={preventDelete} onKeyDown={allowSpace}
+                    placeholder="Enter Display Name" onFocus={preventDelete} onKeyDown={allowSpace}
                     onBlur={allowDelete} />
                 </Field.Root>
 
-                
+
               </Menu.Content>
             </Menu.Positioner>
           </Portal>

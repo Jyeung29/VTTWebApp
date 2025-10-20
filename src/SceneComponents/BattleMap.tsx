@@ -40,23 +40,59 @@ class BattleMap extends Scene {
   protected gridUnitHeight: number = -1;
   protected gridUnitWidth: number = -1;
 
+  //
+  public toObject(): Object {
+    let parentObject = super.toObject();
+    if (this.centerPoint && this.cornerPoints) {
+      let corners = [];
+      corners.push(this.cornerPoints.tl.toString());
+      corners.push(this.cornerPoints.tr.toString());
+      corners.push(this.cornerPoints.br.toString());
+      corners.push(this.cornerPoints.bl.toString());
+      return { ...parentObject, gridUnitHeight: this.gridUnitHeight, gridUnitWidth: this.gridUnitWidth, gridPlaced: this.gridPlaced, gridSnap: this.gridSnap, centerPoint: this.centerPoint.toString(), cornerPoints: corners }
+    }
+    return { ...parentObject, gridUnitHeight: this.gridUnitHeight, gridUnitWidth: this.gridUnitWidth, gridPlaced: this.gridPlaced, gridSnap: this.gridSnap }
+  }
+
   //Basic constructor requires a unique and valid name string and a reference to the associated Canvas object.
   // The name is validated by the Sidebar Menu.
-  constructor(name: string, id:number, gridSnap?:boolean) {
-    if(name.trim() == "")
-    {
-      throw new Error("BattleMap name cannot be empty or only spaces");
+  constructor(name: string, id: number, gridSnap?: boolean);
+
+  constructor(arg1: any, arg2?: any, arg3?: any) {
+    if (typeof arg1 == 'string' && typeof arg2 == 'number' && (typeof arg3 == 'boolean' || arg3 == null)) {
+      if (arg1.trim() == "") {
+        throw new Error("BattleMap name cannot be empty or only spaces");
+      }
+      if (arg1.length > 64) {
+        throw new Error("BattleMap name's length cannot be greater than 64 characters");
+      }
+      super(arg2);
+      if (arg3 != null) {
+        this.gridSnap = arg3;
+      }
+      this.name = arg1;
+      this.SCENETYPE = 0;
     }
-    if(name.length > 64)
+    else if(typeof arg1 == 'object')
     {
-      throw new Error("BattleMap name's length cannot be greater than 64 characters");
+      super(arg1);
+      if(arg1.gridUnitHeight != null)
+      {
+        this.gridUnitHeight = arg1.gridUnitHeight;
+      }
+      if(arg1.gridUnitWidth != null)
+      {
+        this.gridUnitWidth = arg1.gridUnitWidth;
+      }
+      if(arg1.gridPlaced != null)
+      {
+        this.gridPlaced = arg1.gridPlaced;
+      }
+      if(arg1.gridSnap != null)
+      {
+        this.gridSnap = arg1.gridSnap;
+      }
     }
-    super(id);
-    if(gridSnap != null)
-    {
-      this.gridSnap = gridSnap;
-    }
-    this.name = name;
   }
 
   public setGridPlaced(bool: boolean): boolean {
@@ -73,8 +109,7 @@ class BattleMap extends Scene {
   }
 
   public setResizeRect(rect: Rect): boolean {
-    if(rect)
-    {
+    if (rect) {
       this.resizeRect = rect;
       return true;
     }
@@ -87,8 +122,7 @@ class BattleMap extends Scene {
 
   //Function that scales a specified Token according to the new size based on the grid.
   // Used by ContextMenu when setting Token size
-  public resizeToken(token: Group, sizeCode: number, canvas: Canvas, 
-    canvasCollection: [string, Canvas[], Scene[], Token[][], FabricImage[][]][], canvasIndex:number[] ): boolean {
+  public resizeToken(token: Group, sizeCode: number, canvas: Canvas): boolean {
     let resizeToken;
 
     //Validate if Group is a valid Token group and the sizeCode is valid
@@ -99,20 +133,15 @@ class BattleMap extends Scene {
         //Check if Token group found
         if (token == this.tokenGroups[i][0]) {
           let tokenInfo;
-              let infoIndex = -1;
-              for(let j = 0; j < canvasCollection[canvasIndex[0]][4][canvasIndex[1]].length; j++)
-              {
-                if(canvasCollection[canvasIndex[0]][4][canvasIndex[1]][j] == resizeToken)
-                {
-                  tokenInfo = canvasCollection[canvasIndex[0]][3][canvasIndex[1]][j];
-                  infoIndex = j;
-                  break;
-                }
-              }
-        if(tokenInfo == null)
-        {
-          throw Error('Token Info not found');
-        }
+          for (let j = 0; j < this.tokenGroups.length; j++) {
+            if (this.tokenGroups[j][0] == token) {
+              tokenInfo = this.tokenInfo[j];
+              break;
+            }
+          }
+          if (tokenInfo == null) {
+            return false;
+          }
           //Set the Token's size code
           tokenInfo.setSizeCode(sizeCode);
           //Account for grid not yet created. Map must be used as baseline size. Currently
@@ -148,8 +177,7 @@ class BattleMap extends Scene {
 
   //Function that scales all objects and Tokens tracked by the BattleMap. Returns either error that
   //indicates invalid size number or number of objects unable to be resized. Called when grid is created or resized by Toolbar.
-  public resizeAllObjects(width: number, height: number, corners: TCornerPoint, center: Point, 
-    canvasCollection: [string, Canvas[], Scene[], Token[][], FabricImage[][]][], canvasIndex:[number,number]): number {
+  public resizeAllObjects(width: number, height: number, corners: TCornerPoint, center: Point): number {
     //Check whether necessary grid information is provided
     if (!width || !height || !corners || !center || width <= 0 || height <= 0) {
       return -1; //Indicates error
@@ -169,31 +197,12 @@ class BattleMap extends Scene {
 
     var errorCount = 0; //Indicates number of objects not resized
 
-    if(canvasIndex[0] < 0 || canvasIndex[1] < 0)
-    {
-      throw Error('Index for accessing Token Info is negative');
-    }
-
     //Iterate over Token groups and resize them all
-    for (let i = 0; i < this.tokenGroups.length; i++) {
+    for (let i = 0; i < this.tokenGroups.length && i < this.tokenInfo.length; i++) {
       let currentToken = this.tokenGroups[i][0].getObjects()[0];
+      let tokenInfo = this.tokenInfo[i];
       //Double check if 
       if (currentToken instanceof FabricImage) {
-        let tokenInfo;
-              let infoIndex = -1;
-              for(let j = 0; j < canvasCollection[canvasIndex[0]][4][canvasIndex[1]].length; j++)
-              {
-                if(canvasCollection[canvasIndex[0]][4][canvasIndex[1]][j] == currentToken)
-                {
-                  tokenInfo = canvasCollection[canvasIndex[0]][3][canvasIndex[1]][j];
-                  infoIndex = j;
-                  break;
-                }
-              }
-        if(tokenInfo == null)
-        {
-          throw Error('Token Info not found');
-        }
 
         let sizeMultiplier = tokenInfo.getSizeCode();
         this.tokenGroups[i][0].scaleToHeight(this.smallestGridUnit * sizeMultiplier);

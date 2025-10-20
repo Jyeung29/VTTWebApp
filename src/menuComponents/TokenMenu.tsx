@@ -13,7 +13,7 @@ import { FaCheck, FaEdit, FaFolderPlus } from 'react-icons/fa';
 import { MdOutlineDelete } from "react-icons/md";
 import defaultTokenImage from '../DefaultImages/defaultPaladinOrc.png'
 
-export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, linkFactory, gameLog, canvasCollection, canvasIndex, setCanvasCollection }) {
+export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, linkFactory, gameLog, canvasCollection, setCanvasCollection }) {
     //State that contains JSX for showing all collections and their base tokens
     const [collectionJSX, setCollectionJSX] = useState([]);
 
@@ -476,8 +476,8 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
 
                         //Circle with border that will change color
                         var circleBorder = new Circle({
-                            radius: newRadius, strokeWidth: 5, lockScalingX: false, lockScalingY: false, originX: 'center', originY: 'center',
-                            fill: 'transparent', stroke: 'green'
+                            radius: newRadius, strokeWidth: 1, lockScalingX: false, lockScalingY: false, originX: 'center', originY: 'center',
+                            fill: 'transparent', stroke: 'green', strokeUniform:true
                         });
 
                         //Create group of Token and Border set as Group. FixedLayout used to change bounding box to fit circle.
@@ -502,7 +502,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                         //textbox must not be in same group.
                         var nameBox = new Textbox(tokenInfo.getName(), {
                             selectable: false, lockRotation: true, lockScalingFlip: true,
-                            lockSkewingX: true, lockSkewingY: true, fill: 'rgba(227, 207, 207, 1)', fontSize: newRadius * 2 / 20,
+                            lockSkewingX: true, lockSkewingY: true, fill: 'rgba(227, 207, 207, 1)', //fontSize: newRadius * 2 / 20,
                             textAlign: 'center'
                         });
 
@@ -514,16 +514,13 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                         //Otherwise scale height to the Token's image
                         else if (canvas.getObjects()[0] instanceof FabricImage) {
                             group.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 15 * tokenInfo.getSizeCode());
+                            nameBox.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 100)
                         }
 
                         //Add Token group to the canvas
                         canvas.add(group);
                         canvas.centerObject(group);
                         let newCollection = canvasCollection;
-                        console.log(newCollection);
-                        console.log(newCollection[canvasIndex.current[0]][4][canvasIndex.current[1]]);
-                        newCollection[canvasIndex.current[0]][4][canvasIndex.current[1]].push(tokenEl);
-                        newCollection[canvasIndex.current[0]][3][canvasIndex.current[1]].push(tokenInfo);
                         setCanvasCollection(newCollection);
 
                         //Add textbox to canvas
@@ -550,8 +547,9 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                             let tokenNumber: number = 0;
                             //Iterate over selected objects and determine if all are Token groups
                             for (let i = 0; i < selectedObjects.length; i++) {
-                                if ((selectedObjects[i] instanceof Group) && (selectedObjects[i].getObjects().length > 1)
-                                    && (selectedObjects[i].getObjects()[0] instanceof FabricImage)) {
+                                let tokenGroup;
+                                if (((tokenGroup = selectedObjects[i]) instanceof Group) && (tokenGroup.getObjects().length > 1)
+                                    && (tokenGroup.getObjects()[0] instanceof FabricImage)) {
                                     tokenNumber++;
                                 }
                                 else //If not a Token Group end loop
@@ -760,7 +758,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
     );
 }
 
-function updateBaseTokenContextMenuPosition(event: Event): boolean {
+function updateBaseTokenContextMenuPosition(event: MouseEvent): boolean {
     var contextMenu = document.querySelector(".BaseTokenContextMenu");
 
     if (contextMenu && event.type == 'contextmenu' && contextMenu instanceof HTMLElement) {

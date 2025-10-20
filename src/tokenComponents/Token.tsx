@@ -1,25 +1,3 @@
-import {FabricImage} from 'fabric';
-import type {
-    ImageProps, 
-    TOptions, 
-    SerializedImageProps, 
-    ObjectEvents,
-    TClassProperties,
-    Abortable,
-} from 'fabric';
-
-//Import types and variables from Fabric.js in order to allow for toObject to function
-import 
-{
-    loadImage,
-    enlivenObjectEnlivables,
-    enlivenObjects
-}
-from '../../node_modules/fabric/dist/src/util/misc/objectEnlive'
-
-import type { BaseFilter } from '../../node_modules/fabric/src/filters/BaseFilter';
-
-
 //Token class definition. Extends Fabric's FabricImage class but with additional Functionality to store
 // values regarding the Token's name, size, visibility, resources, and more. The class provides multiple
 //getter, setters, add, and remove functions to manipulate the Token's values.
@@ -67,6 +45,11 @@ export class Token/*<
     //An array of index pairs that indicate where in the Base Token Collection a token is located
     //Not implemented in cloneTokenMembers
     protected baseTokenIndexPairs: [number,number][] = [];
+
+    public toObject() {
+
+        return {name: this.name, visibility: this.visibility, sizeCode:this.sizeCode, showName: this.showName, imageURLs: this.imageURLs, currentImage: this.currentImage};
+    }
 
     //Returns string name of Token.
     public getName(): string {
