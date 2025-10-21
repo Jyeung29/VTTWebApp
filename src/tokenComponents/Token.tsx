@@ -46,6 +46,47 @@ export class Token/*<
     //Not implemented in cloneTokenMembers
     protected baseTokenIndexPairs: [number,number][] = [];
 
+    constructor(obj:Object);
+
+    constructor(arg1?: any)
+    {
+        if(arg1 != null && typeof arg1 == 'object')
+        {
+            if(arg1.name != null && typeof arg1.name == 'string')
+            {
+                this.name = arg1.name;
+            }
+            if(arg1.visibility != null && typeof arg1.visibility == 'boolean')
+            {
+                this.visibility = arg1.visibility;
+            }
+            if(arg1.sizeCode != null && typeof arg1.sizeCode == 'number' && arg1.sizeCode > 0)
+            {
+                this.sizeCode = arg1.sizeCode;
+            }
+            if(arg1.showName != null && typeof arg1.showName == 'boolean')
+            {
+                this.showName = arg1.showName;
+            }
+            if(arg1.imageURLs != null && Array.isArray(arg1.imageURLs))
+            {
+                for(let i = 0; i < arg1.imageURLs.length; i++)
+                {
+                    if(!Array.isArray(arg1.imageURLs[i]) || arg1.imageURLs[i].length != 2
+                     || typeof arg1.imageURLs[i][0] != 'string' || typeof arg1.imageURLs[i][1] != 'string')
+                    {
+                        throw Error('An item in the imageURLs array is not a string pair');
+                    }
+                }
+                this.imageURLs = arg1.imageURLs;
+            }
+            if(arg1.currentImage != null && typeof arg1.currentImage == 'number' && arg1.currentImage < this.imageURLs.length)
+            {
+                this.currentImage = arg1.currentImage;
+            }
+        }
+    }
+
     public toObject() {
 
         return {name: this.name, visibility: this.visibility, sizeCode:this.sizeCode, showName: this.showName, imageURLs: this.imageURLs, currentImage: this.currentImage};

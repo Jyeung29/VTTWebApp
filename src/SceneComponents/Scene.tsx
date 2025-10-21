@@ -47,7 +47,7 @@ abstract class Scene {
     {
       tokenObjects.push(this.tokenInfo[i].toObject());
     }
-    return {SCENETYPE: this.SCENETYPE, name: this.name, currentImage: this.currentImage, allowDelete: this.allowDelete, imageURLs: this.imageURLs, id: this.id, tokenInfo:tokenObjects};
+    return {SCENETYPE: this.SCENETYPE, name: this.name, currentImage: this.currentImage, imageURLs: this.imageURLs, id: this.id, tokenInfo:tokenObjects};
   }
 
   constructor(id: number);
@@ -65,25 +65,41 @@ abstract class Scene {
       {
         this.SCENETYPE = arg1.SCENETYPE;
       }
-      if(arg1.allowDelete != null)
+      else
       {
-        this.allowDelete = arg1.allowDelete;
+        throw Error('No SCENETYPE number provided');
       }
       if(arg1.currentImage != null)
       {
         this.currentImage = arg1.currentImage;
       }
+      else
+      {
+        throw Error('No number is provided to be the currentImage index');
+      }
       if(arg1.imageURLs != null)
       {
         this.imageURLs = arg1.imageURLs;
+      }
+      else
+      {
+        throw Error('No array is provided with imageURLs');
       }
       if(arg1.id != null)
       {
         this.id = arg1.id;
       }
+      else
+      {
+        throw Error('No id was provided');
+      }
       if(arg1.tokenInfo != null)
       {
         this.tokenInfo = arg1.tokenInfo;
+      }
+      else
+      {
+        this.tokenInfo = [];
       }
     }
   }

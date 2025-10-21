@@ -73,24 +73,54 @@ class BattleMap extends Scene {
       this.name = arg1;
       this.SCENETYPE = 0;
     }
-    else if(typeof arg1 == 'object')
-    {
+    else if (typeof arg1 == 'object') {
       super(arg1);
-      if(arg1.gridUnitHeight != null)
-      {
+      if (arg1.gridUnitHeight != null && typeof arg1.gridUnitHeight == 'number') {
         this.gridUnitHeight = arg1.gridUnitHeight;
       }
-      if(arg1.gridUnitWidth != null)
-      {
+      if (arg1.gridUnitWidth != null && typeof arg1.gridUnitWidth == 'number') {
         this.gridUnitWidth = arg1.gridUnitWidth;
       }
-      if(arg1.gridPlaced != null)
-      {
+      if (arg1.gridPlaced != null && typeof arg1.gridPlaced == 'boolean') {
         this.gridPlaced = arg1.gridPlaced;
       }
-      if(arg1.gridSnap != null)
-      {
+      if (arg1.gridSnap != null && typeof arg1.gridSnap == 'boolean') {
         this.gridSnap = arg1.gridSnap;
+      }
+      let strArray;
+      if (arg1.centerPoint != null && typeof arg1.centerPoint == 'string' && (strArray = arg1.centerPoint.split(',')).length == 2) {
+        if (Number(strArray[0]) != null && Number(strArray[1]) != null) {
+          this.centerPoint = new Point();
+          this.centerPoint.x = Number(strArray[0]);
+          this.centerPoint.y = Number(strArray[1]);
+        }
+        else if (this.gridPlaced) {
+          throw Error('Grid indicated to be placed but centerPoint string is unable to be converted to x and y coordinates');
+        }
+      }
+      else if (this.gridPlaced) {
+        throw Error('Grid indicated to be placed but centerPoint string is unable to be converted to x and y coordinates');
+      }
+      if(arg1.cornerPoints != null && Array.isArray(arg1.cornerPoints) && arg1.cornerPoints.length == 4)
+      {
+        let points:Point[] = [];
+        for(let i = 0; i < 4; i++)
+        {
+          let temp;
+          if((temp = arg1.cornerPoints[i].split(',')).length != 2 || Number(temp[0]) == null || Number(temp[1]) == null)
+          {
+            throw Error('cornerPoints array contains a string that is unable to convert to a number');
+          }
+          else
+          {
+            let point = new Point();
+            point.x = Number(temp[0]);
+            point.y = Number(temp[1]);
+            points.push(point);
+          }
+        }
+        
+        this.cornerPoints = {tl: points[0], tr: points[1], br: points[2], bl: points[3] };
       }
     }
   }
