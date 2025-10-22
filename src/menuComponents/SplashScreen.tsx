@@ -14,7 +14,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { Token } from '../tokenComponents/Token';
 import '../index.css';
-import { Canvas, Circle, FabricImage, FixedLayout, Group, LayoutManager } from 'fabric';
+import { Canvas, Circle, FabricImage, FixedLayout, Group, LayoutManager, Textbox } from 'fabric';
 import { systems } from '../Factory';
 import { HiUpload } from 'react-icons/hi';
 import { Factory } from '../Factory';
@@ -22,7 +22,7 @@ import BattleMap from '../SceneComponents/BattleMap';
 
 const CANVASCOLLECTIONLENGTH = 3;
 
-export function SplashScreen({ openSplash, setOpenSplash, ttrpgSystem, setCanvasCollection, setCurrentCanvasID, setSceneIDMap, setTokenCollection, factory, setCanvas, setCurrentScene }) {
+export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgSystem, setCanvasCollection, setCurrentCanvasID, setSceneIDMap, setTokenCollection, factory, setCanvas, setCurrentScene }) {
     const { contains } = useFilter({ sensitivity: 'base' });
     const { collection, filter } = useListCollection({ initialItems: systems, filter: contains });
     const [systemChosen, setSystemChosen] = useState();
@@ -47,10 +47,6 @@ export function SplashScreen({ openSplash, setOpenSplash, ttrpgSystem, setCanvas
 
                 console.log(object);
 
-                console.log('canvasCollection'! in object)
-                console.log('tokenCollection'! in object)
-                console.log('currentCanvasID'! in object)
-                console.log('sceneIDMap'! in object)
                 if (!('canvasCollection'! in object) || !('tokenCollection'! in object) || !('currentCanvasID'! in object) || !('sceneIDMap' in object)) {
                     alert('Campaign file is in the wrong format or has been corrupted');
                     return;
@@ -78,6 +74,30 @@ export function SplashScreen({ openSplash, setOpenSplash, ttrpgSystem, setCanvas
 
                 let newCollection = [];
                 try {
+                    let map = new Map(Object.entries(object.sceneIDMap));
+                    if (map.size < 1) {
+                        throw Error('Campaign file must have at least 1 sceneIDMap');
+                    }
+
+                    let atLeastOne = false;
+                    map.forEach(function (value, key) {
+                        if(typeof key != 'number' || typeof value != 'boolean')
+                        {
+                            throw Error('Campaign file must have sceneIDMap entries in pairs of an ID number and boolean value');
+                        }
+                        //Detect if there is at least 1 Scene ID in use
+                        if(value)
+                        {
+                            atLeastOne = true;
+                        }
+                    });
+
+                    if(!atLeastOne) throw Error('Campaign file must have at least 1 active ID in use in sceneIDMap');
+
+                    setSceneIDMap(map);
+
+                    let dupMap = new Map();
+
                     let parentDiv = document.getElementById('SceneDiv');
                     if (parentDiv) {
                         for (let i = 0; i < object.canvasCollection.length; i++) {
@@ -95,6 +115,7 @@ export function SplashScreen({ openSplash, setOpenSplash, ttrpgSystem, setCanvas
                             let canvasArray = [];
                             let sceneArray = [];
 
+                            //Iterate over all canvasCollection and rebuild each Canvas and Scene pair
                             for (let j = 0; j < object.canvasCollection[i][1].length; j++) {
                                 if (typeof object.canvasCollection[i][1][j] != 'object' || typeof object.canvasCollection[i][2][j] != 'object') {
                                     throw Error('Campaign file contains canvasCollection property that contains items of Scene and Canvas arrays that are in in object representation');
@@ -110,14 +131,23 @@ export function SplashScreen({ openSplash, setOpenSplash, ttrpgSystem, setCanvas
                                 }
 
                                 let newCanvas = document.createElement('canvas');
+                                if(!dupMap.has(newScene.getID()))
+                                {
+                                    dupMap.set(newScene.getID(), true);
+                                }
+                                else
+                                {
+                                    throw Error('Campaign file contains multiple of the same Scene ID');
+                                }
+
                                 newCanvas.id = 'scene_' + newScene.getID();
-                                parentDiv.appendChild(newCanvas);
                                 const fabricCanvas = new Canvas(newCanvas, {
                                     width: window.innerWidth,
                                     height: window.innerHeight,
                                     backgroundColor: 'rgb(0,0,0)',
                                     enableRetinaScaling: true
                                 });
+
                                 fabricCanvas.loadFromJSON(object.canvasCollection[i][1][j], function (o, object) {
                                     //parse objects and add events to the Token Groups
                                     if (object instanceof Group && object.getObjects().length > 1 && object.getObjects()[0] instanceof FabricImage) {
@@ -129,19 +159,35 @@ export function SplashScreen({ openSplash, setOpenSplash, ttrpgSystem, setCanvas
                                         else {
                                             newRadius = tokenEls[0].width / 4;
                                         }
-                                        //Make sure Token Group objects all have the correct data members
+                                        //Make sure Token Group objects all have the valid data members
                                         if (!(tokenEls[1] instanceof Circle) || tokenEls[0].clipPath == null || tokenEls[0].selectable || tokenEls[1].strokeWidth != 1 || tokenEls[1].lockScalingX || tokenEls[1].lockScalingY
-                                        || !(tokenEls[0].clipPath instanceof Circle) || Math.floor(tokenEls[0].clipPath.radius * 10000) != Math.floor(newRadius * 10000)
+                                            || !(tokenEls[0].clipPath instanceof Circle) || Math.floor(tokenEls[0].clipPath.radius * 10000) != Math.floor(newRadius * 10000)
                                             || tokenEls[1].fill != 'transparent' || !tokenEls[1].strokeUniform || Math.floor(tokenEls[1].radius * 10000) != Math.floor(newRadius * 10000) || Math.floor(object.width * 10000) != Math.floor(newRadius * 2.2 * 10000) || Math.floor(object.height * 100) != Math.floor(newRadius * 2.2 * 100) || !object.lockRotation
                                             || !object.lockSkewingX || !object.lockSkewingY || !object.lockScalingFlip || !object.lockScalingY || !object.lockScalingX || !(object.layoutManager.strategy instanceof FixedLayout)
                                         ) {
                                             throw Error('Campaign file contains Scene with a Token with incorrect settings')
+                                        }
+
+                                        let removeGroup = (event) => {
+                                            if (event.target == object) {
+                                                newScene.removeToken(object);
+                                            }
+                                            fabricCanvas.off('object:removed', removeGroup);
+                                        };
+                                        fabricCanvas.on('object:removed', removeGroup);
+                                    }
+                                    else if (object instanceof Textbox) {
+                                        if (object.selectable || !object.lockRotation || !object.lockScalingFlip || !object.lockSkewingX ||
+                                            !object.lockSkewingY || object.textAlign != 'center'
+                                        ) {
+                                            throw Error('Campaign file contains Token name element that has inccorect settings');
                                         }
                                     }
 
                                 }).then((canvas) => {
                                     //canvas restored
                                     let img;
+                                    //Check if Scene contains FabricImage at lowest layer with valid data members
                                     if (fabricCanvas.getObjects().length > 0 && (img = fabricCanvas.getObjects()[0]) instanceof FabricImage) {
                                         if (img.hoverCursor != 'default' || img.hasBorders || img.hasControls || img.selectable) {
                                             throw Error('Campaign file contains a Scene with an image on the lowest layer with incorrect settings');
@@ -151,9 +197,12 @@ export function SplashScreen({ openSplash, setOpenSplash, ttrpgSystem, setCanvas
                                     else {
                                         throw Error('Campaign file contains a Scene without an image on the lowest layer');
                                     }
+                                    parentDiv.appendChild(newCanvas);
                                 });
+                                canvasArray.push(fabricCanvas);
+                                sceneArray.push(newScene);
                             }
-
+                            newCollection.push([object.canvasCollection[i][0],canvasArray,sceneArray]);
                         }
                     }
 
@@ -178,55 +227,7 @@ export function SplashScreen({ openSplash, setOpenSplash, ttrpgSystem, setCanvas
           }
         };
       }
-        if (canvas && canvas instanceof Canvas) {
-                                //Get center point of Token Image to set circleBorder onto
         
-                                canvas.on('object:removed', (event) => {
-                                    if (event.target == group) {
-                                        scene.removeToken(group);
-                                    }
-                                });
-        
-                                //Textbox element to show Token's name. Must be added after Token added to canvas because
-                                //textbox must not be in same group.
-                                var nameBox = new Textbox(tokenInfo.getName(), {
-                                    selectable: false, lockRotation: true, lockScalingFlip: true,
-                                    lockSkewingX: true, lockSkewingY: true, fill: 'rgba(227, 207, 207, 1)', //fontSize: newRadius * 2 / 20,
-                                    textAlign: 'center'
-                                });
-        
-                                //When adding Tokens check whether a grid has been added and resize accordingly
-                                if (scene.getSmallestGridUnit() > 0) {
-                                    group.scaleToHeight(scene.getSmallestGridUnit() * tokenInfo.getSizeCode());
-                                    nameBox.scaleToHeight(scene.getGridUnitHeight() / 5);
-                                }
-                                //Otherwise scale height to the Token's image
-                                else if (canvas.getObjects()[0] instanceof FabricImage) {
-                                    group.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 15 * tokenInfo.getSizeCode());
-                                    nameBox.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 100)
-                                }
-        
-                                //Add Token group to the canvas
-                                canvas.add(group);
-                                canvas.centerObject(group);
-                                let newCollection = canvasCollection;
-                                setCanvasCollection(newCollection);
-        
-                                //Add textbox to canvas
-                                //Align textbox to bottom center of the Token
-                                let bottomLeft = circleBorder.getCoords()[3];
-                                let newPoint = new Point();
-                                newPoint.x = group.getCenterPoint().x;
-                                newPoint.y = bottomLeft.y;
-                                nameBox.setXY(newPoint, 'center', 'top');
-                                nameBox.setCoords();
-                                canvas.add(nameBox);
-        
-                                //Alert if Token was not added to Battle Map correctly
-                                if (!scene.addToken(group, [nameBox], tokenInfo)) {
-                                    alert("Error: Token not added correctly");
-                                    return;
-                                }
         
                                 //When Token is selected, add a listener for the context menu
                                 //and prevent context menu from being exited
@@ -317,6 +318,7 @@ export function SplashScreen({ openSplash, setOpenSplash, ttrpgSystem, setCanvas
         if (createCampaign) {
             if (systemChosen && systemChosen[0] != '') {
                 setOpenSplash(false);
+                setNewCampaign(true);
             }
             else {
                 alert('Choose a TTRPG System');

@@ -492,13 +492,14 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                         circleBorder.setXY(center, 'center', 'center');
                         tokenEl.setXY(center, 'center', 'center');
 
-                        //Inefficient memory. Change on later implementation
-                        canvas.on('object:removed', (event) => {
-                            console.log('remove')
+                        let removeGroup = (event) => {
                             if (event.target == group) {
                                 scene.removeToken(group);
                             }
-                        });
+                            canvas.off('object:removed', removeGroup);
+                        };
+                        //Inefficient memory. Change on later implementation
+                        canvas.on('object:removed', removeGroup);
 
                         //Textbox element to show Token's name. Must be added after Token added to canvas because
                         //textbox must not be in same group.

@@ -45,6 +45,8 @@ function Campaign() {
 
   const ttrpgSystem = useRef(null);
 
+  const [newCampaign, setNewCampaign] = useState(false);
+
   //An array containing the name of a scene collection and an array of Scenes. For scenes not associated
   //with any collection, the name is empty and the Scene arrray only contains the Scene by itself 
   //const [sceneCollection, setSceneCollection] = useState<[string, Scene[]][]>([]);
@@ -148,7 +150,7 @@ function Campaign() {
         initCanvas.dispose();
       }
     }
-  }, []);
+  }, [newCampaign]);
 
   //Update event whenever currentScene or canvas is updated so user view features apply to the current canvas
   useEffect(() => {
@@ -320,7 +322,7 @@ function Campaign() {
       <ContextMenu canvas={canvas} cmManager={contextMenuManager} scene={currentScene} />
       <SplashScreen openSplash={openSplash} setOpenSplash={setOpenSplash} ttrpgSystem={ttrpgSystem} setCanvasCollection={setCanvasCollection}
         setSceneIDMap={setSceneIDMap} setTokenCollection={setTokenCollection} setCurrentCanvasID={setCurrentCanvasID} factory={factory}
-        setCurrentScene={setCurrentScene} setCanvas={setCanvas} />
+        setCurrentScene={setCurrentScene} setCanvas={setCanvas} setNewCampaign={setNewCampaign}/>
       <div id='SceneDiv'>
         <canvas id='scene_0' />
       </div>
