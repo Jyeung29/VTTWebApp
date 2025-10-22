@@ -188,7 +188,7 @@ abstract class Scene {
   //Function that Removes token from being tracked in instance of Scene. Returns the
   //target token to be removed. Called when canvas object removed event triggers and
   //is a Token group. Removes any associated Token elements such as name textbox.
-  public removeToken(removeToken: Group, canvas: Canvas) {
+  public removeToken(removeToken: Group) {
     //Validate whether provided Group is a Token Group
     if (removeToken && removeToken.getObjects().length > 1 && removeToken.getObjects()[0] instanceof FabricImage) {
       let index = -1;
@@ -203,6 +203,8 @@ abstract class Scene {
       if (index > -1) {
         let removedTokens = this.tokenGroups.splice(index, 1);
         let removedInfo = this.tokenInfo.splice(index, 1);
+        console.log(this.tokenInfo)
+        console.log(this.tokenGroups)
         return [removedTokens, removedInfo];
       }
     }

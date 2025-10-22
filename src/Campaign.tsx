@@ -203,11 +203,10 @@ function Campaign() {
         }
       };
 
-      if(currentScene && currentScene instanceof BattleMap)
-      {
+      if (currentScene && currentScene instanceof BattleMap) {
         canvas.on('object:moving', handleMove);
       }
-      
+
 
       //Function to pan across the canvas
       const panView = (event) => {
@@ -219,7 +218,7 @@ function Campaign() {
 
           //pan in y direction
           vpt[5] += event.viewportPoint.y - mouseLocation.current.y;
-          
+
           //Add panning range in future
           //let center = initCanvas.getCenterPoint()
           //let corners = initCanvas.calcViewportBoundaries();
@@ -282,10 +281,9 @@ function Campaign() {
       //When canvas is updated make sure previous canvas viewing features are
       //turned off to be reset
       return () => {
-        if(currentScene && currentScene instanceof BattleMap)
-      {
-        canvas.off('object:moving', handleMove);
-      }
+        if (currentScene && currentScene instanceof BattleMap) {
+          canvas.off('object:moving', handleMove);
+        }
         canvas.off('mouse:wheel', zoomView);
         canvas.off('mouse:move', panView);
         document.removeEventListener('keydown', detectKeydown);
@@ -295,7 +293,7 @@ function Campaign() {
 
   }, [canvas, currentScene]);
 
-  
+
 
   /*useEffect(() => {
     console.log('scene collection')
@@ -310,19 +308,19 @@ function Campaign() {
     <div className="Board">
       <div className="ToolMenus">
         <Toolbar canvas={canvas} scene={currentScene} cmManager={contextMenuManager} campaignName={campaignName} canvasCollection={canvasCollection}
-        tokenCollection={tokenCollection} sceneIDMap={sceneIDMap} currentCanvasID={currentCanvasID}/>
+          tokenCollection={tokenCollection} sceneIDMap={sceneIDMap} currentCanvasID={currentCanvasID} />
         <SidebarMenu canvas={canvas} cmManager={contextMenuManager} scene={currentScene}
           setCurrentScene={setCurrentScene} setCanvas={setCanvas}
           tokenCollection={tokenCollection} setTokenCollection={setTokenCollection}
           factory={factory} sceneIDMap={sceneIDMap} setSceneIDMap={setSceneIDMap}
           currentCanvasID={currentCanvasID} setCurrentCanvasID={setCurrentCanvasID}
-          canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection} 
-          gameLog={gameLog}/>
+          canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection}
+          gameLog={gameLog} />
       </div>
       <ContextMenu canvas={canvas} cmManager={contextMenuManager} scene={currentScene} />
       <SplashScreen openSplash={openSplash} setOpenSplash={setOpenSplash} ttrpgSystem={ttrpgSystem} setCanvasCollection={setCanvasCollection}
-       setSceneIDMap={setSceneIDMap} setTokenCollection={setTokenCollection} setCurrentCanvasID={setCurrentCanvasID} factory={factory}
-       setCurrentScene={setCurrentScene} setCanvas={setCanvas}/>
+        setSceneIDMap={setSceneIDMap} setTokenCollection={setTokenCollection} setCurrentCanvasID={setCurrentCanvasID} factory={factory}
+        setCurrentScene={setCurrentScene} setCanvas={setCanvas} />
       <div id='SceneDiv'>
         <canvas id='scene_0' />
       </div>

@@ -14,10 +14,11 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { Token } from '../tokenComponents/Token';
 import '../index.css';
-import { FabricImage } from 'fabric';
+import { Canvas, Circle, FabricImage, FixedLayout, Group, LayoutManager } from 'fabric';
 import { systems } from '../Factory';
 import { HiUpload } from 'react-icons/hi';
 import { Factory } from '../Factory';
+import BattleMap from '../SceneComponents/BattleMap';
 
 const CANVASCOLLECTIONLENGTH = 3;
 
@@ -36,172 +37,280 @@ export function SplashScreen({ openSplash, setOpenSplash, ttrpgSystem, setCanvas
                 const fileContent = e.target.result;
                 let object;
                 console.log(fileContent);
-                try{
+                try {
                     object = JSON.parse(fileContent);
                 }
-                catch(error)
-                {
+                catch (error) {
                     alert(error);
                     return;
                 }
-                
+
                 console.log(object);
 
-                if('canvasCollection' !in object || 'tokenCollection' !in object || 'currentCanvasID' !in object || 'sceneIDMap' !in object)
-                {
+                console.log('canvasCollection'! in object)
+                console.log('tokenCollection'! in object)
+                console.log('currentCanvasID'! in object)
+                console.log('sceneIDMap'! in object)
+                if (!('canvasCollection'! in object) || !('tokenCollection'! in object) || !('currentCanvasID'! in object) || !('sceneIDMap' in object)) {
                     alert('Campaign file is in the wrong format or has been corrupted');
                     return;
                 }
 
-                if(!Array.isArray(object.canvasCollection))
-                {
-                   alert('Campaign file contains canvasCollection property that is not an array');
-                   return;
+                if (!Array.isArray(object.canvasCollection)) {
+                    alert('Campaign file contains canvasCollection property that is not an array');
+                    return;
                 }
 
-                if(!Array.isArray(object.tokenCollection))
-                {
-                   alert('Campaign file contains tokenCollection property that is not an array');
-                   return;
+                if (!Array.isArray(object.tokenCollection)) {
+                    alert('Campaign file contains tokenCollection property that is not an array');
+                    return;
                 }
 
-                if(typeof object.sceneIDMap != 'object')
-                {
+                if (typeof object.sceneIDMap != 'object') {
                     alert('Campaign file contains sceneIDMap property that is not an object');
                     return;
                 }
 
-                if(typeof object.currentCanvasID != 'number')
-                {
+                if (typeof object.currentCanvasID != 'number') {
                     alert('Campaign file contains currentCanvasID property that is not a number');
                     return;
                 }
 
-
+                let newCollection = [];
                 try {
-                    for(let i = 0; i < object.canvasCollection.length; i++)
-                    {
-                        if(object.canvasCollection[i].length != CANVASCOLLECTIONLENGTH)
-                        {
-                            throw Error('Campaign file contains canvasCollection property that contains items not of length ' + CANVASCOLLECTIONLENGTH);
-                        }
-                        if(typeof object.canvasCollection[i][0] != 'string' || !Array.isArray(object.canvasCollection[i][1]) || !Array.isArray(object.canvasCollection[i][2]))
-                        {
-                            throw Error('Campaign file contains canvasCollection property that has items not in format of [string, Object[], Object[]]');
-                        }
+                    let parentDiv = document.getElementById('SceneDiv');
+                    if (parentDiv) {
+                        for (let i = 0; i < object.canvasCollection.length; i++) {
+                            if (object.canvasCollection[i].length != CANVASCOLLECTIONLENGTH) {
+                                throw Error('Campaign file contains canvasCollection property that contains items not of length ' + CANVASCOLLECTIONLENGTH);
+                            }
+                            if (typeof object.canvasCollection[i][0] != 'string' || !Array.isArray(object.canvasCollection[i][1]) || !Array.isArray(object.canvasCollection[i][2])) {
+                                throw Error('Campaign file contains canvasCollection property that has items not in format of [string, Object[], Object[]]');
+                            }
 
-                        if(object.canvasCollection[i][1].length != object.canvasCollection[i][2].length)
-                        {
-                            throw Error('Campaign file contains canvasCollection property that contains items of Scene and Canvas arrays that are not the same length');
-                        }
+                            if (object.canvasCollection[i][1].length != object.canvasCollection[i][2].length) {
+                                throw Error('Campaign file contains canvasCollection property that contains items of Scene and Canvas arrays that are not the same length');
+                            }
 
-                        for(let j = 0; j < object.canvasCollection[i][1].length; j++)
-                        {
-                            if(typeof object.canvasCollection[i][1][j] != 'object' || typeof object.canvasCollection[i][2][j] != 'object')
-                            {
-                                throw Error('Campaign file contains canvasCollection property that contains items of Scene and Canvas arrays that are in in object representation');
+                            let canvasArray = [];
+                            let sceneArray = [];
+
+                            for (let j = 0; j < object.canvasCollection[i][1].length; j++) {
+                                if (typeof object.canvasCollection[i][1][j] != 'object' || typeof object.canvasCollection[i][2][j] != 'object') {
+                                    throw Error('Campaign file contains canvasCollection property that contains items of Scene and Canvas arrays that are in in object representation');
+                                }
+
+                                let newScene;
+
+                                if ('SCENETYPE' in object.canvasCollection[i][2][j] && object.canvasCollection[i][2][j].SCENETYPE == 0) {
+                                    newScene = new BattleMap(object.canvasCollection[i][2][j]);
+                                }
+                                else {
+                                    throw Error('Campaign file contains canvasCollection property with an item that does not define a valid SCENETYPE for a Scene');
+                                }
+
+                                let newCanvas = document.createElement('canvas');
+                                newCanvas.id = 'scene_' + newScene.getID();
+                                parentDiv.appendChild(newCanvas);
+                                const fabricCanvas = new Canvas(newCanvas, {
+                                    width: window.innerWidth,
+                                    height: window.innerHeight,
+                                    backgroundColor: 'rgb(0,0,0)',
+                                    enableRetinaScaling: true
+                                });
+                                fabricCanvas.loadFromJSON(object.canvasCollection[i][1][j], function (o, object) {
+                                    //parse objects and add events to the Token Groups
+                                    if (object instanceof Group && object.getObjects().length > 1 && object.getObjects()[0] instanceof FabricImage) {
+                                        let tokenEls = object.getObjects();
+                                        let newRadius: number;
+                                        if (tokenEls[0].width >= tokenEls[0].height) {
+                                            newRadius = tokenEls[0].height / 4;
+                                        }
+                                        else {
+                                            newRadius = tokenEls[0].width / 4;
+                                        }
+                                        //Make sure Token Group objects all have the correct data members
+                                        if (!(tokenEls[1] instanceof Circle) || tokenEls[0].clipPath == null || tokenEls[0].selectable || tokenEls[1].strokeWidth != 1 || tokenEls[1].lockScalingX || tokenEls[1].lockScalingY
+                                        || !(tokenEls[0].clipPath instanceof Circle) || Math.floor(tokenEls[0].clipPath.radius * 10000) != Math.floor(newRadius * 10000)
+                                            || tokenEls[1].fill != 'transparent' || !tokenEls[1].strokeUniform || Math.floor(tokenEls[1].radius * 10000) != Math.floor(newRadius * 10000) || Math.floor(object.width * 10000) != Math.floor(newRadius * 2.2 * 10000) || Math.floor(object.height * 100) != Math.floor(newRadius * 2.2 * 100) || !object.lockRotation
+                                            || !object.lockSkewingX || !object.lockSkewingY || !object.lockScalingFlip || !object.lockScalingY || !object.lockScalingX || !(object.layoutManager.strategy instanceof FixedLayout)
+                                        ) {
+                                            throw Error('Campaign file contains Scene with a Token with incorrect settings')
+                                        }
+                                    }
+
+                                }).then((canvas) => {
+                                    //canvas restored
+                                    let img;
+                                    if (fabricCanvas.getObjects().length > 0 && (img = fabricCanvas.getObjects()[0]) instanceof FabricImage) {
+                                        if (img.hoverCursor != 'default' || img.hasBorders || img.hasControls || img.selectable) {
+                                            throw Error('Campaign file contains a Scene with an image on the lowest layer with incorrect settings');
+                                        }
+                                        newScene.addImage(img);
+                                    }
+                                    else {
+                                        throw Error('Campaign file contains a Scene without an image on the lowest layer');
+                                    }
+                                });
                             }
 
                         }
-
                     }
-                }catch(error)
-                {
+
+                } catch (error) {
                     alert(error);
                     return;
                 }
                 /*
-                var newMap = new BattleMap("Test Map", 0);
-                setCurrentScene(newMap);
-                let newIDMap = sceneIDMap;
-                newIDMap.set(0, true);
-                setSceneIDMap(newIDMap);
-                document.addEventListener('contextmenu', (event) => {
-                    event.preventDefault();
-                });
 
-                //Mouse event that indicates panning should be allowed
-                window.addEventListener('mousedown', panCanvas);
-                function panCanvas(event: MouseEvent) {
-                    //If (for right hand) right mouse button down
-                    if (event.button == 2) {
-                        isPanning.current = true;
-                    }
-                }
-
-                //Event for mouse event to stop panning
-                window.addEventListener('mouseup', stopPan);
-                function stopPan(event: MouseEvent) {
-                    //If (for right hand) right mouse button down
-                    if (event.button == 2) {
-                        isPanning.current = false;
-                    }
-                }
-
-                let currentCanvas = document.getElementById('scene_0');
-                if (currentCanvas) {
-                    const initCanvas = new Canvas('scene_0', {
-                        width: window.innerWidth,
-                        height: window.innerHeight,
-                        backgroundColor: 'rgb(0,0,0)',
-                        enableRetinaScaling: true
-                    });
-
-                    setCanvasCollection([['', [initCanvas], [newMap]]]);
-                    //canvasIndex.current = [0,0];
-
-                    var image = document.createElement('img');
-                    var source = document.createElement('source');
-
-                    //Set image URL source
-                    image.appendChild(source);
-                    image.src = defaultMap;
-                    //Make sure image's link source works
-                    image.onerror = function () {
-                        alert('Map Image link is invalid or is not compatible');
-                    };
-
-                    //Make sure image loads before adding to Canvas
-                    image.onload = function () {
-                        const mapEl = new FabricImage(image);
-
-                        //Scale image for battle map to fit in window as large as possible with some padding
-                        if (mapEl.height >= mapEl.width && initCanvas.getHeight() < mapEl.height) {
-                            mapEl.scaleToHeight(initCanvas.getHeight() - 50);
-                        } else if (mapEl.width > mapEl.height && initCanvas.getWidth() < mapEl.width) {
-                            mapEl.scaleToWidth(initCanvas.getWidth() - 50);
+        //Make sure image loads before adding to Canvas
+          //Update ID map to indicate the id is taken
+          let newMap = sceneIDMap;
+          newMap.set(idNum, true);
+          setSceneIDMap(newMap);
+          fabricCanvas.renderAll();
+          //Hide the previous canvas
+          let prevID = 'scene_' + currentCanvasID;
+          let prevCanvas = document.getElementById(prevID);
+          if (prevCanvas) {
+            let prevDiv = prevCanvas.parentNode as HTMLElement;
+            prevDiv.style.display = 'none';
+          }
+        };
+      }
+        if (canvas && canvas instanceof Canvas) {
+                                //Get center point of Token Image to set circleBorder onto
+        
+                                canvas.on('object:removed', (event) => {
+                                    if (event.target == group) {
+                                        scene.removeToken(group);
+                                    }
+                                });
+        
+                                //Textbox element to show Token's name. Must be added after Token added to canvas because
+                                //textbox must not be in same group.
+                                var nameBox = new Textbox(tokenInfo.getName(), {
+                                    selectable: false, lockRotation: true, lockScalingFlip: true,
+                                    lockSkewingX: true, lockSkewingY: true, fill: 'rgba(227, 207, 207, 1)', //fontSize: newRadius * 2 / 20,
+                                    textAlign: 'center'
+                                });
+        
+                                //When adding Tokens check whether a grid has been added and resize accordingly
+                                if (scene.getSmallestGridUnit() > 0) {
+                                    group.scaleToHeight(scene.getSmallestGridUnit() * tokenInfo.getSizeCode());
+                                    nameBox.scaleToHeight(scene.getGridUnitHeight() / 5);
+                                }
+                                //Otherwise scale height to the Token's image
+                                else if (canvas.getObjects()[0] instanceof FabricImage) {
+                                    group.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 15 * tokenInfo.getSizeCode());
+                                    nameBox.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 100)
+                                }
+        
+                                //Add Token group to the canvas
+                                canvas.add(group);
+                                canvas.centerObject(group);
+                                let newCollection = canvasCollection;
+                                setCanvasCollection(newCollection);
+        
+                                //Add textbox to canvas
+                                //Align textbox to bottom center of the Token
+                                let bottomLeft = circleBorder.getCoords()[3];
+                                let newPoint = new Point();
+                                newPoint.x = group.getCenterPoint().x;
+                                newPoint.y = bottomLeft.y;
+                                nameBox.setXY(newPoint, 'center', 'top');
+                                nameBox.setCoords();
+                                canvas.add(nameBox);
+        
+                                //Alert if Token was not added to Battle Map correctly
+                                if (!scene.addToken(group, [nameBox], tokenInfo)) {
+                                    alert("Error: Token not added correctly");
+                                    return;
+                                }
+        
+                                //When Token is selected, add a listener for the context menu
+                                //and prevent context menu from being exited
+                                group.on('selected', () => {
+                                    let selectedObjects = canvas.getActiveObjects();
+                                    let allTokens: boolean = true;
+                                    let tokenNumber: number = 0;
+                                    //Iterate over selected objects and determine if all are Token groups
+                                    for (let i = 0; i < selectedObjects.length; i++) {
+                                        let tokenGroup;
+                                        if (((tokenGroup = selectedObjects[i]) instanceof Group) && (tokenGroup.getObjects().length > 1)
+                                            && (tokenGroup.getObjects()[0] instanceof FabricImage)) {
+                                            tokenNumber++;
+                                        }
+                                        else //If not a Token Group end loop
+                                        {
+                                            allTokens = false;
+                                            break;
+                                        }
+                                    }
+        
+                                    //If all selected Group objects are Token groups then allow context menu access
+                                    if (allTokens) {
+                                        document.addEventListener('contextmenu', cmManager.updateContextMenuPosition);
+                                        cmManager.setContextMenuExit(false);
+                                        if (tokenNumber > 1) {
+                                            cmManager.setMultiSelectionBool(true);
+                                            let groupBox = canvas.getActiveObject();
+                                            if(groupBox)
+                                            {
+                                                //Should not cause memory leak due to the multi object selection being removed and deleted
+                                               groupBox.on('mouseover', () => {
+                                                document.addEventListener('contextmenu', cmManager.updateContextMenuPosition)
+                                                });
+                                                groupBox.on('mouseout', () => {
+                                                    document.removeEventListener('contextmenu', cmManager.updateContextMenuPosition);
+                                                });
+                                            }
+                                            
+                                        }
+                                        else {
+                                            cmManager.setMultiSelectionBool(false);
+                                        }
+                                    }
+                                });
+        
+                                //When mouse hovers over Token group and the group is selected, add listener for context menu
+                                group.on('mouseover', () => {
+                                    let selectedObjects = canvas.getActiveObjects();
+                                    for (let i = 0; i < selectedObjects.length; i++) {
+                                        if (selectedObjects[i] == group) {
+                                            document.addEventListener('contextmenu', cmManager.updateContextMenuPosition);
+                                            break;
+                                        }
+                                    }
+                                });
+        
+                                //When mouse no longer hovers over Token group, remove listener for context menu
+                                group.on('mouseout', (mouseEvent) => {
+                                    let selectedObjects = canvas.getActiveObjects();
+                                    for (let i = 0; i < selectedObjects.length; i++) {
+                                        if (selectedObjects[i] == group) {
+                                            document.removeEventListener('contextmenu', cmManager.updateContextMenuPosition);
+                                            break;
+                                        }
+                                    }
+                                });
+        
+                                //When Token group is no longer selected, remove listener for context menu and
+                                //allow context menu to be exited
+                                group.on('deselected', () => {
+                                    document.removeEventListener('contextmenu', cmManager.updateContextMenuPosition);
+                                    cmManager.setContextMenuExit(true);
+                                    cmManager.setMultiSelectionBool(false);
+                                });
+                            }
                         }
-
-                        //Set map to be unable to be changed and have no controls
-                        mapEl.set({
-                            hoverCursor: 'default',
-                            hasBorder: false,
-                            hasControls: false,
-                            selectable: false
-                        });
-                        //Add map onto center of canvas and at the very back layer
-                        initCanvas.add(mapEl);
-                        initCanvas.sendObjectToBack(mapEl);
-                        initCanvas.centerObject(mapEl);
-
-                        //Add the FabricImage object to BattleMap instance
-                        newMap.addImage(mapEl);
-                    };
-
-                    //Rendering
-                    initCanvas.renderAll();
-                    setCanvas(initCanvas);
-
-                    //Unmounted to free memory
-                    return () => {
-                        initCanvas.dispose();
                     }
                 }*/
                 setOpenSplash(false);
             }
         }
         reader.readAsText(file);
-        
+
     }
 
     useEffect(() => {
