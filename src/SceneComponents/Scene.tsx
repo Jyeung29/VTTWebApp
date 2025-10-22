@@ -61,7 +61,7 @@ abstract class Scene {
     }
     else if(typeof arg1 == 'object')
     {
-      if(arg1.SCENETYPE != null)
+      if('SCENETYPE' in arg1 && typeof arg1.SCENETYPE == 'number')
       {
         this.SCENETYPE = arg1.SCENETYPE;
       }
@@ -69,7 +69,7 @@ abstract class Scene {
       {
         throw Error('No SCENETYPE number provided');
       }
-      if(arg1.currentImage != null)
+      if('currentImage' in arg1 && typeof arg1.currentImage == 'number')
       {
         this.currentImage = arg1.currentImage;
       }
@@ -77,15 +77,22 @@ abstract class Scene {
       {
         throw Error('No number is provided to be the currentImage index');
       }
-      if(arg1.imageURLs != null)
+      if('imageURLs' in arg1 && Array.isArray(arg1.imageURLs))
       {
+        for(let i = 0; i < arg1.imageURLs.length; i++)
+        {
+          if(arg1.imageURLs[i].length != 2 || typeof arg1.imageURLs[i][0] != 'string' || typeof arg1.imageURLs[i][1] != 'string')
+          {
+            throw Error('imageURLs array contains an entry that is not two strings');
+          }
+        }
         this.imageURLs = arg1.imageURLs;
       }
       else
       {
         throw Error('No array is provided with imageURLs');
       }
-      if(arg1.id != null)
+      if('id' in arg1 && typeof arg1.id == 'number')
       {
         this.id = arg1.id;
       }
@@ -93,9 +100,21 @@ abstract class Scene {
       {
         throw Error('No id was provided');
       }
-      if(arg1.tokenInfo != null)
+      if('tokenInfo' in arg1 && Array.isArray(arg1.tokenInfo))
       {
-        this.tokenInfo = arg1.tokenInfo;
+        for(let i = 0; i < arg1.tokenInfo.length; i++)
+        {
+          if(typeof arg1.tokenInfo[i] == 'object')
+            {
+              try {
+                this.tokenInfo.push(new Token(arg1.tokenInfo[i]));
+              }
+              catch(error)
+              {
+                throw error;
+              }
+            } 
+        }
       }
       else
       {

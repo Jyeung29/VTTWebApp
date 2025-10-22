@@ -13,7 +13,7 @@ import { FaCheck, FaEdit, FaFolderPlus } from 'react-icons/fa';
 import { MdOutlineDelete } from 'react-icons/md';
 import { BattleMapCreationMenu } from './BattleMapCreationMenu';
 
-export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
+export function SceneMenu({ sceneIDMap, setSceneIDMap, factory,
     currentCanvasID, setCurrentCanvasID, setCurrentScene, setCanvas, canvasCollection, setCanvasCollection,
 }) {
     //State containing JSX that reflects all Scene's in the sceneCollection
@@ -129,7 +129,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                     //Check if the Scene is the active Scene. If so change GM button to not function
                     if (currentCanvasID == myCollection[i][2][0].getID()) {
                         collectionJSX.push(<div className={'SceneEl Scene_' + myCollection[i][2][0].getID() + ' Scene-' + i + '-0'} key={i}>
-                            <h3 className={'SceneName' + ' Scene-' + i + '-0'}>{myCollection[i][2][0].getName()}</h3>
+                            <h3 className={'SceneName' + ' Scene-' + i + '-0' + ' sceneName'}>{myCollection[i][2][0].getName()}</h3>
                             <IconButton
                                 className='RenameButton'
                                 onClick={(event) => {
@@ -164,7 +164,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                     }
                     else {
                         collectionJSX.push(<div className={'SceneEl Scene_' + myCollection[i][2][0].getID() + ' Scene-' + i + '-0'} key={i}>
-                            <h3 className={'SceneName' + ' Scene-' + i + '-0'}>{myCollection[i][2][0].getName()}</h3>
+                            <h3 className={'SceneName' + ' Scene-' + i + '-0' + ' sceneName'}>{myCollection[i][2][0].getName()}</h3>
                             <IconButton
                                 className='RenameButton' onClick={(event) => {
                                     //Display the renaming element
@@ -228,7 +228,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                     for (let j = 0; j < myCollection[i][2].length; j++) {
                         if (currentCanvasID == myCollection[i][2][j].getID()) {
                             groupJSX.push(<div className={'SceneEl Scene_' + myCollection[i][2][j].getID() + ' Scene-' + i + '-' + j} key={i + '_' + j}>
-                                <h3 className={'SceneName' + ' Scene-' + i + '-' + j}>{myCollection[i][2][j].getName()}</h3>
+                                <h3 className={'SceneName' + ' Scene-' + i + '-' + j + ' sceneName'}>{myCollection[i][2][j].getName()}</h3>
                                 <IconButton
                                     className='RenameButton' onClick={(event) => {
                                         //Display the renaming element
@@ -262,7 +262,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                         }
                         else {
                             groupJSX.push(<div className={'SceneEl Scene_' + myCollection[i][2][j].getID() + ' Scene-' + i + '-' + j} key={i + '_' + j}>
-                                <h3 className={'SceneName' + ' Scene-' + i + '-' + j}>{myCollection[i][2][j].getName()}</h3>
+                                <h3 className={'SceneName' + ' Scene-' + i + '-' + j + ' sceneName'}>{myCollection[i][2][j].getName()}</h3>
                                 <IconButton
                                     className='RenameButton' onClick={(event) => {
                                         //Display the renaming element
@@ -319,10 +319,12 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                     collectionJSX.push(<div className='SceneGroup' key={i}>
                         <Collapsible.Root>
                             <Collapsible.Trigger>
-                                <Center>{myCollection[i][0]}</Center>
+                                <h4 className='collapsibleText'>{myCollection[i][0]}</h4>
                             </Collapsible.Trigger>
                             <Collapsible.Content borderWidth='1px' borderColor={'gray'}>
-                                {groupJSX}
+                                <Box display={'flex'} flexDir={'column'} gap={'10px'} margin={'4px'}>
+                                    {groupJSX}
+                                </Box>
                             </Collapsible.Content>
                         </Collapsible.Root>
                     </div>
@@ -510,10 +512,10 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
     }
 
     return (
-        <div>
+        <div className='SceneMenu'>
             <div className='ButtonRow'>
                 <IconButton onClick={addCollection}><Center><FaFolderPlus /></Center></IconButton>
-                <BattleMapCreationMenu linkFactory={linkFactory} setCurrentScene={setCurrentScene}
+                <BattleMapCreationMenu factory={factory} setCurrentScene={setCurrentScene}
                     sceneIDMap={sceneIDMap} setSceneIDMap={setSceneIDMap} setCanvas={setCanvas}
                     currentCanvasID={currentCanvasID} setCurrentCanvasID={setCurrentCanvasID}
                     canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection}
@@ -521,7 +523,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                 <Button>Add Roleplaying Scene</Button>
             </div>
             <div>
-                <Box scrollbar='visible' overflowY='scroll' maxHeight={innerHeight - 140}>
+                <Box scrollbar='visible' overflowY='scroll' maxHeight={innerHeight - 140} gap={'10px'} display={'flex'} flexDir={'column'}>
                     {sceneCollectionJSX}
                 </Box>
             </div>
@@ -564,10 +566,10 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, linkFactory,
                 </Flex>
             </div>
             <GroupElement className='SceneRenameField' attached w={'full'} position='absolute' bgColor={'rgb(255, 255, 255)'}
-                maxW='md' display={renameDisplay}>
+                maxW={'30rem'} display={renameDisplay}>
                 <Input flex='1' placeholder="Enter the scene's name" value={renameVal}
-                    onChange={updateRename} className='RenameEl' height={50 + 'px'} />
-                <IconButton height={50 + 'px'} width={50 + 'px'} left={-3} className='RenameEl' onClick={() => { setRenameSubmit(true); }}>
+                    onChange={updateRename} className='RenameEl' height={50 + 'px'}backgroundColor={'white'} />
+                <IconButton height={50 + 'px'} width={50 + 'px'} className='RenameEl' onClick={() => { setRenameSubmit(true); }}>
                     <Center><FaCheck /></Center>
                 </IconButton>
             </GroupElement>

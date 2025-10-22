@@ -13,7 +13,7 @@ import { FaCheck, FaEdit, FaFolderPlus } from 'react-icons/fa';
 import { MdOutlineDelete } from "react-icons/md";
 import defaultTokenImage from '../DefaultImages/defaultPaladinOrc.png'
 
-export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, linkFactory, gameLog, canvasCollection, setCanvasCollection }) {
+export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, factory, gameLog, canvasCollection, setCanvasCollection }) {
     //State that contains JSX for showing all collections and their base tokens
     const [collectionJSX, setCollectionJSX] = useState([]);
 
@@ -62,7 +62,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
             var sizeCode = 1;
             tokenInfo.setSizeCode(sizeCode);
             tokenInfo.setName("TestName");
-            let linkPair = linkFactory.getLinkAndID(defaultTokenImage);
+            let linkPair = factory.getLinkAndID(defaultTokenImage);
             tokenInfo.addURL(linkPair[0], linkPair[1]);
             var collection = tokenCollection;
             collection[0][1] = [tokenEl];
@@ -302,7 +302,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
             if (tokenCollection[i][0] != 'My Tokens') {
                 newGroups.push(<Collapsible.Root key={i} className={'TokenCollection_' + i}>
                     <Collapsible.Trigger>
-                        {tokenCollection[i][0]}
+                        <h4 className='collapsibleText'>{tokenCollection[i][0]}</h4>
                     </Collapsible.Trigger>
                     <IconButton
                         className='RenameButton'
@@ -364,7 +364,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                 //push the entire collection into the combined TokenMenu with the baseTokens
                 newGroups.push(<Collapsible.Root key={i}>
                     <Collapsible.Trigger>
-                        {tokenCollection[i][0]}
+                        <h4 className='collapsibleText'>{tokenCollection[i][0]}</h4>
                     </Collapsible.Trigger>
                     <Collapsible.Content
                     >
@@ -698,11 +698,11 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
     return (
         <div className='TokenMenu'>
             <div className='ButtonRow'>
-                <IconButton onClick={addCollection}><Center><FaFolderPlus /></Center></IconButton>
-                <TokenCreationEditMenu setCollectionChange={setCollectionChange} linkFactory={linkFactory} tokenCollection={tokenCollection} setTokenCollection={setTokenCollection} gameLog={gameLog} canvasCollection={canvasCollection}/>
+                <IconButton onClick={addCollection}><FaFolderPlus /></IconButton>
+                <TokenCreationEditMenu setCollectionChange={setCollectionChange} factory={factory} tokenCollection={tokenCollection} setTokenCollection={setTokenCollection} gameLog={gameLog} canvasCollection={canvasCollection}/>
             </div>
             <div className='TokenCollections'>
-                <Box scrollbar='visible' overflowY='scroll' maxHeight={innerHeight - 140}
+                <Box scrollbar='visible' overflowY='scroll' maxHeight={innerHeight - 140} display={'flex'} flexDir={'column'} gap={'10px'}
                 >
                     {collectionJSX}
                 </Box>
@@ -747,7 +747,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                 </Flex>
             </div>
             <GroupElement className='RenameField' attached w={'full'} position='absolute'
-                maxW='md' display={renameDisplay}>
+                maxW='md' display={renameDisplay} backgroundColor={'white'}>
                 <Input flex='1' data-testid="RenameField" placeholder="Enter the collection's name" value={renameVal}
                     onChange={updateRename} className='RenameEl' height={50 + 'px'} />
                 <IconButton height={50 + 'px'} left={-3} width={50+'px'} className='RenameEl' data-testid="RenameSubmit" onClick={() => { setRenameSubmit(true); }}>

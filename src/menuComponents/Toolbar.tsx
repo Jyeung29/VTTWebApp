@@ -320,35 +320,10 @@ function Toolbar({ canvas, scene, cmManager, campaignName, canvasCollection, tok
     setSaveIndicator(true);
   }
 
-  const fileUploaded = (event) => {
-    let file = event.files[0];
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      if(e.target && typeof e.target.result == 'string')
-      {
-        const fileContent = e.target.result;
-        console.log(fileContent);
-        let object = JSON.parse(fileContent);
-        console.log(object);
-      }
-    }
-    reader.readAsText(file);
-  }
-
   return (
     <div className="Toolbar">
         <Button className='GridSettingHiddenElement' id="shape" onClick={addShape}>Shape</Button>
         <Button className='GridSettingHiddenElement' onClick={initiateSave}>Save JSON</Button>
-        <FileUpload.Root className='GridSettingHiddenElement' accept={["application/json"]}
-        onFileAccept={fileUploaded}>
-          <FileUpload.HiddenInput />
-          <FileUpload.Trigger asChild>
-            <Button variant="outline" size="sm" display={'flex'}>
-              <HiUpload/> Upload JSON
-            </Button>
-          </FileUpload.Trigger>
-          <FileUpload.List />
-        </FileUpload.Root>
       <Button id="grid" onClick={() => { setGridTrigger(true); }}>Grid</Button>
 
     </div>

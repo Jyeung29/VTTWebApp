@@ -9,10 +9,11 @@ import { ContextMenuManager } from "./menuComponents/ContextMenuManager";
 import { SidebarMenu } from "./menuComponents/SidebarMenu";
 import { handleObjectSnapping } from "./SceneComponents/GridSnappingHelper";
 import { handleObjectMoving } from "./SceneComponents/TokenMovingHelper";
-import { ImageLinkFactory } from "./ImageLinkFactory";
 import type Scene from "./SceneComponents/Scene";
 
 import defaultMap from './DefaultImages/defaultCliffMap.jpeg'
+import { Factory } from "./Factory";
+import { SplashScreen } from "./menuComponents/SplashScreen";
 
 function Campaign() {
   //State used to access current Canvas to manipulate
@@ -28,7 +29,7 @@ function Campaign() {
   const [contextMenuManager, setContextMenuManager] = useState<ContextMenuManager>(new ContextMenuManager);
 
   //State that stores class that returns image link and id pairs used by Token and Scene classes
-  const [linkFactory, setLinkFactory] = useState<ImageLinkFactory>(new ImageLinkFactory);
+  const [factory, setFactory] = useState<Factory>(new Factory);
 
   //tokenCollection is a array where each row contains the group's name and an array of Tokens 
   // placeable onto the scene
@@ -39,6 +40,10 @@ function Campaign() {
 
   //Reference boolean to determine whether to Pan
   const isPanning = useRef<boolean>(false);
+
+  const [openSplash, setOpenSplash] = useState(true);
+
+  const ttrpgSystem = useRef(null);
 
   //An array containing the name of a scene collection and an array of Scenes. For scenes not associated
   //with any collection, the name is empty and the Scene arrray only contains the Scene by itself 
@@ -309,12 +314,15 @@ function Campaign() {
         <SidebarMenu canvas={canvas} cmManager={contextMenuManager} scene={currentScene}
           setCurrentScene={setCurrentScene} setCanvas={setCanvas}
           tokenCollection={tokenCollection} setTokenCollection={setTokenCollection}
-          linkFactory={linkFactory} sceneIDMap={sceneIDMap} setSceneIDMap={setSceneIDMap}
+          factory={factory} sceneIDMap={sceneIDMap} setSceneIDMap={setSceneIDMap}
           currentCanvasID={currentCanvasID} setCurrentCanvasID={setCurrentCanvasID}
           canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection} 
           gameLog={gameLog}/>
       </div>
       <ContextMenu canvas={canvas} cmManager={contextMenuManager} scene={currentScene} />
+      <SplashScreen openSplash={openSplash} setOpenSplash={setOpenSplash} ttrpgSystem={ttrpgSystem} setCanvasCollection={setCanvasCollection}
+       setSceneIDMap={setSceneIDMap} setTokenCollection={setTokenCollection} setCurrentCanvasID={setCurrentCanvasID} factory={factory}
+       setCurrentScene={setCurrentScene} setCanvas={setCanvas}/>
       <div id='SceneDiv'>
         <canvas id='scene_0' />
       </div>

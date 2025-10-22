@@ -15,9 +15,8 @@ import { ContextMenuManager } from './ContextMenuManager';
 import { Token } from '../tokenComponents/Token';
 import BattleMap from '../SceneComponents/BattleMap';
 import '../index.css';
-import { ImageLinkFactory } from '../ImageLinkFactory';
 
-export function BattleMapCreationMenu({ linkFactory, setCanvas, canvasCollection, setCanvasCollection,
+export function BattleMapCreationMenu({ factory, setCanvas, canvasCollection, setCanvasCollection,
   sceneIDMap, setSceneIDMap, currentCanvasID, setCurrentCanvasID, setCurrentScene, setCollectionUpdate }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [spinState, setSpinState] = useState('none');
@@ -217,13 +216,14 @@ export function BattleMapCreationMenu({ linkFactory, setCanvas, canvasCollection
                 <Button data-testid="SubmitButton" onClick={submitFields} display='block'>
                   Submit
                 </Button>
-                <Box pos={'absolute'} inset='0' bg='bg/80' display={spinState}>
+                
+              </Box>
+            </Dialog.Body>
+            <Box pos={'absolute'} inset='0' bg='bg/80' display={spinState}>
                   <Center h='full'>
                     <Spinner size='xl' />
                   </Center>
                 </Box>
-              </Box>
-            </Dialog.Body>
           </Dialog.Content>
         </Dialog.Positioner>
       </Portal>

@@ -34,3 +34,4 @@ abstract class TabletopRoleplayingGame {
 }
 
 export default TabletopRoleplayingGame;
+

@@ -3,7 +3,6 @@ import type { Token } from "../tokenComponents/Token";
 import TabletopRoleplayingGame from "./TabletopRoleplayingGame";
 import { DiceRoll, type Dice } from "../DiceRollComponents/DiceRoll";
 import { Button, Table } from "@chakra-ui/react";
-import { emitKeypressEvents } from "readline";
 
 const ABILITYSCORENAMES = ['Str', 'Dex', 'Con', 'Int', 'Wis', 'Cha'];
 

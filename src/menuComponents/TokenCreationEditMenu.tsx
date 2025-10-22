@@ -10,7 +10,6 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { Token } from '../tokenComponents/Token';
 import '../index.css';
-import { ImageLinkFactory } from '../ImageLinkFactory';
 import { FabricImage } from 'fabric';
 
 /*Function component TokenCreationEditMenu is a draggable pane where the user
@@ -18,7 +17,7 @@ import { FabricImage } from 'fabric';
     The component is hidden and is displayed when the user presses the "Create New Token"
     button in the TokenMenu or "Edit" in the TokenMenu's context menu.
 */
-export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, linkFactory, setCollectionChange, gameLog, canvasCollection }) {
+export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, factory, setCollectionChange, gameLog, canvasCollection }) {
     //State that stores the selected size value of the Token
     const [sizeVal, setSizeVal] = useState(['']);
 
@@ -46,13 +45,12 @@ export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, lin
         if (submitState) {
             //Check if the current operation uses the Token 'Creation' logic 
             if (operation == 'Create') {
-                    //Make sure the tokenCollection and linkFactory exist
-                    if (tokenCollection && tokenCollection.length > 0 && linkFactory
-                        && linkFactory instanceof ImageLinkFactory) {
+                    //Make sure the tokenCollection and Factory exist
+                    if (tokenCollection && tokenCollection.length > 0 && factory) {
                         //Create an HTML img element
                         var source = document.createElement('source');
                         var image = document.createElement('img');
-                        let idLink = linkFactory.getLinkAndID(linkVal);
+                        let idLink = factory.getLinkAndID(linkVal);
                         image.src = idLink[1];
                         //Set the loading spinner to display
                         setSpinState('block');
@@ -207,13 +205,14 @@ export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, lin
                                 <Button onClick={submitFields}>
                                     Submit
                                 </Button>
-                                <Box pos={'absolute'} inset='0' bg='bg/80' display={spinState}>
+                                
+                            </Box>
+                        </Dialog.Body>
+                        <Box pos={'absolute'} inset='0' bg='bg/80' display={spinState}>
                                     <Center h='full'>
                                         <Spinner size='xl'/>
                                     </Center>
-                                </Box>
-                            </Box>
-                        </Dialog.Body>
+                        </Box>
                     </Dialog.Content>
                 </Dialog.Positioner>
             </Portal>

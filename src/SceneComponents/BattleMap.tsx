@@ -57,6 +57,7 @@ class BattleMap extends Scene {
   //Basic constructor requires a unique and valid name string and a reference to the associated Canvas object.
   // The name is validated by the Sidebar Menu.
   constructor(name: string, id: number, gridSnap?: boolean);
+  constructor(obj: Object);
 
   constructor(arg1: any, arg2?: any, arg3?: any) {
     if (typeof arg1 == 'string' && typeof arg2 == 'number' && (typeof arg3 == 'boolean' || arg3 == null)) {
@@ -75,20 +76,20 @@ class BattleMap extends Scene {
     }
     else if (typeof arg1 == 'object') {
       super(arg1);
-      if (arg1.gridUnitHeight != null && typeof arg1.gridUnitHeight == 'number') {
+      if ('gridUnitHeight' in arg1 && typeof arg1.gridUnitHeight == 'number') {
         this.gridUnitHeight = arg1.gridUnitHeight;
       }
-      if (arg1.gridUnitWidth != null && typeof arg1.gridUnitWidth == 'number') {
+      if ('gridUnitWidth' in arg1 && typeof arg1.gridUnitWidth == 'number') {
         this.gridUnitWidth = arg1.gridUnitWidth;
       }
-      if (arg1.gridPlaced != null && typeof arg1.gridPlaced == 'boolean') {
+      if ('gridPlaced' in arg1 && typeof arg1.gridPlaced == 'boolean') {
         this.gridPlaced = arg1.gridPlaced;
       }
-      if (arg1.gridSnap != null && typeof arg1.gridSnap == 'boolean') {
+      if ('gridSnap' in arg1 && typeof arg1.gridSnap == 'boolean') {
         this.gridSnap = arg1.gridSnap;
       }
       let strArray;
-      if (arg1.centerPoint != null && typeof arg1.centerPoint == 'string' && (strArray = arg1.centerPoint.split(',')).length == 2) {
+      if ('centerPoint' in arg1 && typeof arg1.centerPoint == 'string' && (strArray = arg1.centerPoint.split(',')).length == 2) {
         if (Number(strArray[0]) != null && Number(strArray[1]) != null) {
           this.centerPoint = new Point();
           this.centerPoint.x = Number(strArray[0]);
@@ -101,7 +102,7 @@ class BattleMap extends Scene {
       else if (this.gridPlaced) {
         throw Error('Grid indicated to be placed but centerPoint string is unable to be converted to x and y coordinates');
       }
-      if(arg1.cornerPoints != null && Array.isArray(arg1.cornerPoints) && arg1.cornerPoints.length == 4)
+      if('cornerPoints' in arg1 && Array.isArray(arg1.cornerPoints) && arg1.cornerPoints.length == 4)
       {
         let points:Point[] = [];
         for(let i = 0; i < 4; i++)

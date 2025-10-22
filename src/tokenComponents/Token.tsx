@@ -47,28 +47,31 @@ export class Token/*<
     protected baseTokenIndexPairs: [number,number][] = [];
 
     constructor(obj:Object);
+    constructor(name:string, vis:boolean, size:number, showName:boolean);
+    constructor();
 
-    constructor(arg1?: any)
+    constructor(arg1?: any, arg2?:any, arg3?:any,arg4?:any)
     {
+        //Token reconstruction from Object representation
         if(arg1 != null && typeof arg1 == 'object')
         {
-            if(arg1.name != null && typeof arg1.name == 'string')
+            if('name' in arg1 && typeof arg1.name == 'string')
             {
                 this.name = arg1.name;
             }
-            if(arg1.visibility != null && typeof arg1.visibility == 'boolean')
+            if('visibility' in arg1 && typeof arg1.visibility == 'boolean')
             {
                 this.visibility = arg1.visibility;
             }
-            if(arg1.sizeCode != null && typeof arg1.sizeCode == 'number' && arg1.sizeCode > 0)
+            if('sizeCode' in arg1  && typeof arg1.sizeCode == 'number' && arg1.sizeCode > 0)
             {
                 this.sizeCode = arg1.sizeCode;
             }
-            if(arg1.showName != null && typeof arg1.showName == 'boolean')
+            if('showName' in arg1  && typeof arg1.showName == 'boolean')
             {
                 this.showName = arg1.showName;
             }
-            if(arg1.imageURLs != null && Array.isArray(arg1.imageURLs))
+            if('imageURLs' in arg1  && Array.isArray(arg1.imageURLs))
             {
                 for(let i = 0; i < arg1.imageURLs.length; i++)
                 {
@@ -80,10 +83,27 @@ export class Token/*<
                 }
                 this.imageURLs = arg1.imageURLs;
             }
-            if(arg1.currentImage != null && typeof arg1.currentImage == 'number' && arg1.currentImage < this.imageURLs.length)
+            if('currentImage' in arg1  && typeof arg1.currentImage == 'number' && arg1.currentImage < this.imageURLs.length)
             {
                 this.currentImage = arg1.currentImage;
             }
+        }
+        //Basic
+        else if(typeof arg1 == 'string' && arg1 != null && typeof arg2 == 'boolean' && arg2 != null && 
+            typeof arg3 == 'number' && arg3 != null && typeof arg4 == 'boolean' && arg4 != null)
+        {
+            if(arg1.trim() != '')
+            {
+                this.name = arg1;
+            }
+            this.visibility = arg2;
+            
+            if(arg3 > 0)
+            {
+                this.sizeCode = arg3;
+            }
+
+            this.showName = arg4;
         }
     }
 
