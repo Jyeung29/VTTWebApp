@@ -14,7 +14,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { Token } from '../tokenComponents/Token';
 import '../index.css';
-import { Canvas, Circle, FabricImage, FixedLayout, Group, LayoutManager, Textbox } from 'fabric';
+import { Canvas, Circle, FabricImage, FixedLayout, Group, LayoutManager, Text, Textbox } from 'fabric';
 import { systems } from '../Factory';
 import { HiUpload } from 'react-icons/hi';
 import { Factory } from '../Factory';
@@ -74,6 +74,7 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
 
                 let newCollection = [];
                 try {
+                    //Map becomes string - boolean pair. Numbers turn into strings and must be converted during parsing
                     let map = new Map(Object.entries(object.sceneIDMap));
                     if (map.size < 1) {
                         throw Error('Campaign file must have at least 1 sceneIDMap');
@@ -81,22 +82,20 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
 
                     let atLeastOne = false;
                     map.forEach(function (value, key) {
-                        if(typeof key != 'number' || typeof value != 'boolean')
-                        {
+                        if (Number(key) == null || typeof value != 'boolean') {
                             throw Error('Campaign file must have sceneIDMap entries in pairs of an ID number and boolean value');
                         }
                         //Detect if there is at least 1 Scene ID in use
-                        if(value)
-                        {
+                        if (value) {
                             atLeastOne = true;
                         }
                     });
 
-                    if(!atLeastOne) throw Error('Campaign file must have at least 1 active ID in use in sceneIDMap');
-
-                    setSceneIDMap(map);
+                    if (!atLeastOne) throw Error('Campaign file must have at least 1 active ID in use in sceneIDMap');
 
                     let dupMap = new Map();
+
+                    let currentID = object.currentCanvasID;
 
                     let parentDiv = document.getElementById('SceneDiv');
                     if (parentDiv) {
@@ -131,12 +130,10 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
                                 }
 
                                 let newCanvas = document.createElement('canvas');
-                                if(!dupMap.has(newScene.getID()))
-                                {
+                                if (!dupMap.has(newScene.getID())) {
                                     dupMap.set(newScene.getID(), true);
                                 }
-                                else
-                                {
+                                else {
                                     throw Error('Campaign file contains multiple of the same Scene ID');
                                 }
 
@@ -147,6 +144,11 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
                                     backgroundColor: 'rgb(0,0,0)',
                                     enableRetinaScaling: true
                                 });
+
+                                if(newScene.getID() == currentID)
+                                {
+                                    setCurrentCanvasID(fabricCanvas);
+                                }
 
                                 fabricCanvas.loadFromJSON(object.canvasCollection[i][1][j], function (o, object) {
                                     //parse objects and add events to the Token Groups
@@ -160,13 +162,24 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
                                             newRadius = tokenEls[0].width / 4;
                                         }
                                         //Make sure Token Group objects all have the valid data members
-                                        if (!(tokenEls[1] instanceof Circle) || tokenEls[0].clipPath == null || tokenEls[0].selectable || tokenEls[1].strokeWidth != 1 || tokenEls[1].lockScalingX || tokenEls[1].lockScalingY
+                                        if (!(tokenEls[1] instanceof Circle) || tokenEls[0].clipPath == null || tokenEls[1].strokeWidth != 1
                                             || !(tokenEls[0].clipPath instanceof Circle) || Math.floor(tokenEls[0].clipPath.radius * 10000) != Math.floor(newRadius * 10000)
-                                            || tokenEls[1].fill != 'transparent' || !tokenEls[1].strokeUniform || Math.floor(tokenEls[1].radius * 10000) != Math.floor(newRadius * 10000) || Math.floor(object.width * 10000) != Math.floor(newRadius * 2.2 * 10000) || Math.floor(object.height * 100) != Math.floor(newRadius * 2.2 * 100) || !object.lockRotation
-                                            || !object.lockSkewingX || !object.lockSkewingY || !object.lockScalingFlip || !object.lockScalingY || !object.lockScalingX || !(object.layoutManager.strategy instanceof FixedLayout)
+                                            || tokenEls[1].fill != 'transparent' || !tokenEls[1].strokeUniform || Math.floor(tokenEls[1].radius * 10000) != Math.floor(newRadius * 10000)
+                                            || Math.floor(object.width * 10000) != Math.floor(newRadius * 2.2 * 10000) || Math.floor(object.height * 100) != Math.floor(newRadius * 2.2 * 100)
+                                            || !(object.layoutManager.strategy instanceof FixedLayout)
                                         ) {
                                             throw Error('Campaign file contains Scene with a Token with incorrect settings')
                                         }
+                                        object.lockSkewingX = true;
+                                        object.lockSkewingY = true;
+                                        object.lockScalingFlip = true;
+                                        object.lockScalingY = true;
+                                        object.lockScalingX = true;
+                                        tokenEls[1].lockScalingX = false;
+                                        tokenEls[1].lockScalingY = false;
+                                        object.lockRotation = true;
+                                        //Fabric toJSON does not save selectable property so set it
+                                        tokenEls[0].selectable = false;
 
                                         let removeGroup = (event) => {
                                             if (event.target == object) {
@@ -177,11 +190,15 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
                                         fabricCanvas.on('object:removed', removeGroup);
                                     }
                                     else if (object instanceof Textbox) {
-                                        if (object.selectable || !object.lockRotation || !object.lockScalingFlip || !object.lockSkewingX ||
-                                            !object.lockSkewingY || object.textAlign != 'center'
+                                        if (object.textAlign != 'center'
                                         ) {
-                                            throw Error('Campaign file contains Token name element that has inccorect settings');
+                                            throw Error('Campaign file contains Token name element that has incorrect settings');
                                         }
+                                        object.selectable = false;
+                                        object.lockRotation = true;
+                                        object.lockScalingFlip = true;
+                                        object.lockSkewingX = true;
+                                        object.lockSkewingY = true;
                                     }
 
                                 }).then((canvas) => {
@@ -189,23 +206,93 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
                                     let img;
                                     //Check if Scene contains FabricImage at lowest layer with valid data members
                                     if (fabricCanvas.getObjects().length > 0 && (img = fabricCanvas.getObjects()[0]) instanceof FabricImage) {
-                                        if (img.hoverCursor != 'default' || img.hasBorders || img.hasControls || img.selectable) {
-                                            throw Error('Campaign file contains a Scene with an image on the lowest layer with incorrect settings');
-                                        }
+                                        img.hasBorders = false;
+                                        img.hasControls = false;
+                                        img.hoverCursor = 'move';
+                                        img.selectable = false;
                                         newScene.addImage(img);
                                     }
                                     else {
                                         throw Error('Campaign file contains a Scene without an image on the lowest layer');
                                     }
+                                    let objects = fabricCanvas.getObjects();
+                                    for(let k = 0; k < objects.length; k++)
+                                    {
+                                        let tokenObjects;
+                                        let tokenGroup;
+                                        let nameBox;
+                                        if((tokenGroup = objects[k]) instanceof Group && (tokenObjects = tokenGroup.getObjects()) && tokenObjects.length > 1
+                                        && tokenObjects[0] instanceof FabricImage)
+                                        {
+                                            if(k + 1 < objects.length && (nameBox = objects[k+1]) instanceof Textbox)
+                                            {
+                                                newScene.addToken(tokenGroup,[nameBox]);
+                                            }
+                                            else
+                                            {
+                                                throw Error('Campaign file contains a Canvas with a Token object without it\'s Name Textbox');
+                                            }
+                                        }
+                                        else if(objects[k] instanceof Circle)
+                                        {
+                                            if(!newScene.addObjectReference(objects[k])) 
+                                                throw Error('Campaign file contains a Scene that has object size codes and object references of lengths that don\'t match');
+                                        }
+                                    }
+
                                     parentDiv.appendChild(newCanvas);
+                                }).catch((error) => {
+                                    alert(error);
+                                    return;
                                 });
                                 canvasArray.push(fabricCanvas);
                                 sceneArray.push(newScene);
                             }
-                            newCollection.push([object.canvasCollection[i][0],canvasArray,sceneArray]);
+                            newCollection.push([object.canvasCollection[i][0], canvasArray, sceneArray]);
                         }
                     }
 
+                    dupMap.forEach((value, key) => {
+                        if (!map.has(`${key}`) || map.get(`${key}`) != value) {
+                            throw Error('Campaign file contains a sceneIDMap that does not match the IDs of Scenes in the file');
+                        }
+                    setSceneIDMap(dupMap);
+                    });
+
+                    setCanvasCollection(newCollection);
+                    let newTokens = [];
+                    for(let i = 0; i < object.tokenCollection.length; i++)
+                    {
+                        let tokenObjectArray: FabricImage[] = [];
+                        let tokenInfoArray: Token[] = [];
+
+                        let rawTokenObjects = object.tokenCollection[i][1];
+                        let rawTokenInfo = object.tokenCollection[i][2];
+
+                        if(rawTokenObjects.length != rawTokenInfo.length)
+                        {
+                            throw Error('Campaign file contains a collection in tokenCollection that does not have FabricImage and Token arrays not of the same length');
+                        }
+
+                        for(let j = 0; j < rawTokenInfo.length; i++)
+                        {
+                            if(typeof rawTokenInfo[i] != 'object' || typeof rawTokenObjects[i] != 'object')
+                            {
+                                throw Error('Campaign file contains a collection in tokenCollection that contains an entry that is not an object representation of FabricImage or Token');
+                            }
+
+                            FabricImage.fromObject(rawTokenObjects[j]).then((img) => {
+                              tokenObjectArray.push(img);  
+                            });
+
+                            tokenInfoArray.push(new Token(rawTokenInfo[j]));
+                        }
+
+                        newTokens.push([object.tokenCollection[i][0], tokenObjectArray, tokenInfoArray]);
+                    }
+                    //Must reconstruct collection with original collection having the first references and other collections connecting to existing tokens
+                    
+                    
                 } catch (error) {
                     alert(error);
                     return;

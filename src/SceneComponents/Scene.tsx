@@ -20,7 +20,11 @@ abstract class Scene {
 
   //A list which contains a reference to non-token interactable objects on a Scene such as a circle and an associated
   // size multiplier used to scale the object to the grid.
-  protected objects: [FabricObject, number][] = [];
+  protected objects: FabricObject[] = [];
+
+  protected objectSizeCodes: number[] = [];
+
+  protected improperObjects:boolean = false;
 
   //A list of FabricImages that can be switched between a single Scene instance. Currently only supports a single image.
   protected images: FabricImage[] = [];
@@ -47,7 +51,15 @@ abstract class Scene {
     {
       tokenObjects.push(this.tokenInfo[i].toObject());
     }
-    return {SCENETYPE: this.SCENETYPE, name: this.name, currentImage: this.currentImage, imageURLs: this.imageURLs, id: this.id, tokenInfo:tokenObjects};
+
+    let otherObjects = [];
+    for(let i = 0; i < this.objectSizeCodes.length; i++)
+    {
+      otherObjects.push(this.objectSizeCodes[i]);
+    }
+
+    return {SCENETYPE: this.SCENETYPE, name: this.name, currentImage: this.currentImage,
+       imageURLs: this.imageURLs, id: this.id, tokenInfo:tokenObjects, otherObjects: otherObjects};
   }
 
   constructor(id: number);
@@ -61,7 +73,7 @@ abstract class Scene {
     }
     else if(typeof arg1 == 'object')
     {
-      if('SCENETYPE' in arg1 && typeof arg1.SCENETYPE == 'number')
+      if('SCENETYPE' in arg1 && typeof arg1.SCENETYPE == 'number' && Number.isInteger(arg1.SCENETYPE))
       {
         this.SCENETYPE = arg1.SCENETYPE;
       }
@@ -69,7 +81,8 @@ abstract class Scene {
       {
         throw Error('No SCENETYPE number provided');
       }
-      if('currentImage' in arg1 && typeof arg1.currentImage == 'number')
+
+      if('currentImage' in arg1 && typeof arg1.currentImage == 'number' && Number.isInteger(arg1.currentImage))
       {
         this.currentImage = arg1.currentImage;
       }
@@ -77,6 +90,7 @@ abstract class Scene {
       {
         throw Error('No number is provided to be the currentImage index');
       }
+
       if('imageURLs' in arg1 && Array.isArray(arg1.imageURLs))
       {
         for(let i = 0; i < arg1.imageURLs.length; i++)
@@ -92,7 +106,8 @@ abstract class Scene {
       {
         throw Error('No array is provided with imageURLs');
       }
-      if('id' in arg1 && typeof arg1.id == 'number')
+
+      if('id' in arg1 && typeof arg1.id == 'number' && Number.isInteger(arg1.id))
       {
         this.id = arg1.id;
       }
@@ -100,6 +115,7 @@ abstract class Scene {
       {
         throw Error('No id was provided');
       }
+
       if('tokenInfo' in arg1 && Array.isArray(arg1.tokenInfo))
       {
         for(let i = 0; i < arg1.tokenInfo.length; i++)
@@ -120,6 +136,24 @@ abstract class Scene {
       {
         this.tokenInfo = [];
       }
+
+      if('otherObjects' in arg1 && Array.isArray(arg1.otherObjects))
+      {
+        let newObjects = arg1.otherObjects;
+        for(let i = 0; i < arg1.otherObjects.length; i++)
+        {
+          if(typeof arg1.otherObjects[i] != 'number' && !Number.isInteger(arg1.otherObjects[i]))
+          {
+            throw Error('Campaign file contains otherObject array item that is not an integer number');
+          }
+          if(arg1.otherObjects[i] <= 0) throw Error('Campaign file contains otherObject array itme that is less than or equal to 0');
+        }
+        this.objectSizeCodes = newObjects;
+        //Flags that size codes are present but requires canvas reconstruction with object references to have
+        //one to one relationship with objects array
+        this.improperObjects = true;
+      }
+
     }
   }
 
@@ -155,11 +189,11 @@ abstract class Scene {
   //A function that adds new token and associated list of FabricObjects to be tracked in instance of Scene. 
   // Returns boolean depending on success of Token addition. Function validates whether the Group object is
   // a Token group.
-  public addToken(newToken: Group, tokenObjects: FabricObject[], tokenInfo:Token): boolean {
+  public addToken(newToken: Group, tokenObjects: FabricObject[], tokenInfo?:Token): boolean {
     //Check if provided Group is a valid Token Group. If so, add to tokenGroups data member.
-    if (newToken && newToken.getObjects().length > 1 && newToken.getObjects()[0] instanceof FabricImage && tokenInfo) {
+    if (newToken && newToken.getObjects().length > 1 && newToken.getObjects()[0] instanceof FabricImage) {
       this.tokenGroups.push([newToken, tokenObjects]);
-      this.tokenInfo.push(tokenInfo);
+      if(tokenInfo)this.tokenInfo.push(tokenInfo);
       return true;
     }
     return false;
@@ -216,13 +250,25 @@ abstract class Scene {
   public addObject(newObject: FabricObject, multiplier: number): boolean {
     //Check if provided object is not null and multiplier is valid. If so, add object with multiplier.
     if (newObject && multiplier > 0) {
-      this.objects.push([newObject, multiplier]);
+      this.objects.push(newObject);
+      this.objectSizeCodes.push(multiplier);
       return true;
     }
     return false;
   }
 
-  //Funciton that removes shape from being tracked in instance of Scene. Returns the
+  //Function that adds an object reference to be tracked in instance of Scene. Only used during reconstruction of
+  //Scene's object representation
+  public addObjectReference(newObject: FabricObject): boolean {
+    if(newObject && this.objectSizeCodes.length > this.objects.length)
+    {
+      this.objects.push(newObject);
+      return true;
+    }
+    return false;
+  }
+
+  //Function that removes shape from being tracked in instance of Scene. Returns the
   //target shape to be removed. Called when canvas object removed event triggers and
   //is a shape.
   public removeObjects(removeObject: FabricObject) {
@@ -231,7 +277,7 @@ abstract class Scene {
       let index = -1;
       //Iterate over tracked objects and if found, track index
       for (let i = 0; i < this.objects.length; i++) {
-        if (this.objects[i][0] == removeObject) {
+        if (this.objects[i] == removeObject) {
           index = i;
           break;
         }
@@ -239,8 +285,9 @@ abstract class Scene {
 
       //If object was found, remove it and it's multiplier. Return the object.
       if (index > -1) {
-        let removedTokens = this.objects.splice(index, 1);
-        return removedTokens[0][0];
+        let removedObject = this.objects.splice(index, 1);
+        this.objectSizeCodes.splice(index, 1);
+        return removedObject;
       }
     }
     return null;

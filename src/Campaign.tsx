@@ -1,6 +1,6 @@
 import BattleMap from "./SceneComponents/BattleMap";
 import { useRef, useState, useEffect } from 'react';
-import { Canvas, FabricImage, Point, Group, Textbox } from 'fabric';
+import { Canvas, FabricImage, Point, Group, Textbox, Circle } from 'fabric';
 import { Token } from "./tokenComponents/Token";
 import './index.css';
 import Toolbar from './menuComponents/Toolbar';
@@ -181,6 +181,11 @@ function Campaign() {
                     canvas.remove(nameBox);
                     //newCollection[canvasIndex.current[0]][3][canvasIndex.current[1]].splice(0,1)
                   }
+                }
+                //Remove non-token objects from the Scene's info
+                else if(actives[i] instanceof Circle)
+                {
+                  currentScene.removeObjects(actives[i]);
                 }
                 canvas.remove(actives[i]);
               }
