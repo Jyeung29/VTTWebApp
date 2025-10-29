@@ -17,7 +17,7 @@ import { FabricImage } from 'fabric';
     The component is hidden and is displayed when the user presses the "Create New Token"
     button in the TokenMenu or "Edit" in the TokenMenu's context menu.
 */
-export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, factory, setCollectionChange, gameLog, canvasCollection }) {
+export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, factory, setTokenCollectionUpdate, gameLog, canvasCollection }) {
     //State that stores the selected size value of the Token
     const [sizeVal, setSizeVal] = useState(['']);
 
@@ -88,10 +88,12 @@ export function TokenCreationEditMenu({ tokenCollection, setTokenCollection, fac
 
                             //Add the Token to the TokenCollection
                             var collection = tokenCollection;
+                            let newIndex = collection[0][1].length;
                             collection[0][1].push(tokenEl);
                             collection[0][2].push(tokenInfo);
+                            tokenInfo.setCollectionIndex(newIndex);
                             setTokenCollection(collection);
-                            setCollectionChange(true);
+                            setTokenCollectionUpdate(true);
                             //Close the TokenCreationEditMenu Dialogue
                             setMenuOpen(false);
                         }

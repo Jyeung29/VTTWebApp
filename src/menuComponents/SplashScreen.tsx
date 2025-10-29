@@ -14,7 +14,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { Token } from '../tokenComponents/Token';
 import '../index.css';
-import { Canvas, Circle, FabricImage, FixedLayout, Group, LayoutManager, Text, Textbox } from 'fabric';
+import { Canvas, Circle, FabricImage, FixedLayout, Group, LayoutManager, Line, Text, Textbox } from 'fabric';
 import { systems } from '../Factory';
 import { HiUpload } from 'react-icons/hi';
 import { Factory } from '../Factory';
@@ -22,7 +22,9 @@ import BattleMap from '../SceneComponents/BattleMap';
 
 const CANVASCOLLECTIONLENGTH = 3;
 
-export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgSystem, setCanvasCollection, setCurrentCanvasID, setSceneIDMap, setTokenCollection, factory, setCanvas, setCurrentScene }) {
+export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgSystem, setCanvasCollection, setCurrentCanvasID, setSceneIDMap, setTokenCollection, factory, setCanvas, setCurrentScene,
+    setSceneCollectionUpdate, contextMenuManager, setTokenCollectionUpdate
+}) {
     const { contains } = useFilter({ sensitivity: 'base' });
     const { collection, filter } = useListCollection({ initialItems: systems, filter: contains });
     const [systemChosen, setSystemChosen] = useState();
@@ -52,12 +54,12 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
                     return;
                 }
 
-                if (!Array.isArray(object.canvasCollection)) {
+                if (!Array.isArray(object.canvasCollection) || object.canvasCollection.length <= 0) {
                     alert('Campaign file contains canvasCollection property that is not an array');
                     return;
                 }
 
-                if (!Array.isArray(object.tokenCollection)) {
+                if (!Array.isArray(object.tokenCollection) || object.tokenCollection.length <= 0) {
                     alert('Campaign file contains tokenCollection property that is not an array');
                     return;
                 }
@@ -67,7 +69,7 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
                     return;
                 }
 
-                if (typeof object.currentCanvasID != 'number') {
+                if (typeof object.currentCanvasID != 'number' || !Number.isInteger(object.currentCanvasID) || object.currentCanvasID < 0) {
                     alert('Campaign file contains currentCanvasID property that is not a number');
                     return;
                 }
@@ -96,6 +98,8 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
                     let dupMap = new Map();
 
                     let currentID = object.currentCanvasID;
+
+                    setCurrentCanvasID(currentID);
 
                     let parentDiv = document.getElementById('SceneDiv');
                     if (parentDiv) {
@@ -138,6 +142,7 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
                                 }
 
                                 newCanvas.id = 'scene_' + newScene.getID();
+                                parentDiv.appendChild(newCanvas);
                                 const fabricCanvas = new Canvas(newCanvas, {
                                     width: window.innerWidth,
                                     height: window.innerHeight,
@@ -145,9 +150,9 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
                                     enableRetinaScaling: true
                                 });
 
-                                if(newScene.getID() == currentID)
-                                {
-                                    setCurrentCanvasID(fabricCanvas);
+                                if (newScene.getID() == currentID) {
+                                    setCanvas(fabricCanvas);
+                                    setCurrentScene(newScene);
                                 }
 
                                 fabricCanvas.loadFromJSON(object.canvasCollection[i][1][j], function (o, object) {
@@ -188,6 +193,96 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
                                             fabricCanvas.off('object:removed', removeGroup);
                                         };
                                         fabricCanvas.on('object:removed', removeGroup);
+
+
+                                        //When Token is selected, add a listener for the context menu
+                                        //and prevent context menu from being exited
+                                        object.on('selected', () => {
+                                            let selectedObjects = fabricCanvas.getActiveObjects();
+                                            let allTokens: boolean = true;
+                                            let tokenNumber: number = 0;
+                                            //Iterate over selected objects and determine if all are Token groups
+                                            for (let i = 0; i < selectedObjects.length; i++) {
+                                                let tokenGroup;
+                                                if (((tokenGroup = selectedObjects[i]) instanceof Group) && (tokenGroup.getObjects().length > 1)
+                                                    && (tokenGroup.getObjects()[0] instanceof FabricImage)) {
+                                                    tokenNumber++;
+                                                }
+                                                else //If not a Token Group end loop
+                                                {
+                                                    allTokens = false;
+                                                    break;
+                                                }
+                                            }
+
+                                            //If all selected Group objects are Token groups then allow context menu access
+                                            if (allTokens) {
+                                                document.addEventListener('contextmenu', contextMenuManager.updateContextMenuPosition);
+                                                contextMenuManager.setContextMenuExit(false);
+                                                if (tokenNumber > 1) {
+                                                    contextMenuManager.setMultiSelectionBool(true);
+                                                    let groupBox = fabricCanvas.getActiveObject();
+                                                    if (groupBox) {
+                                                        //Should not cause memory leak due to the multi object selection being removed and deleted
+                                                        groupBox.on('mouseover', () => {
+                                                            document.addEventListener('contextmenu', contextMenuManager.updateContextMenuPosition)
+                                                        });
+                                                        groupBox.on('mouseout', () => {
+                                                            document.removeEventListener('contextmenu', contextMenuManager.updateContextMenuPosition);
+                                                        });
+                                                    }
+
+                                                }
+                                                else {
+                                                    contextMenuManager.setMultiSelectionBool(false);
+                                                }
+                                            }
+                                        });
+
+                                        //When mouse hovers over Token group and the group is selected, add listener for context menu
+                                        object.on('mouseover', () => {
+                                            let selectedObjects = fabricCanvas.getActiveObjects();
+                                            for (let i = 0; i < selectedObjects.length; i++) {
+                                                if (selectedObjects[i] == object) {
+                                                    document.addEventListener('contextmenu', contextMenuManager.updateContextMenuPosition);
+                                                    break;
+                                                }
+                                            }
+                                        });
+
+                                        //When mouse no longer hovers over Token group, remove listener for context menu
+                                        object.on('mouseout', (mouseEvent) => {
+                                            let selectedObjects = fabricCanvas.getActiveObjects();
+                                            for (let i = 0; i < selectedObjects.length; i++) {
+                                                if (selectedObjects[i] == object) {
+                                                    document.removeEventListener('contextmenu', contextMenuManager.updateContextMenuPosition);
+                                                    break;
+                                                }
+                                            }
+                                        });
+
+                                        //When Token group is no longer selected, remove listener for context menu and
+                                        //allow context menu to be exited
+                                        object.on('deselected', () => {
+                                            document.removeEventListener('contextmenu', contextMenuManager.updateContextMenuPosition);
+                                            contextMenuManager.setContextMenuExit(true);
+                                            contextMenuManager.setMultiSelectionBool(false);
+                                        });
+
+                                    }
+                                    else if (object instanceof Group && object.getObjects().length > 1 && object.getObjects()[0] instanceof Line) {
+                                        object.selectable = false;
+                                        object.lockRotation = true;
+                                        object.lockScalingFlip = true;
+                                        object.lockSkewingX = true;
+                                        object.lockSkewingY = true;
+                                        object.hasControls = false;
+                                        if (newScene instanceof BattleMap) {
+                                            newScene.setGridGroup(object);
+                                        }
+                                        else {
+                                            throw Error('Non-BattleMap Scenes should not have a grid');
+                                        }
                                     }
                                     else if (object instanceof Textbox) {
                                         if (object.textAlign != 'center'
@@ -200,6 +295,7 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
                                         object.lockSkewingX = true;
                                         object.lockSkewingY = true;
                                     }
+
 
                                 }).then((canvas) => {
                                     //canvas restored
@@ -216,33 +312,29 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
                                         throw Error('Campaign file contains a Scene without an image on the lowest layer');
                                     }
                                     let objects = fabricCanvas.getObjects();
-                                    for(let k = 0; k < objects.length; k++)
-                                    {
+                                    for (let k = 0; k < objects.length; k++) {
                                         let tokenObjects;
                                         let tokenGroup;
                                         let nameBox;
-                                        if((tokenGroup = objects[k]) instanceof Group && (tokenObjects = tokenGroup.getObjects()) && tokenObjects.length > 1
-                                        && tokenObjects[0] instanceof FabricImage)
-                                        {
-                                            if(k + 1 < objects.length && (nameBox = objects[k+1]) instanceof Textbox)
-                                            {
-                                                newScene.addToken(tokenGroup,[nameBox]);
+                                        if ((tokenGroup = objects[k]) instanceof Group && (tokenObjects = tokenGroup.getObjects()) && tokenObjects.length > 1
+                                            && tokenObjects[0] instanceof FabricImage) {
+                                            if (k + 1 < objects.length && (nameBox = objects[k + 1]) instanceof Textbox) {
+                                                newScene.addToken(tokenGroup, [nameBox]);
                                             }
-                                            else
-                                            {
+                                            else {
                                                 throw Error('Campaign file contains a Canvas with a Token object without it\'s Name Textbox');
                                             }
                                         }
-                                        else if(objects[k] instanceof Circle)
-                                        {
-                                            if(!newScene.addObjectReference(objects[k])) 
+                                        else if (objects[k] instanceof Circle) {
+                                            if (!newScene.addObjectReference(objects[k]))
                                                 throw Error('Campaign file contains a Scene that has object size codes and object references of lengths that don\'t match');
                                         }
                                     }
-
-                                    parentDiv.appendChild(newCanvas);
+                                    fabricCanvas.renderAll();
                                 }).catch((error) => {
                                     alert(error);
+                                    //Clear all previous canvases since error occured
+                                    parentDiv.innerHTML = '';
                                     return;
                                 });
                                 canvasArray.push(fabricCanvas);
@@ -256,43 +348,102 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
                         if (!map.has(`${key}`) || map.get(`${key}`) != value) {
                             throw Error('Campaign file contains a sceneIDMap that does not match the IDs of Scenes in the file');
                         }
-                    setSceneIDMap(dupMap);
+                        setSceneIDMap(dupMap);
                     });
 
+                    setSceneCollectionUpdate(true);
                     setCanvasCollection(newCollection);
-                    let newTokens = [];
-                    for(let i = 0; i < object.tokenCollection.length; i++)
-                    {
-                        let tokenObjectArray: FabricImage[] = [];
-                        let tokenInfoArray: Token[] = [];
 
-                        let rawTokenObjects = object.tokenCollection[i][1];
-                        let rawTokenInfo = object.tokenCollection[i][2];
+                    dupMap.forEach((value, key) => {
+                        let currentCanvas = document.getElementById('scene_' + key);
+                        if (!currentCanvas) {
+                            throw Error('sceneIDMap contains an active ID that has a non-existent canvas element');
+                        }
+                        currentCanvas = currentCanvas.parentNode as HTMLElement;
+                        if (key == currentID) {
+                            currentCanvas.style.display = 'block';
+                        }
+                        else {
+                            currentCanvas.style.display = 'none';
+                        }
+                    });
 
-                        if(rawTokenObjects.length != rawTokenInfo.length)
-                        {
+
+                    async function constructTokenCollection(object) {
+                        let newTokens = [];
+
+                        let tokenObjectArray = [];
+                        let tokenInfoArray = [];
+
+                        let rawTokenObjects = object.tokenCollection[0][1];
+                        let rawTokenInfo = object.tokenCollection[0][2];
+
+                        if (rawTokenObjects.length != rawTokenInfo.length) {
                             throw Error('Campaign file contains a collection in tokenCollection that does not have FabricImage and Token arrays not of the same length');
                         }
 
-                        for(let j = 0; j < rawTokenInfo.length; i++)
-                        {
-                            if(typeof rawTokenInfo[i] != 'object' || typeof rawTokenObjects[i] != 'object')
-                            {
+                        for (let j = 0; j < rawTokenInfo.length; j++) {
+                            console.log(typeof rawTokenInfo[j])
+                            console.log(typeof rawTokenObjects[j])
+                            if (typeof rawTokenInfo[j] != 'object' || typeof rawTokenObjects[j] != 'object') {
                                 throw Error('Campaign file contains a collection in tokenCollection that contains an entry that is not an object representation of FabricImage or Token');
                             }
-
-                            FabricImage.fromObject(rawTokenObjects[j]).then((img) => {
-                              tokenObjectArray.push(img);  
-                            });
-
                             tokenInfoArray.push(new Token(rawTokenInfo[j]));
+
+                            await FabricImage.fromObject(rawTokenObjects[j]).then((img) => {
+                                tokenObjectArray.push(img);
+                            });
                         }
 
-                        newTokens.push([object.tokenCollection[i][0], tokenObjectArray, tokenInfoArray]);
+                        newTokens.push([object.tokenCollection[0][0], tokenObjectArray, tokenInfoArray]);
+
+                        for (let i = 1; i < object.tokenCollection.length; i++) {
+                            tokenObjectArray = [];
+                            tokenInfoArray = [];
+
+                            rawTokenObjects = object.tokenCollection[i][1];
+                            rawTokenInfo = object.tokenCollection[i][2];
+                            if (rawTokenObjects.length != rawTokenInfo.length) {
+                                throw Error('Campaign file contains a collection in tokenCollection that does not have FabricImage and Token arrays not of the same length');
+                            }
+
+                            for (let j = 0; j < rawTokenInfo.length; j++) {
+                                console.log(typeof rawTokenInfo[j])
+                                console.log(typeof rawTokenObjects[j])
+                                if (typeof rawTokenInfo[j] != 'object' || typeof rawTokenObjects[j] != 'object') {
+                                    throw Error('Campaign file contains a collection in tokenCollection that contains an entry that is not an object representation of FabricImage or Token');
+                                }
+
+                                let index = -1;
+
+                                if('collectionIndex' in rawTokenInfo[j] && rawTokenInfo[j].collectionIndex >= 0 && Number.isInteger(rawTokenInfo[j].collectionIndex))
+                                {
+                                    index = rawTokenInfo[j].collectionIndex;
+                                }
+                                else
+                                {
+                                    throw Error('Campaign file contains a Token in tokenCollection that does not have a valid collectionIndex value');
+                                }
+
+                                if(index < newTokens[0][1].length && index < newTokens[0][2].length)
+                                {
+                                    tokenInfoArray.push(newTokens[0][2][index]);
+                                    tokenObjectArray.push(newTokens[0][1][index]);
+                                }
+                                else
+                                {
+                                    throw Error('Campaign file contains a Token in tokenCollection that has a collectionIndex that is out of range');
+                                }
+                            }
+                            newTokens.push([object.tokenCollection[i][0], tokenObjectArray, tokenInfoArray]);
+                        }
+                        setTokenCollection(newTokens);
+                        setTokenCollectionUpdate(true);
                     }
+
+                    constructTokenCollection(object);
+
                     //Must reconstruct collection with original collection having the first references and other collections connecting to existing tokens
-                    
-                    
                 } catch (error) {
                     alert(error);
                     return;
@@ -315,85 +466,7 @@ export function SplashScreen({ setNewCampaign, openSplash, setOpenSplash, ttrpgS
         };
       }
         
-        
-                                //When Token is selected, add a listener for the context menu
-                                //and prevent context menu from being exited
-                                group.on('selected', () => {
-                                    let selectedObjects = canvas.getActiveObjects();
-                                    let allTokens: boolean = true;
-                                    let tokenNumber: number = 0;
-                                    //Iterate over selected objects and determine if all are Token groups
-                                    for (let i = 0; i < selectedObjects.length; i++) {
-                                        let tokenGroup;
-                                        if (((tokenGroup = selectedObjects[i]) instanceof Group) && (tokenGroup.getObjects().length > 1)
-                                            && (tokenGroup.getObjects()[0] instanceof FabricImage)) {
-                                            tokenNumber++;
-                                        }
-                                        else //If not a Token Group end loop
-                                        {
-                                            allTokens = false;
-                                            break;
-                                        }
-                                    }
-        
-                                    //If all selected Group objects are Token groups then allow context menu access
-                                    if (allTokens) {
-                                        document.addEventListener('contextmenu', cmManager.updateContextMenuPosition);
-                                        cmManager.setContextMenuExit(false);
-                                        if (tokenNumber > 1) {
-                                            cmManager.setMultiSelectionBool(true);
-                                            let groupBox = canvas.getActiveObject();
-                                            if(groupBox)
-                                            {
-                                                //Should not cause memory leak due to the multi object selection being removed and deleted
-                                               groupBox.on('mouseover', () => {
-                                                document.addEventListener('contextmenu', cmManager.updateContextMenuPosition)
-                                                });
-                                                groupBox.on('mouseout', () => {
-                                                    document.removeEventListener('contextmenu', cmManager.updateContextMenuPosition);
-                                                });
-                                            }
-                                            
-                                        }
-                                        else {
-                                            cmManager.setMultiSelectionBool(false);
-                                        }
-                                    }
-                                });
-        
-                                //When mouse hovers over Token group and the group is selected, add listener for context menu
-                                group.on('mouseover', () => {
-                                    let selectedObjects = canvas.getActiveObjects();
-                                    for (let i = 0; i < selectedObjects.length; i++) {
-                                        if (selectedObjects[i] == group) {
-                                            document.addEventListener('contextmenu', cmManager.updateContextMenuPosition);
-                                            break;
-                                        }
-                                    }
-                                });
-        
-                                //When mouse no longer hovers over Token group, remove listener for context menu
-                                group.on('mouseout', (mouseEvent) => {
-                                    let selectedObjects = canvas.getActiveObjects();
-                                    for (let i = 0; i < selectedObjects.length; i++) {
-                                        if (selectedObjects[i] == group) {
-                                            document.removeEventListener('contextmenu', cmManager.updateContextMenuPosition);
-                                            break;
-                                        }
-                                    }
-                                });
-        
-                                //When Token group is no longer selected, remove listener for context menu and
-                                //allow context menu to be exited
-                                group.on('deselected', () => {
-                                    document.removeEventListener('contextmenu', cmManager.updateContextMenuPosition);
-                                    cmManager.setContextMenuExit(true);
-                                    cmManager.setMultiSelectionBool(false);
-                                });
-                            }
-                        }
-                    }
-                }*/
+        */
                 setOpenSplash(false);
             }
         }

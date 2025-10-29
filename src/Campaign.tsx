@@ -47,6 +47,10 @@ function Campaign() {
 
   const [newCampaign, setNewCampaign] = useState(false);
 
+  const [sceneCollectionUpdate, setSceneCollectionUpdate] = useState<boolean>(false);
+
+  const [tokenCollectionUpdate, setTokenCollectionUpdate] = useState<boolean>(false);
+
   //An array containing the name of a scene collection and an array of Scenes. For scenes not associated
   //with any collection, the name is empty and the Scene arrray only contains the Scene by itself 
   //const [sceneCollection, setSceneCollection] = useState<[string, Scene[]][]>([]);
@@ -62,13 +66,40 @@ function Campaign() {
 
   //const canvasIndex = useRef([-1, -1]);
 
+  useEffect(() => {
+    document.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+    });
+
+    //Mouse event that indicates panning should be allowed
+    window.addEventListener('mousedown', panCanvas);
+    function panCanvas(event: MouseEvent) {
+      //If (for right hand) right mouse button down
+      if (event.button == 2) {
+        isPanning.current = true;
+      }
+    }
+
+    //Event for mouse event to stop panning
+    window.addEventListener('mouseup', stopPan);
+    function stopPan(event: MouseEvent) {
+      //If (for right hand) right mouse button down
+      if (event.button == 2) {
+        isPanning.current = false;
+      }
+    }
+  }, [])
+
   //Create the initial Canvas on startup with default BattleMap
   useEffect(() => {
+    if(newCampaign) {
+    console.log('new')
     var newMap = new BattleMap("Test Map", 0);
     setCurrentScene(newMap);
     let newIDMap = sceneIDMap;
     newIDMap.set(0, true);
     setSceneIDMap(newIDMap);
+
     document.addEventListener('contextmenu', (event) => {
       event.preventDefault();
     });
@@ -91,8 +122,11 @@ function Campaign() {
       }
     }
 
-    let currentCanvas = document.getElementById('scene_0');
-    if (currentCanvas) {
+    let currentCanvas = document.createElement('canvas');
+    currentCanvas.id = 'scene_0';
+    let parent = document.getElementById('SceneDiv');
+    if (currentCanvas && parent) {
+      parent.appendChild(currentCanvas)
       const initCanvas = new Canvas('scene_0', {
         width: window.innerWidth,
         height: window.innerHeight,
@@ -105,7 +139,6 @@ function Campaign() {
 
       var image = document.createElement('img');
       var source = document.createElement('source');
-
       //Set image URL source
       image.appendChild(source);
       image.src = defaultMap;
@@ -150,6 +183,7 @@ function Campaign() {
         initCanvas.dispose();
       }
     }
+  }
   }, [newCampaign]);
 
   //Update event whenever currentScene or canvas is updated so user view features apply to the current canvas
@@ -318,18 +352,17 @@ function Campaign() {
           tokenCollection={tokenCollection} sceneIDMap={sceneIDMap} currentCanvasID={currentCanvasID} />
         <SidebarMenu canvas={canvas} cmManager={contextMenuManager} scene={currentScene}
           setCurrentScene={setCurrentScene} setCanvas={setCanvas}
-          tokenCollection={tokenCollection} setTokenCollection={setTokenCollection}
+          tokenCollection={tokenCollection} setTokenCollection={setTokenCollection} tokenCollectionUpdate={tokenCollectionUpdate} setTokenCollectionUpdate={setTokenCollectionUpdate}
           factory={factory} sceneIDMap={sceneIDMap} setSceneIDMap={setSceneIDMap}
           currentCanvasID={currentCanvasID} setCurrentCanvasID={setCurrentCanvasID}
           canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection}
-          gameLog={gameLog} />
+          gameLog={gameLog} sceneCollectionUpdate={sceneCollectionUpdate} setSceneCollectionUpdate={setSceneCollectionUpdate}/>
       </div>
       <ContextMenu canvas={canvas} cmManager={contextMenuManager} scene={currentScene} />
-      <SplashScreen openSplash={openSplash} setOpenSplash={setOpenSplash} ttrpgSystem={ttrpgSystem} setCanvasCollection={setCanvasCollection}
-        setSceneIDMap={setSceneIDMap} setTokenCollection={setTokenCollection} setCurrentCanvasID={setCurrentCanvasID} factory={factory}
-        setCurrentScene={setCurrentScene} setCanvas={setCanvas} setNewCampaign={setNewCampaign}/>
+      <SplashScreen openSplash={openSplash} setOpenSplash={setOpenSplash} ttrpgSystem={ttrpgSystem} setCanvasCollection={setCanvasCollection} setTokenCollectionUpdate={setTokenCollectionUpdate}
+        setSceneIDMap={setSceneIDMap} setTokenCollection={setTokenCollection} setCurrentCanvasID={setCurrentCanvasID} factory={factory} contextMenuManager = {contextMenuManager}
+        setCurrentScene={setCurrentScene} setCanvas={setCanvas} setNewCampaign={setNewCampaign} setSceneCollectionUpdate={setSceneCollectionUpdate}/>
       <div id='SceneDiv'>
-        <canvas id='scene_0' />
       </div>
     </div>
   )

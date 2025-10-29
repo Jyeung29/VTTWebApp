@@ -13,12 +13,11 @@ import { FaCheck, FaEdit, FaFolderPlus } from 'react-icons/fa';
 import { MdOutlineDelete } from "react-icons/md";
 import defaultTokenImage from '../DefaultImages/defaultPaladinOrc.png'
 
-export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, factory, gameLog, canvasCollection, setCanvasCollection }) {
+export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, factory, gameLog, canvasCollection, setCanvasCollection,
+    setTokenCollectionUpdate, tokenCollectionUpdate
+ }) {
     //State that contains JSX for showing all collections and their base tokens
     const [collectionJSX, setCollectionJSX] = useState([]);
-
-    //State used to detect changes to the tokenCollection
-    const [collectionChange, setCollectionChange] = useState(false);
 
     //State used to determine whether TokenMenu context menu is active
     const [cmActive, setContextMenuActive] = useState(false);
@@ -51,7 +50,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
     const groupNum = useRef(new Map<number, boolean>());
 
     //Testing Purposes to Preload Tokens
-    useEffect(() => {
+    /*useEffect(() => {
         var image = document.createElement('img');
         var source = document.createElement('source');
         image.src = defaultTokenImage;
@@ -62,19 +61,20 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
             var sizeCode = 1;
             tokenInfo.setSizeCode(sizeCode);
             tokenInfo.setName("TestName");
+            tokenInfo.setCollectionIndex(0);
             let linkPair = factory.getLinkAndID(defaultTokenImage);
             tokenInfo.addURL(linkPair[0], linkPair[1]);
             var collection = tokenCollection;
             collection[0][1] = [tokenEl];
             collection[0][2] = [tokenInfo];
             setTokenCollection(collection);
-            setCollectionChange(true);
+            setTokenCollectionUpdate(true);
         }
         //Make sure image's link source works
         image.onerror = function () {
             alert('Token link is invalid or is not compatible');
         };
-    }, []);
+    }, []);*/
 
     //Function to display the Token Menu's Context Menu
     const cmFunction = (event) => {
@@ -146,6 +146,13 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                 //Remove from 1st Base Token Collection
                 myCollection[0][1].splice(currentIndex[1], 1);
                 myCollection[0][2].splice(currentIndex[1], 1);
+                for(let i = 0; i < myCollection[0][2].length; i++)
+                {
+                    if(myCollection[0][2][i].getCollectionIndex() != i)
+                    {
+                        myCollection[0][2][i].setCollectionIndex(i);
+                    }
+                }
             }
             //Remove from a Collection
             else if (confirm('Are you sure you want to remove this Token from the collection?')) {
@@ -162,7 +169,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
             }
             //Update States to Reflect Changes
             setTokenCollection(myCollection);
-            setCollectionChange(true);
+            setTokenCollectionUpdate(true);
             exitTokenCM();
         }
     }
@@ -190,7 +197,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
             //Remove the collection from the tokenCollection array
             let myCollection = tokenCollection;
             myCollection.splice(collectionIndex, 1);
-            setCollectionChange(true);
+            setTokenCollectionUpdate(true);
             setTokenCollection(myCollection);
             setCollectionIndex(-1);
         }
@@ -265,7 +272,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                     newCollection[index][1].push(token);
                     newCollection[index][2].push(tokenInfo);
                     setTokenCollection(newCollection);
-                    setCollectionChange(true);
+                    setTokenCollectionUpdate(true);
                 }
             }
         }
@@ -393,9 +400,9 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
 
         }
         setCollectionJSX(newGroups);
-        setCollectionChange(false);
+        setTokenCollectionUpdate(false);
         setCollectionNames(newGroupButtons);
-    }, [collectionChange, currentIndex]);
+    }, [tokenCollectionUpdate, currentIndex]);
 
 
     //Function that adds a new collection for Tokens to be stored in
@@ -440,7 +447,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
             allCollections.push(['New Group', [], []]);
         }
         setTokenCollection(allCollections);
-        setCollectionChange(true);
+        setTokenCollectionUpdate(true);
     }
 
     //Effect called when tryAddToken is changed by the 'Add to Scene' button in the TokenMenu's Context Menu
@@ -505,19 +512,48 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                         //textbox must not be in same group.
                         var nameBox = new Textbox(tokenInfo.getName(), {
                             selectable: false, lockRotation: true, lockScalingFlip: true,
-                            lockSkewingX: true, lockSkewingY: true, fill: 'rgba(227, 207, 207, 1)', //fontSize: newRadius * 2 / 20,
-                            textAlign: 'center'
+                            lockSkewingX: true, lockSkewingY: true, fill: 'rgba(227, 207, 207, 1)', fontSize: 40,
+                            textAlign: 'center', 
                         });
 
                         //When adding Tokens check whether a grid has been added and resize accordingly
                         if (scene.getSmallestGridUnit() > 0) {
                             group.scaleToHeight(scene.getSmallestGridUnit() * tokenInfo.getSizeCode());
-                            nameBox.scaleToHeight(scene.getGridUnitHeight() / 5);
+                            let scale = scene.getSmallestGridUnit() / 150;
+                            nameBox.scale(scale);
+                            
+                            if(nameBox.width < group.getScaledWidth() * 2)
+                            {
+                                while(nameBox.textLines.length > 1 && nameBox.width + 10 <= group.getScaledWidth() * 2)
+                                {
+                                    nameBox.set({width:nameBox.width + 10});
+                                }
+                            }
+                            else if(nameBox.width > group.getScaledWidth() * 2)
+                            {
+                                nameBox.set({width:group.getScaledWidth() * 2});
+                            }
+
                         }
                         //Otherwise scale height to the Token's image
                         else if (canvas.getObjects()[0] instanceof FabricImage) {
                             group.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 15 * tokenInfo.getSizeCode());
-                            nameBox.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 100)
+                            //nameBox.scaleToHeight(canvas.getObjects()[0].getScaledHeight() / 100);
+                            let scale = canvas.getObjects()[0].getScaledHeight() / 5000;
+                            //nameBox.height = canvas.getObjects()[0].getScaledHeight() / 100;
+                            //nameBox.width = group.getScaledWidth();
+                            nameBox.scale(scale);
+                            
+                            if(nameBox.width < group.getScaledWidth() * 2)
+                            {
+                                while (nameBox.textLines.length > 1 && nameBox.width + 10 <= group.getScaledWidth() * 2) {
+                                    nameBox.set({ width: nameBox.width + 1 });
+                                }
+                            }
+                            else if(nameBox.width > group.getScaledWidth() * 2)
+                            {
+                                nameBox.set({width:group.getScaledWidth() * 2});
+                            }
                         }
 
                         //Add Token group to the canvas
@@ -680,7 +716,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
                 //Update the tokenCollection
                 setTokenCollection(myCollection);
                 //Indicate change so Token Menu rerenders
-                setCollectionChange(true);
+                setTokenCollectionUpdate(true);
                 //Update index to no longer pair to the target collection
                 setCollectionIndex(-1);
                 //Hide the renaming element
@@ -702,7 +738,7 @@ export function TokenMenu({ canvas, cmManager, scene, tokenCollection, setTokenC
         <div className='TokenMenu'>
             <div className='ButtonRow'>
                 <IconButton onClick={addCollection}><FaFolderPlus /></IconButton>
-                <TokenCreationEditMenu setCollectionChange={setCollectionChange} factory={factory} tokenCollection={tokenCollection} setTokenCollection={setTokenCollection} gameLog={gameLog} canvasCollection={canvasCollection}/>
+                <TokenCreationEditMenu setTokenCollectionUpdate={setTokenCollectionUpdate} factory={factory} tokenCollection={tokenCollection} setTokenCollection={setTokenCollection} gameLog={gameLog} canvasCollection={canvasCollection}/>
             </div>
             <div className='TokenCollections'>
                 <Box scrollbar='visible' overflowY='scroll' maxHeight={innerHeight - 140} display={'flex'} flexDir={'column'} gap={'10px'}

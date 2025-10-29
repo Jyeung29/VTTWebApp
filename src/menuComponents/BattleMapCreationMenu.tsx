@@ -17,7 +17,7 @@ import BattleMap from '../SceneComponents/BattleMap';
 import '../index.css';
 
 export function BattleMapCreationMenu({ factory, setCanvas, canvasCollection, setCanvasCollection,
-  sceneIDMap, setSceneIDMap, currentCanvasID, setCurrentCanvasID, setCurrentScene, setCollectionUpdate }) {
+  sceneIDMap, setSceneIDMap, currentCanvasID, setCurrentCanvasID, setCurrentScene, setSceneCollectionUpdate }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [spinState, setSpinState] = useState('none');
   const [checked, setChecked] = useState(true);
@@ -131,7 +131,7 @@ export function BattleMapCreationMenu({ factory, setCanvas, canvasCollection, se
           setCurrentScene(newBattleMap);
           setCanvas(fabricCanvas);
           setMenuOpen(false);
-          setCollectionUpdate(true);
+          setSceneCollectionUpdate(true);
 
           setSpinState('none');
           //Unmounted to free memory

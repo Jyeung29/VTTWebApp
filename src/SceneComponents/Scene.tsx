@@ -73,6 +73,14 @@ abstract class Scene {
     }
     else if(typeof arg1 == 'object')
     {
+      if('name' in arg1 && typeof arg1.name =='string' && arg1.name.trim() != '')
+      {
+        this.name = arg1.name;
+      }
+      else
+      {
+        throw Error('Instance of a Scene must have a name string that is not empty or only spaces');
+      }
       if('SCENETYPE' in arg1 && typeof arg1.SCENETYPE == 'number' && Number.isInteger(arg1.SCENETYPE))
       {
         this.SCENETYPE = arg1.SCENETYPE;

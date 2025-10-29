@@ -14,8 +14,8 @@ The Sidebar Component uses the Chakra UI Drawer component as a top-level overlay
 be manipulatable. It contains five sub-menus: the GameLog, TokenMenu, SceneMenu, AudioMenu, and SettingsMenu.
 */
 
-export function SidebarMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, 
-    factory, sceneIDMap, setSceneIDMap, currentCanvasID, gameLog, 
+export function SidebarMenu({ canvas, cmManager, scene, tokenCollection, setTokenCollection, tokenCollectionUpdate, setTokenCollectionUpdate,
+    factory, sceneIDMap, setSceneIDMap, currentCanvasID, gameLog, sceneCollectionUpdate, setSceneCollectionUpdate,
     setCurrentCanvasID, setCurrentScene, setCanvas, canvasCollection, setCanvasCollection}) {
     
         //State that sets whether the Sidebar is open
@@ -58,7 +58,7 @@ export function SidebarMenu({ canvas, cmManager, scene, tokenCollection, setToke
                                 <Drawer.Body>
                                 <Tabs.Content value="game log">Game Log Coming Soon</Tabs.Content>
                                 <Tabs.Content value="tokens">
-                                    <TokenMenu canvas={canvas} cmManager={cmManager} scene={scene} tokenCollection={tokenCollection}
+                                    <TokenMenu canvas={canvas} cmManager={cmManager} scene={scene} tokenCollection={tokenCollection} tokenCollectionUpdate={tokenCollectionUpdate} setTokenCollectionUpdate={setTokenCollectionUpdate}
                                     setTokenCollection={setTokenCollection} factory={factory} gameLog={gameLog} canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection}/>
                                     </Tabs.Content>
                                 <Tabs.Content value="audio">
@@ -67,7 +67,7 @@ export function SidebarMenu({ canvas, cmManager, scene, tokenCollection, setToke
                                 <Tabs.Content value="scenes">
                                     <SceneMenu factory={factory} setCurrentScene={setCurrentScene}
                                     sceneIDMap={sceneIDMap} setSceneIDMap={setSceneIDMap} setCanvas={setCanvas}
-                                    currentCanvasID={currentCanvasID} setCurrentCanvasID={setCurrentCanvasID}
+                                    currentCanvasID={currentCanvasID} setCurrentCanvasID={setCurrentCanvasID} sceneCollectionUpdate={sceneCollectionUpdate} setSceneCollectionUpdate={setSceneCollectionUpdate}
                                     canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection}/>
                                 </Tabs.Content>
                                 <Tabs.Content value="settings">

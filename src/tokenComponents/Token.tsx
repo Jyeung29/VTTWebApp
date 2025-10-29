@@ -6,11 +6,11 @@ export class Token/*<
     SProps extends SerializedImageProps = SerializedImageProps,
     EventSpec extends ObjectEvents = ObjectEvents,
   >extends FabricImage<Props, SProps, EventSpec>
-  implements ImageProps*/{
+  implements ImageProps*/ {
 
     //Name displayed on Battle Maps. Multiple tokens can have same name.
-    protected name: string = "";
-    
+    protected name: string = '';
+
     //Whether a token is displayed in Streaming Mode and is transparent in GM Mode
     protected visibility: boolean = true;
 
@@ -44,72 +44,90 @@ export class Token/*<
 
     //An array of index pairs that indicate where in the Base Token Collection a token is located
     //Not implemented in cloneTokenMembers
-    protected baseTokenIndexPairs: [number,number][] = [];
+    protected baseTokenIndexPairs: [number, number][] = [];
 
-    constructor(obj:Object);
-    constructor(name:string, vis:boolean, size:number, showName:boolean);
+    protected collectionIndex: number = -1;
+
+    constructor(obj: Object);
+    constructor(name: string, vis: boolean, size: number, showName: boolean, index: number);
     constructor();
 
-    constructor(arg1?: any, arg2?:any, arg3?:any,arg4?:any)
-    {
+    constructor(arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any) {
         //Token reconstruction from Object representation
-        if(arg1 != null && typeof arg1 == 'object')
-        {
-            if('name' in arg1 && typeof arg1.name == 'string')
-            {
+        if (arg1 != null && typeof arg1 == 'object') {
+            if ('name' in arg1 && typeof arg1.name == 'string') {
+                console.log(arg1.name)
                 this.name = arg1.name;
             }
-            if('visibility' in arg1 && typeof arg1.visibility == 'boolean')
-            {
+            if ('visibility' in arg1 && typeof arg1.visibility == 'boolean') {
                 this.visibility = arg1.visibility;
             }
-            if('sizeCode' in arg1  && typeof arg1.sizeCode == 'number' && arg1.sizeCode > 0)
-            {
+            if ('sizeCode' in arg1 && typeof arg1.sizeCode == 'number' && arg1.sizeCode > 0) {
                 this.sizeCode = arg1.sizeCode;
             }
-            if('showName' in arg1  && typeof arg1.showName == 'boolean')
-            {
+            if ('showName' in arg1 && typeof arg1.showName == 'boolean') {
                 this.showName = arg1.showName;
             }
-            if('imageURLs' in arg1  && Array.isArray(arg1.imageURLs))
-            {
-                for(let i = 0; i < arg1.imageURLs.length; i++)
-                {
-                    if(!Array.isArray(arg1.imageURLs[i]) || arg1.imageURLs[i].length != 2
-                     || typeof arg1.imageURLs[i][0] != 'string' || typeof arg1.imageURLs[i][1] != 'string')
-                    {
+            if ('imageURLs' in arg1 && Array.isArray(arg1.imageURLs)) {
+                for (let i = 0; i < arg1.imageURLs.length; i++) {
+                    if (!Array.isArray(arg1.imageURLs[i]) || arg1.imageURLs[i].length != 2
+                        || typeof arg1.imageURLs[i][0] != 'string' || typeof arg1.imageURLs[i][1] != 'string') {
                         throw Error('An item in the imageURLs array is not a string pair');
                     }
                 }
                 this.imageURLs = arg1.imageURLs;
             }
-            if('currentImage' in arg1  && typeof arg1.currentImage == 'number' && arg1.currentImage < this.imageURLs.length)
-            {
+            if ('currentImage' in arg1 && typeof arg1.currentImage == 'number' && arg1.currentImage < this.imageURLs.length) {
                 this.currentImage = arg1.currentImage;
+            }
+
+            if ('collectionIndex' in arg1 && typeof arg1.collectionIndex == 'number' && Number.isInteger(arg1.collectionIndex) && arg1.collectionIndex >= 0) {
+                this.collectionIndex = arg1.collectionIndex;
             }
         }
         //Basic
-        else if(typeof arg1 == 'string' && arg1 != null && typeof arg2 == 'boolean' && arg2 != null && 
-            typeof arg3 == 'number' && arg3 != null && typeof arg4 == 'boolean' && arg4 != null)
-        {
-            if(arg1.trim() != '')
-            {
+        else if (typeof arg1 == 'string' && arg1 != null && typeof arg2 == 'boolean' && arg2 != null &&
+            typeof arg3 == 'number' && arg3 != null && typeof arg4 == 'boolean' && arg4 != null && arg5 != null && typeof arg5 == 'number') {
+            if (arg1.trim() != '') {
                 this.name = arg1;
             }
+            else {
+                throw Error('Token name cannot be empty or only spaces');
+            }
             this.visibility = arg2;
-            
-            if(arg3 > 0)
-            {
+
+            if (arg3 > 0) {
                 this.sizeCode = arg3;
+            }
+            else {
+                throw Error('Token size cannot be 0 or negative number');
             }
 
             this.showName = arg4;
+
+            if (Number.isInteger(arg5) && arg5 >= 0) {
+                this.collectionIndex = arg5;
+            }
+            else {
+                throw Error('Token collectionIndex cannot be a non-integer or negative number')
+            }
         }
     }
 
     public toObject() {
+        console.log(this.name)
+        return { name: this.name, visibility: this.visibility, sizeCode: this.sizeCode, showName: this.showName, imageURLs: this.imageURLs, currentImage: this.currentImage, collectionIndex: this.collectionIndex };
+    }
 
-        return {name: this.name, visibility: this.visibility, sizeCode:this.sizeCode, showName: this.showName, imageURLs: this.imageURLs, currentImage: this.currentImage};
+    public setCollectionIndex(num: number): boolean {
+        if (num >= 0 && Number.isInteger(num)) {
+            this.collectionIndex = num;
+            return true;
+        }
+        return false;
+    }
+    public getCollectionIndex(): number {
+        return this.collectionIndex;
     }
 
     //Returns string name of Token.
@@ -121,8 +139,7 @@ export class Token/*<
     // Otherwise returns true
     public setName(newName: string): boolean {
         //Make sure not empty name or null
-        if(!newName && newName.trim() == "")
-        {
+        if (!newName && newName.trim() == "") {
             return false;
         }
         //Otherwise set name
@@ -133,12 +150,10 @@ export class Token/*<
     //Sets nameNumber of the Token to the provided number. Returns false if provided number is null
     // or less than -1. Otherwise returns true.
     public setNameNumber(num: number): boolean {
-        if(num == null || num < -1)
-        {
+        if (num == null || num < -1) {
             return false;
         }
-        else
-        {
+        else {
             this.nameNumber = num;
             return true;
         }
@@ -156,8 +171,7 @@ export class Token/*<
 
     //Sets visibility to entered boolean. Returns true if visibility was set.
     public setVisibility(newVisibility: boolean): boolean {
-        if(newVisibility)
-        {
+        if (newVisibility) {
             this.visibility = newVisibility;
             return true;
         }
@@ -172,153 +186,152 @@ export class Token/*<
     //Sets sizeCode to entered number. If an invalid negative number return false.
     public setSizeCode(newCode: number): boolean {
         //Make sure not negative size
-        if(newCode && newCode > 0)
-        {
+        if (newCode && newCode > 0) {
             this.sizeCode = newCode;
             return true;
         }
         return false;
     }
-    
 
-/*
-    toObject<
-    T extends Omit<Props & TClassProperties<this>, keyof SProps>,
-    K extends keyof T = never,
-  >(propertiesToInclude: K[] = []): Pick<T, K> & SProps {
-    const filters: Record<string, any>[] = [];
-    this.filters.forEach((filterObj) => {
-      filterObj && filters.push(filterObj.toObject());
-    });
-    return {
-      ...super.toObject(),
-    name: this.getName(),
-    
-    visibility: this.getVisibility(),
-
-    sizeCode: this.getSizeCode(),
-
-    showName: this.getShowName(),
-
-    nameNumber: this.getNameNumber(),
-
-    imageURLs: this.getImageURLs(),
-
-    currentImage: this.getCurrentImageIndex(),
-
-    };
-  }
-/*
-  static fromObject<T extends TOptions<SerializedImageProps>>(
-    { filters: f, resizeFilter: rf, src, crossOrigin, type, ...object }: T,
-    options?: Abortable,
-  ) {
-    return Promise.all([
-      loadImage(src!, { ...options, crossOrigin }),
-      f && enlivenObjects<BaseFilter<string>>(f, options),
-      // redundant - handled by enlivenObjectEnlivables, but nicely explicit
-      rf ? enlivenObjects<Resize>([rf], options) : [],
-      enlivenObjectEnlivables(object, options),
-    ]).then(([el, filters = [], [resizeFilter], hydratedProps = {}]) => {
-      return new this(el, {
-        ...object,
-        // TODO: passing src creates a difference between image creation and restoring from JSON
-        src,
-        filters,
-        resizeFilter,
-        ...hydratedProps,
-      });
-    });
-  }
 
     /*
-    //Return all Resources of Token
-    public getAllResources(): Resource[] {
-        return this.resources;
-    }
-
-    public getResource(index?:number, name?:string){
-        //Check if index is not out of bounds. Directly access Resource at index.
-        if(index && index > -1 && index < this.resources.length)
-        {
-            return this.resources[index];
-        } 
-        //Make sure name is not null and only spaces
-        else if(name && name.trim() != "")
-        {
-            //Find Resource with parameter name. Return the Resource when found.
-            for(let i = 0; i < this.resources.length; i++)
+        toObject<
+        T extends Omit<Props & TClassProperties<this>, keyof SProps>,
+        K extends keyof T = never,
+      >(propertiesToInclude: K[] = []): Pick<T, K> & SProps {
+        const filters: Record<string, any>[] = [];
+        this.filters.forEach((filterObj) => {
+          filterObj && filters.push(filterObj.toObject());
+        });
+        return {
+          ...super.toObject(),
+        name: this.getName(),
+        
+        visibility: this.getVisibility(),
+    
+        sizeCode: this.getSizeCode(),
+    
+        showName: this.getShowName(),
+    
+        nameNumber: this.getNameNumber(),
+    
+        imageURLs: this.getImageURLs(),
+    
+        currentImage: this.getCurrentImageIndex(),
+    
+        };
+      }
+    /*
+      static fromObject<T extends TOptions<SerializedImageProps>>(
+        { filters: f, resizeFilter: rf, src, crossOrigin, type, ...object }: T,
+        options?: Abortable,
+      ) {
+        return Promise.all([
+          loadImage(src!, { ...options, crossOrigin }),
+          f && enlivenObjects<BaseFilter<string>>(f, options),
+          // redundant - handled by enlivenObjectEnlivables, but nicely explicit
+          rf ? enlivenObjects<Resize>([rf], options) : [],
+          enlivenObjectEnlivables(object, options),
+        ]).then(([el, filters = [], [resizeFilter], hydratedProps = {}]) => {
+          return new this(el, {
+            ...object,
+            // TODO: passing src creates a difference between image creation and restoring from JSON
+            src,
+            filters,
+            resizeFilter,
+            ...hydratedProps,
+          });
+        });
+      }
+    
+        /*
+        //Return all Resources of Token
+        public getAllResources(): Resource[] {
+            return this.resources;
+        }
+    
+        public getResource(index?:number, name?:string){
+            //Check if index is not out of bounds. Directly access Resource at index.
+            if(index && index > -1 && index < this.resources.length)
             {
-                if(this.resources[i].name == name)
+                return this.resources[index];
+            } 
+            //Make sure name is not null and only spaces
+            else if(name && name.trim() != "")
+            {
+                //Find Resource with parameter name. Return the Resource when found.
+                for(let i = 0; i < this.resources.length; i++)
                 {
-                    return this.resources[i];
+                    if(this.resources[i].name == name)
+                    {
+                        return this.resources[i];
+                    }
                 }
             }
+            //Null if out of bounds index, name is null or only spaces, no Resource with given name.
+            return null;
         }
-        //Null if out of bounds index, name is null or only spaces, no Resource with given name.
-        return null;
-    }
-
-    //Method that sets a specific resource value and maximum found with index or name of Resource.
-    public setResource(index?:number, name?:string, val?:number, max?:number): boolean {
-        //Check if valid index provided
-        if(index && index > -1 && index < this.resources.length)
-        {
-            this.setResourceData(this.resources[index], val, max);
-            return true;     
-        }
-        //Check if name is provided
-        else if(name && name.trim() != "")
-        {
-            //Search for resource name in Token's resources
-            for(let i = 0; i < this.resources.length; i++)
+    
+        //Method that sets a specific resource value and maximum found with index or name of Resource.
+        public setResource(index?:number, name?:string, val?:number, max?:number): boolean {
+            //Check if valid index provided
+            if(index && index > -1 && index < this.resources.length)
             {
-                //If found, set new resource values
-                if(this.resources[i].name == name)
+                this.setResourceData(this.resources[index], val, max);
+                return true;     
+            }
+            //Check if name is provided
+            else if(name && name.trim() != "")
+            {
+                //Search for resource name in Token's resources
+                for(let i = 0; i < this.resources.length; i++)
                 {
-                    this.setResourceData(this.resources[i], val, max);
-                    return true;  
+                    //If found, set new resource values
+                    if(this.resources[i].name == name)
+                    {
+                        this.setResourceData(this.resources[i], val, max);
+                        return true;  
+                    }
                 }
             }
+            return false;
         }
-        return false;
-    }
-
-    //Method that resets all Resource's val to the max value.
-    public restoreAllResources(): boolean {
-        for(let i = 0; i < this.resources.length; i++)
-        {
-            this.setResourceData(this.resources[i], this.resources[i].max, );
-        }
-        return true;
-    }
-
-    //Helper method for setResource() and restoreAllResources(). Sets Resource object values.
-    protected setResourceData(resource: Resource, val?:number, max?:number): boolean {
-        if(resource)
-        {
-            //If val or max is null, then make no changes
-            resource.val = val ?? resource.val;
-            resource.max = max ?? resource.max;
+    
+        //Method that resets all Resource's val to the max value.
+        public restoreAllResources(): boolean {
+            for(let i = 0; i < this.resources.length; i++)
+            {
+                this.setResourceData(this.resources[i], this.resources[i].max, );
+            }
             return true;
         }
-        return false;
-    }
-
-    //Returns boolean array of whether to display resources of the Token. 
-    public getShowResources(): boolean[] {
-        return this.showResources;
-    }
-
-    //Sets showResource at given index to entered boolean. Returns true if in range of array.
-    public setShowResources(newShowResource: boolean, index: number): boolean {
-        if(newShowResource != null && index && index > -1 && this.showResources.length > index)
-        {
-            this.showResources[index] = newShowResource;
-            return true;
+    
+        //Helper method for setResource() and restoreAllResources(). Sets Resource object values.
+        protected setResourceData(resource: Resource, val?:number, max?:number): boolean {
+            if(resource)
+            {
+                //If val or max is null, then make no changes
+                resource.val = val ?? resource.val;
+                resource.max = max ?? resource.max;
+                return true;
+            }
+            return false;
         }
-        return false;
-    }*/
+    
+        //Returns boolean array of whether to display resources of the Token. 
+        public getShowResources(): boolean[] {
+            return this.showResources;
+        }
+    
+        //Sets showResource at given index to entered boolean. Returns true if in range of array.
+        public setShowResources(newShowResource: boolean, index: number): boolean {
+            if(newShowResource != null && index && index > -1 && this.showResources.length > index)
+            {
+                this.showResources[index] = newShowResource;
+                return true;
+            }
+            return false;
+        }*/
 
     //Returns sizeCode of the Token. 
     public getShowName(): boolean {
@@ -327,8 +340,7 @@ export class Token/*<
 
     //Sets showName to entered boolean. Returns true if showName is set.
     public setShowName(newShowName: boolean): boolean {
-        if(newShowName != null)
-        {
+        if (newShowName != null) {
             this.showName = newShowName;
             return true;
         }
@@ -350,17 +362,14 @@ export class Token/*<
     //Method that only adds a url string to be tracked. Does not change the 
     //Token's image. Assumes that ImageLinkFactory outputed correct file id and
     //url.
-    public addURL(id:string, url: string): boolean {
+    public addURL(id: string, url: string): boolean {
         //Check if not empty
-        if(//id.trim() != '' && 
-        url.trim() != '')
-        {
-            for(let i = 0; i < this.imageURLs.length; i++)
-            {
+        if (//id.trim() != '' && 
+            url.trim() != '') {
+            for (let i = 0; i < this.imageURLs.length; i++) {
                 //Make sure there are no redundant links. IDs could be same across
                 //drive services so must match url as well.
-                if(this.imageURLs[i][0] == id && this.imageURLs[i][1] == url)
-                {
+                if (this.imageURLs[i][0] == id && this.imageURLs[i][1] == url) {
                     return false;
                 }
             }
@@ -379,8 +388,7 @@ export class Token/*<
         return this.currentImage;
     }
 
-    protected getImageURLs(): [string,string][]
-    {
+    protected getImageURLs(): [string, string][] {
         return this.imageURLs;
     }
 

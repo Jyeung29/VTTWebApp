@@ -1,4 +1,4 @@
-import { Canvas, Group, type TCornerPoint, Point, FabricImage, FabricObject, Circle, Line, Rect } from 'fabric';
+import { Canvas, Group, type TCornerPoint, Point, FabricImage, FabricObject, Circle, Line, Rect, Textbox } from 'fabric';
 import { useState } from 'react'
 import { Token } from '../tokenComponents/Token';
 import Scene from '../SceneComponents/Scene';
@@ -88,6 +88,11 @@ class BattleMap extends Scene {
       if ('gridSnap' in arg1 && typeof arg1.gridSnap == 'boolean') {
         this.gridSnap = arg1.gridSnap;
       }
+
+      if (this.gridUnitHeight > 0 && this.gridUnitWidth > 0) {
+        this.smallestGridUnit = this.gridUnitHeight > this.gridUnitWidth ? this.gridUnitHeight : this.gridUnitWidth;
+      }
+
       let strArray;
       if ('centerPoint' in arg1 && typeof arg1.centerPoint == 'string' && (strArray = arg1.centerPoint.split(',')).length == 2) {
         if (Number(strArray[0]) != null && Number(strArray[1]) != null) {
@@ -102,26 +107,22 @@ class BattleMap extends Scene {
       else if (this.gridPlaced) {
         throw Error('Grid indicated to be placed but centerPoint string is unable to be converted to x and y coordinates');
       }
-      if('cornerPoints' in arg1 && Array.isArray(arg1.cornerPoints) && arg1.cornerPoints.length == 4)
-      {
-        let points:Point[] = [];
-        for(let i = 0; i < 4; i++)
-        {
+      if ('cornerPoints' in arg1 && Array.isArray(arg1.cornerPoints) && arg1.cornerPoints.length == 4) {
+        let points: Point[] = [];
+        for (let i = 0; i < 4; i++) {
           let temp;
-          if((temp = arg1.cornerPoints[i].split(',')).length != 2 || Number(temp[0]) == null || Number(temp[1]) == null)
-          {
+          if ((temp = arg1.cornerPoints[i].split(',')).length != 2 || Number(temp[0]) == null || Number(temp[1]) == null) {
             throw Error('cornerPoints array contains a string that is unable to convert to a number');
           }
-          else
-          {
+          else {
             let point = new Point();
             point.x = Number(temp[0]);
             point.y = Number(temp[1]);
             points.push(point);
           }
         }
-        
-        this.cornerPoints = {tl: points[0], tr: points[1], br: points[2], bl: points[3] };
+
+        this.cornerPoints = { tl: points[0], tr: points[1], br: points[2], bl: points[3] };
       }
     }
   }
@@ -151,6 +152,14 @@ class BattleMap extends Scene {
     return this.gridGroup;
   }
 
+  public setGridGroup(group: Group): boolean {
+    if (group && group.getObjects().length > 1 && group.getObjects()[0] instanceof Line) {
+      this.gridGroup = group;
+      return true;
+    }
+    return false;
+  }
+
   //Function that scales a specified Token according to the new size based on the grid.
   // Used by ContextMenu when setting Token size
   public resizeToken(token: Group, sizeCode: number, canvas: Canvas): boolean {
@@ -178,147 +187,179 @@ class BattleMap extends Scene {
           //Account for grid not yet created. Map must be used as baseline size. Currently
           //does not account for multiple Map Images for a calculation of size
           if (this.smallestGridUnit <= 0 && this.images.length > 0) {
-            let newHeight = canvas.getObjects()[0].getScaledHeight() / 15 * sizeCode;
-            this.tokenGroups[i][0].scaleToHeight(newHeight);
+            let scale = canvas.getObjects()[0].getScaledHeight() / 5000;
+            this.tokenGroups[i][1][0].scale(scale);
+
+            if (this.tokenGroups[i][1][0].width < this.tokenGroups[i][0].getScaledWidth() * 2) {
+              while (this.tokenGroups[i][1][0].textLines.length > 1 && this.tokenGroups[i][1][0].width + 10 <= group.getScaledWidth() * 2) {
+                this.tokenGroups[i][1][0].set({ width: this.tokenGroups[i][1][0].width + 1 });
+              }
+            }
+            else if (this.tokenGroups[i][1][0].width > this.tokenGroups[i][0].getScaledWidth() * 2) {
+              this.tokenGroups[i][1][0].set({ width: this.tokenGroups[i][0].getScaledWidth() * 2 });
+            }
           }
-          //Check whether grid has been added. Assumed that if it is, then map image already present.
-          else if (this.smallestGridUnit > 0) {
-            this.tokenGroups[i][0].scaleToHeight(this.smallestGridUnit * sizeCode);
-            this.tokenGroups[i][1][0].scaleToHeight(this.gridUnitHeight / 5);
-          }
-
-          //Set the Token's name textbox to be underneath resized Token
-          let newX = this.tokenGroups[i][0].getObjects()[1].getCenterPoint().x;
-          let newY = this.tokenGroups[i][0].getObjects()[1].getCoords()[3].y;
-          let newPoint = new Point({ x: newX, y: newY });
-          this.tokenGroups[i][1][0].setXY(newPoint, 'center', 'top');
-
-          //Update coordinates so Canvas caching sets dirty and renders correctly
-          this.tokenGroups[i][1][0].setCoords();
-
-          //Render changes to the Canvas
-          canvas.renderAll();
-          return true;
         }
+        //Check whether grid has been added. Assumed that if it is, then map image already present.
+        else if (this.smallestGridUnit > 0) {
+          let scale = this.smallestGridUnit / 150;
+          this.tokenGroups[i][1][0].scale(scale);
+
+          if (this.tokenGroups[i][1][0] instanceof Textbox && this.tokenGroups[i][1][0].width < this.tokenGroups[i][0].getScaledWidth() * 2) {
+            while (this.tokenGroups[i][1][0].textLines.length > 1 && this.tokenGroups[i][1][0].width + 10 <= this.tokenGroups[i][0].getScaledWidth() * 2) {
+              this.tokenGroups[i][1][0].set({ width: this.tokenGroups[i][1][0].width + 10 });
+            }
+          }
+          else if (this.tokenGroups[i][1][0].width > this.tokenGroups[i][0].getScaledWidth() * 2) {
+            this.tokenGroups[i][1][0].set({ width: this.tokenGroups[i][0].getScaledWidth() * 2 });
+          }
+        }
+
+        //Set the Token's name textbox to be underneath resized Token
+        let newX = this.tokenGroups[i][0].getObjects()[1].getCenterPoint().x;
+        let newY = this.tokenGroups[i][0].getObjects()[1].getCoords()[3].y;
+        let newPoint = new Point({ x: newX, y: newY });
+        this.tokenGroups[i][1][0].setXY(newPoint, 'center', 'top');
+
+        //Update coordinates so Canvas caching sets dirty and renders correctly
+        this.tokenGroups[i][1][0].setCoords();
+
+        //Render changes to the Canvas
+        canvas.renderAll();
+        return true;
       }
-      //Token not found
     }
+    //Token not found
+  }
     return false;
   }
 
   //Function that scales all objects and Tokens tracked by the BattleMap. Returns either error that
   //indicates invalid size number or number of objects unable to be resized. Called when grid is created or resized by Toolbar.
   public resizeAllObjects(width: number, height: number, corners: TCornerPoint, center: Point): number {
-    //Check whether necessary grid information is provided
-    if (!width || !height || !corners || !center || width <= 0 || height <= 0) {
-      return -1; //Indicates error
-    }
+  //Check whether necessary grid information is provided
+  if (!width || !height || !corners || !center || width <= 0 || height <= 0) {
+    return -1; //Indicates error
+  }
 
-    //Find smallest grid unit and save it.
-    if (width >= height) {
-      this.smallestGridUnit = height;
+  //Find smallest grid unit and save it.
+  if (width >= height) {
+    this.smallestGridUnit = height;
+  }
+  else {
+    this.smallestGridUnit = width;
+  }
+
+  //Track grid unit width and height.
+  this.gridUnitHeight = height;
+  this.gridUnitWidth = width;
+
+  var errorCount = 0; //Indicates number of objects not resized
+
+  //Iterate over Token groups and resize them all
+  for (let i = 0; i < this.tokenGroups.length && i < this.tokenInfo.length; i++) {
+    let currentToken = this.tokenGroups[i][0].getObjects()[0];
+    let tokenInfo = this.tokenInfo[i];
+    //Double check if 
+    if (currentToken instanceof FabricImage) {
+
+      let sizeMultiplier = tokenInfo.getSizeCode();
+      this.tokenGroups[i][0].scaleToHeight(this.smallestGridUnit * sizeMultiplier);
+
+      //Resize Associated Token Elements such as name textbox
+      if (this.tokenGroups[i][1].length > 0) {
+
+        let scale = this.smallestGridUnit / 150;
+        this.tokenGroups[i][1][0].scale(scale);
+
+        if (this.tokenGroups[i][1][0] instanceof Textbox && this.tokenGroups[i][1][0].width < this.tokenGroups[i][0].getScaledWidth() * 2) {
+          while (this.tokenGroups[i][1][0].textLines.length > 1 && this.tokenGroups[i][1][0].width + 10 <= this.tokenGroups[i][0].getScaledWidth() * 2) {
+            this.tokenGroups[i][1][0].set({ width: this.tokenGroups[i][1][0].width + 10 });
+          }
+        }
+        else if (this.tokenGroups[i][1][0].width > this.tokenGroups[i][0].getScaledWidth() * 2) {
+          this.tokenGroups[i][1][0].set({ width: this.tokenGroups[i][0].getScaledWidth() * 2 });
+        }
+
+        //this.tokenGroups[i][1][0].scaleToHeight(this.gridUnitHeight / 5);
+        let newX = this.tokenGroups[i][0].getObjects()[1].getCenterPoint().x;
+        let newY = this.tokenGroups[i][0].getObjects()[1].getCoords()[3].y;
+        let newPoint = new Point({ x: newX, y: newY });
+        this.tokenGroups[i][1][0].setXY(newPoint, 'center', 'top');
+        this.tokenGroups[i][1][0].setCoords();
+      }
     }
     else {
-      this.smallestGridUnit = width;
+      errorCount++;
     }
-
-    //Track grid unit width and height.
-    this.gridUnitHeight = height;
-    this.gridUnitWidth = width;
-
-    var errorCount = 0; //Indicates number of objects not resized
-
-    //Iterate over Token groups and resize them all
-    for (let i = 0; i < this.tokenGroups.length && i < this.tokenInfo.length; i++) {
-      let currentToken = this.tokenGroups[i][0].getObjects()[0];
-      let tokenInfo = this.tokenInfo[i];
-      //Double check if 
-      if (currentToken instanceof FabricImage) {
-
-        let sizeMultiplier = tokenInfo.getSizeCode();
-        this.tokenGroups[i][0].scaleToHeight(this.smallestGridUnit * sizeMultiplier);
-
-        //Resize Associated Token Elements such as name textbox
-        if (this.tokenGroups[i][1].length > 0) {
-          this.tokenGroups[i][1][0].scaleToHeight(this.gridUnitHeight / 5);
-          let newX = this.tokenGroups[i][0].getObjects()[1].getCenterPoint().x;
-          let newY = this.tokenGroups[i][0].getObjects()[1].getCoords()[3].y;
-          let newPoint = new Point({ x: newX, y: newY });
-          this.tokenGroups[i][1][0].setXY(newPoint, 'center', 'top');
-          this.tokenGroups[i][1][0].setCoords();
-        }
-      }
-      else {
-        errorCount++;
-      }
-    }
-
-    //Iterate over objects and resize them all
-    for (let i = 0; i < this.objects.length; i++) {
-      let currentObject = this.objects[i][0];
-      let multiplier = this.objects[i][1];
-
-      //Circles have different multiplier logic due to radius data member in Fabric.js
-      if (currentObject instanceof Circle && multiplier > 0) {
-        currentObject.scaleX = this.gridUnitWidth / 600 * multiplier;
-        currentObject.scaleY = this.gridUnitHeight / 600 * multiplier;
-      }
-      else if (currentObject instanceof FabricObject && multiplier > 0) {
-        currentObject.scaleToHeight(this.gridUnitHeight * multiplier);
-      }
-      else {
-        errorCount++;
-      }
-    }
-    //Save current grid coordinates and size to use in GridSnappingHelper
-    this.cornerPoints = corners;
-    this.centerPoint = center;
-    return errorCount;
   }
+
+  //Iterate over objects and resize them all
+  for (let i = 0; i < this.objects.length; i++) {
+    let currentObject = this.objects[i];
+    let multiplier = this.objectSizeCodes[i];
+
+    //Circles have different multiplier logic due to radius data member in Fabric.js
+    if (currentObject instanceof Circle && multiplier > 0) {
+      currentObject.scaleX = this.gridUnitWidth / 600 * multiplier;
+      currentObject.scaleY = this.gridUnitHeight / 600 * multiplier;
+    }
+    else if (currentObject instanceof FabricObject && multiplier > 0) {
+      currentObject.scaleToHeight(this.gridUnitHeight * multiplier);
+    }
+    else {
+      errorCount++;
+    }
+  }
+  //Save current grid coordinates and size to use in GridSnappingHelper
+  this.cornerPoints = corners;
+  this.centerPoint = center;
+  return errorCount;
+}
 
   //Function that sets whether objects should snap on grid on this BattleMap. Returns true if gridSnap has been set.
   public setGridSnap(snap: boolean): boolean {
-    if (snap != null) {
-      this.gridSnap = snap;
-      return true;
-    }
-    return false;
+  if (snap != null) {
+    this.gridSnap = snap;
+    return true;
   }
+  return false;
+}
 
   //Function that returns boolean of whether objects should snap on grid for this BattleMap. 
   public getGridSnap(): boolean {
-    return this.gridSnap;
-  }
+  return this.gridSnap;
+}
 
   //Returns the current smallestGridUnit size. smallestGridUnit is set by resizeAllTokens. Will return
   //-1 if resizeAllTokens has not been called before this method is called. 
   public getSmallestGridUnit(): number {
-    return this.smallestGridUnit;
-  }
+  return this.smallestGridUnit;
+}
 
   //Returns current gridUnitHeight. gridUnitHeight is set by resizeAllTokens. Will return -1 if
   //resizeAllTokens has not been called before this method is called.
   public getGridUnitHeight(): number {
-    return this.gridUnitHeight;
-  }
+  return this.gridUnitHeight;
+}
 
   //Returns current gridUnitWidth. gridUnitWidth is set by resizeAllTokens. Will return -1 if
   //resizeAllTokens has not been called before this method is called.
   public getGridUnitWidth(): number {
-    return this.gridUnitWidth;
-  }
+  return this.gridUnitWidth;
+}
 
   //Returns corner Point coordinates of the grid resizing rectangle. Used to calculate
   //snapping distances in GridSnappingHelper.
   public getCornerPoints(): TCornerPoint {
-    return this.cornerPoints;
-  }
+  return this.cornerPoints;
+}
 
   //Returns center Point coorindate of the grid resizing rectangle. Used to calculate
   //snapping distances in GridSnappingHelper.
   public getCenterPoint(): Point {
-    return this.centerPoint;
-  }
+  return this.centerPoint;
+}
 }
 
 export default BattleMap;

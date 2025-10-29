@@ -13,14 +13,11 @@ import { FaCheck, FaEdit, FaFolderPlus } from 'react-icons/fa';
 import { MdOutlineDelete } from 'react-icons/md';
 import { BattleMapCreationMenu } from './BattleMapCreationMenu';
 
-export function SceneMenu({ sceneIDMap, setSceneIDMap, factory,
+export function SceneMenu({ sceneIDMap, setSceneIDMap, factory, sceneCollectionUpdate, setSceneCollectionUpdate,
     currentCanvasID, setCurrentCanvasID, setCurrentScene, setCanvas, canvasCollection, setCanvasCollection,
 }) {
     //State containing JSX that reflects all Scene's in the sceneCollection
     const [sceneCollectionJSX, setSceneCollectionJSX] = useState([]);
-
-    //Boolean state changed to indicate SceneCollection has been changed
-    const [collectionUpdate, setCollectionUpdate] = useState<boolean>(true);
 
     //State that manages whether rename overlay is visible or hidden
     const [renameDisplay, setRenameDisplay] = useState('none');
@@ -116,13 +113,13 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, factory,
                     }
 
                     setCanvasCollection(newCollection);
-                    setCollectionUpdate(true);
+                    setSceneCollectionUpdate(true);
                     exitSceneCM();
                 }
             }
         }
 
-        if (collectionUpdate && myCollection.length > 0) {
+        if (sceneCollectionUpdate && myCollection.length > 0) {
             for (let i = 0; i < myCollection.length; i++) {
                 //Check current array is a lone scene not in any collection
                 if (myCollection[i][0] == '') {
@@ -200,7 +197,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, factory,
                                     setCurrentCanvasID(myCollection[i][2][0].getID());
                                     setCanvas(myCollection[i][1][0]);
                                     setCurrentScene(myCollection[i][2][0]);
-                                    setCollectionUpdate(true);
+                                    setSceneCollectionUpdate(true);
                                 }
                                 else if (newCanvas) {
                                     alert('Error: Cannot find previous scene canvas');
@@ -298,7 +295,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, factory,
                                         setCurrentCanvasID(myCollection[i][2][j].getID());
                                         setCanvas(myCollection[i][1][j]);
                                         setCurrentScene(myCollection[i][2][j]);
-                                        setCollectionUpdate(true);
+                                        setSceneCollectionUpdate(true);
                                     }
                                     else if (newCanvas) {
                                         alert('Error: Cannot find previous scene canvas');
@@ -332,10 +329,10 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, factory,
                 }
             }
             setSceneCollectionJSX(collectionJSX);
-            setCollectionUpdate(false);
+            setSceneCollectionUpdate(false);
             setCollectionNames(collectionContextMenuJSX);
         }
-    }, [collectionUpdate, currentCanvasID, sceneIndex]);
+    }, [sceneCollectionUpdate, currentCanvasID, sceneIndex]);
 
     //Function that adds a new collection for Tokens to be stored in
     const addCollection = () => {
@@ -364,7 +361,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, factory,
             allCollections.push(['New Group', [], [], [], []]);
         }
         setCanvasCollection(allCollections);
-        setCollectionUpdate(true);
+        setSceneCollectionUpdate(true);
     }
 
     //Function to display the Token Menu's Context Menu
@@ -476,7 +473,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, factory,
                 //Update the tokenCollection
                 //setTokenCollection(myCollection);
                 //Indicate change so Token Menu rerenders
-                setCollectionUpdate(true);
+                setSceneCollectionUpdate(true);
                 //Update index to no longer pair to the target collection
                 setSceneID(-1);
                 sceneIndex.current = [-1, -1];
@@ -506,7 +503,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, factory,
                 newCollection[sceneIndex.current[0]][1].splice(sceneIndex.current[1],1);
                 newCollection[sceneIndex.current[0]][2].splice(sceneIndex.current[1],1);
                 setCanvasCollection(newCollection);
-                setCollectionUpdate(true);
+                setSceneCollectionUpdate(true);
             }
         }
     }
@@ -519,7 +516,7 @@ export function SceneMenu({ sceneIDMap, setSceneIDMap, factory,
                     sceneIDMap={sceneIDMap} setSceneIDMap={setSceneIDMap} setCanvas={setCanvas}
                     currentCanvasID={currentCanvasID} setCurrentCanvasID={setCurrentCanvasID}
                     canvasCollection={canvasCollection} setCanvasCollection={setCanvasCollection}
-                    setCollectionUpdate={setCollectionUpdate} />
+                    setSceneCollectionUpdate={setSceneCollectionUpdate} />
                 <Button>Add Roleplaying Scene</Button>
             </div>
             <div>
